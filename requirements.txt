@@ -1,0 +1,18 @@
+ipykernel
+python-dotenv
+pydantic
+huggingface_hub
+
+# llm
+openai
+langchain
+langgraph
+langchain_openai
+langchain_community
+langchain-tavily
+
+# db
+qdrant-client
+
+# view
+flask
