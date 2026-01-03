@@ -2,6 +2,7 @@ ipykernel
 python-dotenv
 pydantic
 huggingface_hub
+nbformat
 
 # llm
 openai
