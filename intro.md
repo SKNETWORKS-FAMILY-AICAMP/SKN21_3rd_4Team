@@ -17,7 +17,7 @@ HUGGINGFACE_API_KEY='<your-huggingface-api-key>'
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 LANGSMITH_API_KEY='<langsmith-api-key>'
-LANGSMITH_PROJECT=pr-linear-cluster-64
+LANGSMITH_PROJECT=SKN21_3rd_4Team
 
 TAVILY_API_KEY='<tavily-api-key>'
 ```

@@ -11,6 +11,7 @@ langgraph
 langchain_openai
 langchain_community
 langchain-tavily
+langchain_qdrant
 
 # db
 qdrant-client

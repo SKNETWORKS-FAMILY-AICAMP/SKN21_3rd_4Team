@@ -7,6 +7,7 @@
 import os
 from dotenv import load_dotenv
 from huggingface_hub import login
+from qdrant_client.models import Distance
 
 # .env 파일 로드 (파일이 없으면 무시됨)
 load_dotenv()
@@ -19,4 +20,8 @@ class ConfigAPI:
     TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 class ConfigDB:
+    HOST = "localhost"
+    PORT = "6333"
     COLLECTION_NAME = "learning_ai"
+    VECTOR_SIZE = 1536
+    DISTANCE_FUNCTION = Distance.COSINE
