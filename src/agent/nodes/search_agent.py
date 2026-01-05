@@ -23,10 +23,12 @@ def run_integration_test():
     test_questions = [
         # [Python 공식문서 테스트] - python_doc DB 저장 확인용
         "머신러닝이 뭐야",
-        "파이썬 딕셔너리 사용법",
+        "경사하강법이 뭐야",
         "Randomforest 설명해줘",
-        "Randomforast 설명해줘",
-        "파이썬 클래스 상속 방법"
+        "딥러닝 설명해줘",
+        "XGBOOST 설명해줘",
+        # "Randomforast 설명해줘",
+        # "파이썬 클래스 상속 방법"
         # "파이썬 리스트 메서드 종류 알려줘",     # list append, pop, sort 등
         # "파이썬 딕셔너리 사용법",               # dict 기본
         # "파이썬 for문 range 사용법",            # 반복문 기초
