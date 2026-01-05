@@ -1,0 +1,106 @@
+파이썬 언어 서비스
+******************
+
+파이썬은 파이썬 언어로 작업하는 데 도움이 되는 여러 모듈을 제공합니다.
+이 모듈들은 토큰화, 구문 분석, 문법 분석, 바이트 코드 역 어셈블리 및
+기타 다양한 기능을 지원합니다.
+
+이 모듈들은 다음과 같습니다:
+
+* "ast" --- Abstract syntax trees
+
+  * Abstract grammar
+
+  * 노드 클래스
+
+    * Root nodes
+
+    * 리터럴
+
+    * 변수
+
+    * 표현식
+
+      * 서브스크립팅
+
+      * 컴프리헨션
+
+    * 문장
+
+      * 임포트
+
+    * 제어 흐름
+
+    * Pattern matching
+
+    * Type annotations
+
+    * Type parameters
+
+    * 함수와 클래스 정의
+
+    * Async와 await
+
+  * "ast" helpers
+
+  * Compiler flags
+
+  * Command-line usage
+
+* "symtable" --- 컴파일러 심볼 테이블 액세스
+
+  * 심볼 테이블 생성하기
+
+  * 심볼 테이블 검사하기
+
+  * Command-Line Usage
+
+* "token" --- 파이썬 구문 분석 트리에 사용되는 상수
+
+* "keyword" --- 파이썬 키워드 검사
+
+* "tokenize" --- 파이썬 소스를 위한 토크나이저
+
+  * 입력 토큰화하기
+
+  * 명령 줄 사용법
+
+  * 예제
+
+* "tabnanny" --- 모호한 들여쓰기 감지
+
+* "pyclbr" --- 파이썬 모듈 브라우저 지원
+
+  * Function 객체
+
+  * Class 객체
+
+* "py_compile" --- 파이썬 소스 파일 컴파일
+
+  * 명령줄 인터페이스
+
+* "compileall" --- 파이썬 라이브러리 바이트 컴파일하기
+
+  * 명령 줄 사용
+
+  * 공용 함수
+
+* "dis" --- Disassembler for Python bytecode
+
+  * Command-line interface
+
+  * 바이트 코드 분석
+
+  * 분석 함수
+
+  * 파이썬 바이트 코드 명령어
+
+  * 옵코드 모음
+
+* "pickletools" --- 피클 개발자를 위한 도구
+
+  * Command-line usage
+
+    * Command-line options
+
+  * Programmatic interface

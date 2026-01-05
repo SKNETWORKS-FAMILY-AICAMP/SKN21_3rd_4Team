@@ -1,0 +1,244 @@
+"fcntl" --- "fcntl"과 "ioctl" 시스템 호출
+*****************************************
+
+======================================================================
+
+이 모듈은 파일 기술자에 대한 파일과 I/O 제어를 수행합니다. "fcntl()"과
+"ioctl()" 유닉스 루틴에 대한 인터페이스입니다. 자세한 설명은
+*fcntl(2)*과 *ioctl(2)* 유닉스 매뉴얼 페이지를 참조하십시오.
+
+가용성: Unix, not WASI.
+
+이 모듈의 모든 함수는 첫 번째 인자로 파일 기술자 *fd*를 받아들입니다.
+이것은 "sys.stdin.fileno()"에 의해 반환된 것과 같은 정수 파일 기술자이
+거나 "sys.stdin" 자체와 같은 "io.IOBase" 객체일 수 있습니다. 이 객체는
+실제 파일 기술자를 반환하는 "fileno()"를 제공합니다.
+
+버전 3.3에서 변경: 이 모듈의 연산은 "IOError"를 발생시켰는데, 이제는
+"OSError"를 발생시킵니다.
+
+버전 3.8에서 변경: "fcntl" 모듈에는 이제 "os.memfd_create()" 파일 기술
+자를 봉인(seal)하기 위한 "F_ADD_SEALS", "F_GET_SEALS" 및 "F_SEAL_*" 상
+수가 포함됩니다.
+
+버전 3.9에서 변경: macOS에서, "fcntl" 모듈은 파일 기술자에서 파일의 경
+로를 얻는 "F_GETPATH" 상수를 노출합니다. 리눅스(>=3.15)에서, "fcntl"
+모듈은 열린 파일 기술 록(open file description locks)으로 작업할 때 사
+용되는 "F_OFD_GETLK", "F_OFD_SETLK" 및 "F_OFD_SETLKW" 상수를 노출합니
+다.
+
+버전 3.10에서 변경: On Linux >= 2.6.11, the "fcntl" module exposes the
+"F_GETPIPE_SZ" and "F_SETPIPE_SZ" constants, which allow to check and
+modify a pipe's size respectively.
+
+버전 3.11에서 변경: On FreeBSD, the "fcntl" module exposes the
+"F_DUP2FD" and "F_DUP2FD_CLOEXEC" constants, which allow to duplicate
+a file descriptor, the latter setting "FD_CLOEXEC" flag in addition.
+
+버전 3.12에서 변경: On Linux >= 4.5, the "fcntl" module exposes the
+"FICLONE" and "FICLONERANGE" constants, which allow to share some data
+of one file with another file by reflinking on some filesystems (e.g.,
+btrfs, OCFS2, and XFS). This behavior is commonly referred to as
+"copy-on-write".
+
+버전 3.13에서 변경: On Linux >= 2.6.32, the "fcntl" module exposes the
+"F_GETOWN_EX", "F_SETOWN_EX", "F_OWNER_TID", "F_OWNER_PID",
+"F_OWNER_PGRP" constants, which allow to direct I/O availability
+signals to a specific thread, process, or process group. On Linux >=
+4.13, the "fcntl" module exposes the "F_GET_RW_HINT", "F_SET_RW_HINT",
+"F_GET_FILE_RW_HINT", "F_SET_FILE_RW_HINT", and "RWH_WRITE_LIFE_*"
+constants, which allow to inform the kernel about the relative
+expected lifetime of writes on a given inode or via a particular open
+file description. On Linux >= 5.1 and NetBSD, the "fcntl" module
+exposes the "F_SEAL_FUTURE_WRITE" constant for use with "F_ADD_SEALS"
+and "F_GET_SEALS" operations. On FreeBSD, the "fcntl" module exposes
+the "F_READAHEAD", "F_ISUNIONSTACK", and "F_KINFO" constants. On macOS
+and FreeBSD, the "fcntl" module exposes the "F_RDAHEAD" constant. On
+NetBSD and AIX, the "fcntl" module exposes the "F_CLOSEM" constant. On
+NetBSD, the "fcntl" module exposes the "F_MAXFD" constant. On macOS
+and NetBSD, the "fcntl" module exposes the "F_GETNOSIGPIPE" and
+"F_SETNOSIGPIPE" constant.
+
+버전 3.14에서 변경: On Linux >= 6.1, the "fcntl" module exposes the
+"F_DUPFD_QUERY" to query a file descriptor pointing to the same file.
+
+이 모듈은 다음 함수를 정의합니다:
+
+fcntl.fcntl(fd, cmd, arg=0, /)
+
+   Perform the operation *cmd* on file descriptor *fd* (file objects
+   providing a "fileno()" method are accepted as well).  The values
+   used for *cmd* are operating system dependent, and are available as
+   constants in the "fcntl" module, using the same names as used in
+   the relevant C header files. The argument *arg* can either be an
+   integer value, a *bytes-like object*, or a string. The type and
+   size of *arg* must match the type and size of the argument of the
+   operation as specified in the relevant C documentation.
+
+   When *arg* is an integer, the function returns the integer return
+   value of the C "fcntl()" call.
+
+   When the argument is bytes-like object, it represents a binary
+   structure, for example, created by "struct.pack()". A string value
+   is encoded to binary using the UTF-8 encoding. The binary data is
+   copied to a buffer whose address is passed to the C "fcntl()" call.
+   The return value after a successful call is the contents of the
+   buffer, converted to a "bytes" object. The length of the returned
+   object will be the same as the length of the *arg* argument. This
+   is limited to 1024 bytes.
+
+   "fcntl()" 호출이 실패하면, "OSError"가 발생합니다.
+
+   참고:
+
+     If the type or the size of *arg* does not match the type or size
+     of the argument of the operation (for example, if an integer is
+     passed when a pointer is expected, or the information returned in
+     the buffer by the operating system is larger than 1024 bytes),
+     this is most likely to result in a segmentation violation or a
+     more subtle data corruption.
+
+   인자 "fd", "cmd", "arg"로 감사 이벤트 "fcntl.fcntl"을 발생시킵니다.
+
+   버전 3.14에서 변경: Add support of arbitrary *bytes-like objects*,
+   not only "bytes".
+
+fcntl.ioctl(fd, request, arg=0, mutate_flag=True, /)
+
+   이 함수는 인자 처리가 훨씬 더 복잡하다는 점을 제외하면, "fcntl()"
+   함수와 같습니다.
+
+   The *request* parameter is limited to values that can fit in
+   32-bits or 64-bits, depending on the platform. Additional constants
+   of interest for use as the *request* argument can be found in the
+   "termios" module, under the same names as used in the relevant C
+   header files.
+
+   The parameter *arg* can be an integer, a *bytes-like object*, or a
+   string. The type and size of *arg* must match the type and size of
+   the argument of the operation as specified in the relevant C
+   documentation.
+
+   If *arg* does not support the read-write buffer interface or the
+   *mutate_flag* is false, behavior is as for the "fcntl()" function.
+
+   If *arg* supports the read-write buffer interface (like
+   "bytearray") and *mutate_flag* is true (the default), then the
+   buffer is (in effect) passed to the underlying "ioctl()" system
+   call, the latter's return code is passed back to the calling
+   Python, and the buffer's new contents reflect the action of the
+   "ioctl()".  This is a slight simplification, because if the
+   supplied buffer is less than 1024 bytes long it is first copied
+   into a static buffer 1024 bytes long which is then passed to
+   "ioctl()" and copied back into the supplied buffer.
+
+   "ioctl()" 호출이 실패하면, "OSError" 예외가 발생합니다.
+
+   참고:
+
+     If the type or size of *arg* does not match the type or size of
+     the operation's argument (for example, if an integer is passed
+     when a pointer is expected, or the information returned in the
+     buffer by the operating system is larger than 1024 bytes, or the
+     size of the mutable bytes-like object is too small), this is most
+     likely to result in a segmentation violation or a more subtle
+     data corruption.
+
+   예제:
+
+      >>> import array, fcntl, struct, termios, os
+      >>> os.getpgrp()
+      13341
+      >>> struct.unpack('h', fcntl.ioctl(0, termios.TIOCGPGRP, "  "))[0]
+      13341
+      >>> buf = array.array('h', [0])
+      >>> fcntl.ioctl(0, termios.TIOCGPGRP, buf, 1)
+      0
+      >>> buf
+      array('h', [13341])
+
+   인자 "fd", "request", "arg"로 감사 이벤트 "fcntl.ioctl"을 발생시킵
+   니다.
+
+   버전 3.14에서 변경: The GIL is always released during a system
+   call. System calls failing with EINTR are automatically retried.
+
+fcntl.flock(fd, operation, /)
+
+   파일 기술자 *fd*("fileno()" 메서드를 제공하는 파일 객체도 허용됩니
+   다)에 대한 잠금 연산 *operation*을 수행합니다. 자세한 내용은 유닉스
+   매뉴얼 *flock(2)*를 참조하십시오. (일부 시스템에서는, 이 함수가
+   "fcntl()"를 사용하여 에뮬레이트됩니다.)
+
+   "flock()" 호출이 실패하면, "OSError" 예외가 발생합니다.
+
+   인자 "fd", "operation"으로 감사 이벤트 "fcntl.flock"을 발생시킵니다
+   .
+
+fcntl.lockf(fd, cmd, len=0, start=0, whence=0, /)
+
+   이것은 본질에서 "fcntl()" 잠금 호출에 대한 래퍼입니다. *fd*는 잠그
+   거나 잠금 해제할 파일의 파일 기술자이고 ("fileno()" 메서드를 제공하
+   는 파일 객체도 허용됩니다), *cmd*는 다음 값 중 하나입니다:
+
+   fcntl.LOCK_UN
+
+      기존 잠금 해제.
+
+   fcntl.LOCK_SH
+
+      공유 잠금 획득.
+
+   fcntl.LOCK_EX
+
+      배타적 잠금 획득.
+
+   fcntl.LOCK_NB
+
+      다른 세 개의 "LOCK_*" 상수와 비트별 OR 하여 요청을 비 블로킹으로
+      만듭니다.
+
+   "LOCK_NB"가 사용되고 잠금을 얻을 수 없을 때, "OSError"가 발생하고
+   *errno* 어트리뷰트가 "EACCES"나 "EAGAIN"으로 설정됩니다 (운영 체제
+   에 따라 다릅니다; 이식성을 위해서 두 값을 모두 확인하십시오). 적어
+   도 일부 시스템에서, "LOCK_EX"는 파일 기술자가 쓰기 위해 열린 파일을
+   참조할 때만 사용할 수 있습니다.
+
+   *len*은 잠글 바이트 수, *start*는 *whence*가 정의하는 기준으로 잠금
+   이 시작되는 바이트 오프셋이며 *whence*는 "io.IOBase.seek()"에서와
+   같은데, 구체적으로 다음과 같습니다:
+
+   * "0" -- 파일의 시작에 상대적 ("os.SEEK_SET")
+
+   * "1" -- 현재 버퍼 위치에 상대적 ("os.SEEK_CUR")
+
+   * "2" -- 파일의 끝에 상대적 ("os.SEEK_END")
+
+   *start*의 기본값은 파일 시작 부분에서 시작한다는 의미인 0입니다.
+   *len*의 기본값은 파일 끝까지 잠그는 것을 의미하는 0입니다. *whence*
+   의 기본값도 0입니다.
+
+   인자 "fd", "cmd", "len", "start", "whence"로 감사 이벤트
+   "fcntl.lockf"를 발생시킵니다.
+
+예제 (모두 SVR4 호환 시스템에서):
+
+   import struct, fcntl, os
+
+   f = open(...)
+   rv = fcntl.fcntl(f, fcntl.F_SETFL, os.O_NDELAY)
+
+   lockdata = struct.pack('hhllhh', fcntl.F_WRLCK, 0, 0, 0, 0, 0)
+   rv = fcntl.fcntl(f, fcntl.F_SETLKW, lockdata)
+
+첫 번째 예제에서 반환 값 변수 *rv*는 정숫값을 저장합니다; 두 번째 예제
+에서는 "bytes" 객체를 저장합니다. *lockdata* 변수에 대한 구조체 배치는
+시스템 종속적입니다 --- 그래서 "flock()" 호출을 사용하는 것이 더 좋을
+수 있습니다.
+
+더 보기:
+
+  모듈 "os"
+     잠금 플래그 "O_SHLOCK"과 "O_EXLOCK"이 "os" 모듈에 있으면 (BSD에만
+     해당합니다), "os.open()" 함수는 "lockf()"와 "flock()" 함수의 대안
+     을 제공합니다.

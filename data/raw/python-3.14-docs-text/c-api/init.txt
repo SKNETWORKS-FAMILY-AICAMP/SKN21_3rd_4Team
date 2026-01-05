@@ -1,0 +1,2818 @@
+초기화, 파이널리제이션 및 스레드
+********************************
+
+See Python Initialization Configuration for details on how to
+configure the interpreter prior to initialization.
+
+
+파이썬 초기화 전
+================
+
+파이썬을 내장한 응용 프로그램에서는, 다른 파이썬/C API 함수를 사용하기
+전에 "Py_Initialize()" 함수를 호출해야 합니다; 몇 가지 함수와 전역 구
+성 변수는 예외입니다.
+
+파이썬이 초기화되기 전에 다음 함수를 안전하게 호출할 수 있습니다:
+
+* Functions that initialize the interpreter:
+
+  * "Py_Initialize()"
+
+  * "Py_InitializeEx()"
+
+  * "Py_InitializeFromConfig()"
+
+  * "Py_BytesMain()"
+
+  * "Py_Main()"
+
+  * the runtime pre-initialization functions covered in 파이썬 초기화
+    구성
+
+* 구성 함수:
+
+  * "PyImport_AppendInittab()"
+
+  * "PyImport_ExtendInittab()"
+
+  * "PyInitFrozenExtensions()"
+
+  * "PyMem_SetAllocator()"
+
+  * "PyMem_SetupDebugHooks()"
+
+  * "PyObject_SetArenaAllocator()"
+
+  * "Py_SetProgramName()"
+
+  * "Py_SetPythonHome()"
+
+  * "PySys_ResetWarnOptions()"
+
+  * the configuration functions covered in 파이썬 초기화 구성
+
+* 정보 함수:
+
+  * "Py_IsInitialized()"
+
+  * "PyMem_GetAllocator()"
+
+  * "PyObject_GetArenaAllocator()"
+
+  * "Py_GetBuildInfo()"
+
+  * "Py_GetCompiler()"
+
+  * "Py_GetCopyright()"
+
+  * "Py_GetPlatform()"
+
+  * "Py_GetVersion()"
+
+  * "Py_IsInitialized()"
+
+* 유틸리티:
+
+  * "Py_DecodeLocale()"
+
+  * the status reporting and utility functions covered in 파이썬 초기
+    화 구성
+
+* 메모리 할당자:
+
+  * "PyMem_RawMalloc()"
+
+  * "PyMem_RawRealloc()"
+
+  * "PyMem_RawCalloc()"
+
+  * "PyMem_RawFree()"
+
+* Synchronization:
+
+  * "PyMutex_Lock()"
+
+  * "PyMutex_Unlock()"
+
+참고:
+
+  Despite their apparent similarity to some of the functions listed
+  above, the following functions **should not be called** before the
+  interpreter has been initialized: "Py_EncodeLocale()",
+  "Py_GetPath()", "Py_GetPrefix()", "Py_GetExecPrefix()",
+  "Py_GetProgramFullPath()", "Py_GetPythonHome()",
+  "Py_GetProgramName()", "PyEval_InitThreads()", and "Py_RunMain()".
+
+
+전역 구성 변수
+==============
+
+파이썬에는 다양한 기능과 옵션을 제어하기 위한 전역 구성 변수가 있습니
+다. 기본적으로, 이러한 플래그는 명령 줄 옵션에 의해 제어됩니다.
+
+옵션에 의해 플래그가 설정되면, 플래그 값은 옵션이 설정된 횟수입니다.
+예를 들어, "-b"는 "Py_BytesWarningFlag" 를 1로 설정하고 "-bb"는
+"Py_BytesWarningFlag" 를 2로 설정합니다.
+
+int Py_BytesWarningFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.bytes_warning" should be used instead, see Python
+   Initialization Configuration.
+
+   "bytes"나 "bytearray"와 "str"을, 또는 "bytes"를 "int"와 비교할 때
+   경고를 발행합니다. "2"보다 크거나 같으면 에러를 발행합니다.
+
+   "-b" 옵션으로 설정합니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_DebugFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.parser_debug" should be used instead, see Python
+   Initialization Configuration.
+
+   구문 분석기 디버깅 출력을 켭니다 (전문가 전용, 컴파일 옵션에 의존합
+   니다).
+
+   "-d" 옵션과 "PYTHONDEBUG" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_DontWriteBytecodeFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.write_bytecode" should be used instead, see Python
+   Initialization Configuration.
+
+   0이 아닌 값으로 설정하면, 파이썬은 소스 모듈을 임포트 할 때 ".pyc"
+   파일을 쓰려고 하지 않습니다.
+
+   "-B" 옵션과 "PYTHONDONTWRITEBYTECODE" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_FrozenFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.pathconfig_warnings" should be used instead, see Python
+   Initialization Configuration.
+
+   "Py_GetPath()"에서 모듈 검색 경로를 계산할 때 에러 메시지를 표시하
+   지 않습니다.
+
+   Private flag used by "_freeze_module" and "frozenmain" programs.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_HashRandomizationFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.hash_seed" and "PyConfig.use_hash_seed" should be used
+   instead, see Python Initialization Configuration.
+
+   "PYTHONHASHSEED" 환경 변수가 비어 있지 않은 문자열로 설정되면 "1"로
+   설정합니다.
+
+   플래그가 0이 아니면, "PYTHONHASHSEED" 환경 변수를 읽어 비밀 해시 시
+   드를 초기화합니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_IgnoreEnvironmentFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.use_environment" should be used instead, see Python
+   Initialization Configuration.
+
+   Ignore all "PYTHON*" environment variables, e.g. "PYTHONPATH" and
+   "PYTHONHOME", that might be set.
+
+   "-E"와 "-I" 옵션으로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_InspectFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.inspect" should be used instead, see Python
+   Initialization Configuration.
+
+   스크립트가 첫 번째 인자로 전달되거나 "-c" 옵션을 사용할 때,
+   "sys.stdin"가 터미널로 보이지 않더라도 스크립트나 명령을 실행한 후
+   대화 형 모드로 들어갑니다.
+
+   "-i" 옵션과 "PYTHONINSPECT" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_InteractiveFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.interactive" should be used instead, see Python
+   Initialization Configuration.
+
+   "-i" 옵션으로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_IsolatedFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.isolated" should be used instead, see Python
+   Initialization Configuration.
+
+   격리 모드로 파이썬을 실행합니다. 격리 모드에서 "sys.path"는 스크립
+   트의 디렉터리도 사용자의 site-packages 디렉터리도 포함하지 않습니다
+   .
+
+   "-I" 옵션으로 설정됩니다.
+
+   Added in version 3.4.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_LegacyWindowsFSEncodingFlag
+
+   This API is kept for backward compatibility: setting
+   "PyPreConfig.legacy_windows_fs_encoding" should be used instead,
+   see Python Initialization Configuration.
+
+   If the flag is non-zero, use the "mbcs" encoding with "replace"
+   error handler, instead of the UTF-8 encoding with "surrogatepass"
+   error handler, for the *filesystem encoding and error handler*.
+
+   "PYTHONLEGACYWINDOWSFSENCODING" 환경 변수가 비어 있지 않은 문자열로
+   설정되면 "1"로 설정합니다.
+
+   자세한 내용은 **PEP 529**를 참조하십시오.
+
+   가용성: Windows.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_LegacyWindowsStdioFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.legacy_windows_stdio" should be used instead, see Python
+   Initialization Configuration.
+
+   If the flag is non-zero, use "io.FileIO" instead of
+   "io._WindowsConsoleIO" for "sys" standard streams.
+
+   "PYTHONLEGACYWINDOWSSTDIO" 환경 변수가 비어 있지 않은 문자열로 설정
+   되면 "1"로 설정합니다.
+
+   자세한 내용은 **PEP 528**을 참조하십시오.
+
+   가용성: Windows.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_NoSiteFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.site_import" should be used instead, see Python
+   Initialization Configuration.
+
+   모듈 "site" 임포트와 이에 수반되는 "sys.path"의 사이트 종속적인 조
+   작을 비활성화합니다. 또한 나중에 "site"를 명시적으로 임포트 할 때도
+   이러한 조작을 비활성화합니다 (트리거 하려면 "site.main()"을 호출하
+   십시오).
+
+   "-S" 옵션으로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_NoUserSiteDirectory
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.user_site_directory" should be used instead, see Python
+   Initialization Configuration.
+
+   "사용자 site-packages 디렉터리"를 "sys.path"에 추가하지 않습니다.
+
+   "-s"와 "-I" 옵션, 그리고 "PYTHONNOUSERSITE" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_OptimizeFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.optimization_level" should be used instead, see Python
+   Initialization Configuration.
+
+   "-O" 옵션과 "PYTHONOPTIMIZE" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_QuietFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.quiet" should be used instead, see Python Initialization
+   Configuration.
+
+   대화형 모드에서도 저작권과 버전 메시지를 표시하지 않습니다.
+
+   "-q" 옵션으로 설정됩니다.
+
+   Added in version 3.2.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_UnbufferedStdioFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.buffered_stdio" should be used instead, see Python
+   Initialization Configuration.
+
+   stdout과 stderr 스트림을 버퍼링 해제하도록 강제합니다.
+
+   "-u" 옵션과 "PYTHONUNBUFFERED" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+int Py_VerboseFlag
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.verbose" should be used instead, see Python
+   Initialization Configuration.
+
+   모듈이 초기화될 때마다, 로드된 위치(파일명이나 내장 모듈)를 표시하
+   는 메시지를 인쇄합니다. "2"보다 크거나 같으면, 모듈을 검색할 때 검
+   사되는 각 파일에 대한 메시지를 인쇄합니다. 또한 종료 시 모듈 정리에
+   대한 정보를 제공합니다.
+
+   "-v" 옵션과 "PYTHONVERBOSE" 환경 변수로 설정됩니다.
+
+   Deprecated since version 3.12, will be removed in version 3.15.
+
+
+인터프리터 초기화와 파이널리제이션
+==================================
+
+void Py_Initialize()
+    * Part of the 안정 ABI.*
+
+   파이썬 인터프리터를 초기화합니다. 파이썬을 내장하는 응용 프로그램에
+   서는, 다른 파이썬/C API 함수를 사용하기 전에 호출해야 합니다; 몇 가
+   지 예외는 파이썬 초기화 전을 참조하십시오.
+
+   This initializes the table of loaded modules ("sys.modules"), and
+   creates the fundamental modules "builtins", "__main__" and "sys".
+   It also initializes the module search path ("sys.path"). It does
+   not set "sys.argv"; use the Python Initialization Configuration API
+   for that. This is a no-op when called for a second time (without
+   calling "Py_FinalizeEx()" first).  There is no return value; it is
+   a fatal error if the initialization fails.
+
+   Use "Py_InitializeFromConfig()" to customize the Python
+   Initialization Configuration.
+
+   참고:
+
+     윈도우에서, 콘솔 모드를 "O_TEXT"에서 "O_BINARY"로 변경합니다, C
+     런타임을 사용하는 콘솔의 비 파이썬 사용에도 영향을 미칩니다.
+
+void Py_InitializeEx(int initsigs)
+    * Part of the 안정 ABI.*
+
+   This function works like "Py_Initialize()" if *initsigs* is "1". If
+   *initsigs* is "0", it skips initialization registration of signal
+   handlers, which may be useful when CPython is embedded as part of a
+   larger application.
+
+   Use "Py_InitializeFromConfig()" to customize the Python
+   Initialization Configuration.
+
+PyStatus Py_InitializeFromConfig(const PyConfig *config)
+
+   Initialize Python from *config* configuration, as described in
+   PyConfig를 사용한 초기화.
+
+   See the 파이썬 초기화 구성 section for details on pre-initializing
+   the interpreter, populating the runtime configuration structure,
+   and querying the returned status structure.
+
+int Py_IsInitialized()
+    * Part of the 안정 ABI.*
+
+   파이썬 인터프리터가 초기화되었으면 참(0이 아님)을 반환하고, 그렇지
+   않으면 거짓(0)을 반환합니다. "Py_FinalizeEx()" 가 호출된 후,
+   "Py_Initialize()"가 다시 호출될 때까지 거짓을 반환합니다.
+
+int Py_IsFinalizing()
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   Return true (non-zero) if the main Python interpreter is *shutting
+   down*. Return false (zero) otherwise.
+
+   Added in version 3.13.
+
+int Py_FinalizeEx()
+    * Part of the 안정 ABI 버전 3.6 이후로.*
+
+   Undo all initializations made by "Py_Initialize()" and subsequent
+   use of Python/C API functions, and destroy all sub-interpreters
+   (see "Py_NewInterpreter()" below) that were created and not yet
+   destroyed since the last call to "Py_Initialize()".  This is a no-
+   op when called for a second time (without calling "Py_Initialize()"
+   again first).
+
+   Since this is the reverse of "Py_Initialize()", it should be called
+   in the same thread with the same interpreter active.  That means
+   the main thread and the main interpreter. This should never be
+   called while "Py_RunMain()" is running.
+
+   Normally the return value is "0". If there were errors during
+   finalization (flushing buffered data), "-1" is returned.
+
+   Note that Python will do a best effort at freeing all memory
+   allocated by the Python interpreter.  Therefore, any C-Extension
+   should make sure to correctly clean up all of the preveiously
+   allocated PyObjects before using them in subsequent calls to
+   "Py_Initialize()".  Otherwise it could introduce vulnerabilities
+   and incorrect behavior.
+
+   이 함수는 여러 가지 이유로 제공됩니다. 내장 응용 프로그램이 응용 프
+   로그램 자체를 다시 시작하지 않고 파이썬을 다시 시작하고 싶을 수 있
+   습니다. 동적으로 로드할 수 있는 라이브러리(또는 DLL)에서 파이썬 인
+   터프리터를 로드한 응용 프로그램은 DLL을 언로드 하기 전에 파이썬이
+   할당한 모든 메모리를 해제하고 싶을 수 있습니다. 응용 프로그램에서
+   메모리 누수를 찾는 동안 개발자는 응용 프로그램을 종료하기 전에 파이
+   썬에서 할당한 모든 메모리를 해제하고 싶을 것입니다.
+
+   **Bugs and caveats:** The destruction of modules and objects in
+   modules is done in random order; this may cause destructors
+   ("__del__()" methods) to fail when they depend on other objects
+   (even functions) or modules.  Dynamically loaded extension modules
+   loaded by Python are not unloaded.  Small amounts of memory
+   allocated by the Python interpreter may not be freed (if you find a
+   leak, please report it).  Memory tied up in circular references
+   between objects is not freed.  Interned strings will all be
+   deallocated regardless of their reference count. Some memory
+   allocated by extension modules may not be freed.  Some extensions
+   may not work properly if their initialization routine is called
+   more than once; this can happen if an application calls
+   "Py_Initialize()" and "Py_FinalizeEx()" more than once.
+   "Py_FinalizeEx()" must not be called recursively from within
+   itself.  Therefore, it must not be called by any code that may be
+   run as part of the interpreter shutdown process, such as "atexit"
+   handlers, object finalizers, or any code that may be run while
+   flushing the stdout and stderr files.
+
+   인자 없이 감사 이벤트 "cpython._PySys_ClearAuditHooks" 를 발생시킵
+   니다.
+
+   Added in version 3.6.
+
+void Py_Finalize()
+    * Part of the 안정 ABI.*
+
+   이것은 "Py_FinalizeEx()"의 이전 버전과 호환되는 반환 값을 무시하는
+   버전입니다.
+
+int Py_BytesMain(int argc, char **argv)
+    * Part of the 안정 ABI 버전 3.8 이후로.*
+
+   Similar to "Py_Main()" but *argv* is an array of bytes strings,
+   allowing the calling application to delegate the text decoding step
+   to the CPython runtime.
+
+   Added in version 3.8.
+
+int Py_Main(int argc, wchar_t **argv)
+    * Part of the 안정 ABI.*
+
+   The main program for the standard interpreter, encapsulating a full
+   initialization/finalization cycle, as well as additional behaviour
+   to implement reading configurations settings from the environment
+   and command line, and then executing "__main__" in accordance with
+   명령 줄.
+
+   This is made available for programs which wish to support the full
+   CPython command line interface, rather than just embedding a Python
+   runtime in a larger application.
+
+   The *argc* and *argv* parameters are similar to those which are
+   passed to a C program's "main()" function, except that the *argv*
+   entries are first converted to "wchar_t" using "Py_DecodeLocale()".
+   It is also important to note that the argument list entries may be
+   modified to point to strings other than those passed in (however,
+   the contents of the strings pointed to by the argument list are not
+   modified).
+
+   The return value is "2" if the argument list does not represent a
+   valid Python command line, and otherwise the same as
+   "Py_RunMain()".
+
+   In terms of the CPython runtime configuration APIs documented in
+   the runtime configuration section (and without accounting for error
+   handling), "Py_Main" is approximately equivalent to:
+
+      PyConfig config;
+      PyConfig_InitPythonConfig(&config);
+      PyConfig_SetArgv(&config, argc, argv);
+      Py_InitializeFromConfig(&config);
+      PyConfig_Clear(&config);
+
+      Py_RunMain();
+
+   In normal usage, an embedding application will call this function
+   *instead* of calling "Py_Initialize()", "Py_InitializeEx()" or
+   "Py_InitializeFromConfig()" directly, and all settings will be
+   applied as described elsewhere in this documentation. If this
+   function is instead called *after* a preceding runtime
+   initialization API call, then exactly which environmental and
+   command line configuration settings will be updated is version
+   dependent (as it depends on which settings correctly support being
+   modified after they have already been set once when the runtime was
+   first initialized).
+
+int Py_RunMain(void)
+
+   Executes the main module in a fully configured CPython runtime.
+
+   Executes the command ("PyConfig.run_command"), the script
+   ("PyConfig.run_filename") or the module ("PyConfig.run_module")
+   specified on the command line or in the configuration. If none of
+   these values are set, runs the interactive Python prompt (REPL)
+   using the "__main__" module's global namespace.
+
+   If "PyConfig.inspect" is not set (the default), the return value
+   will be "0" if the interpreter exits normally (that is, without
+   raising an exception), the exit status of an unhandled
+   "SystemExit", or "1" for any other unhandled exception.
+
+   If "PyConfig.inspect" is set (such as when the "-i" option is
+   used), rather than returning when the interpreter exits, execution
+   will instead resume in an interactive Python prompt (REPL) using
+   the "__main__" module's global namespace. If the interpreter exited
+   with an exception, it is immediately raised in the REPL session.
+   The function return value is then determined by the way the *REPL
+   session* terminates: "0", "1", or the status of a "SystemExit", as
+   specified above.
+
+   This function always finalizes the Python interpreter before it
+   returns.
+
+   See Python Configuration for an example of a customized Python that
+   always runs in isolated mode using "Py_RunMain()".
+
+int PyUnstable_AtExit(PyInterpreterState *interp, void (*func)(void*), void *data)
+
+   *이것은 불안정 API. It may change without warning in minor
+   releases.*
+
+   Register an "atexit" callback for the target interpreter *interp*.
+   This is similar to "Py_AtExit()", but takes an explicit interpreter
+   and data pointer for the callback.
+
+   There must be an *attached thread state* for *interp*.
+
+   Added in version 3.13.
+
+
+프로세스 전체 매개 변수
+=======================
+
+void Py_SetProgramName(const wchar_t *name)
+    * Part of the 안정 ABI.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.program_name" should be used instead, see Python
+   Initialization Configuration.
+
+   (호출된다면) 이 함수는 "Py_Initialize()"가 처음으로 호출되기 전에
+   호출되어야 합니다. 인터프리터에게 프로그램의 "main()" 함수에 대한
+   "argv[0]" 인자의 값을 알려줍니다 (와이드 문자로 변환됩니다). 이것은
+   "Py_GetPath()"와 아래의 다른 함수에서 인터프리터 실행 파일과 관련된
+   파이썬 런타임 라이브러리를 찾는 데 사용됩니다. 기본값은 "'python'"
+   입니다. 인자는 프로그램을 실행하는 동안 내용이 변경되지 않는 정적
+   저장소의 0으로 끝나는 와이드 문자열을 가리켜야 합니다. 파이썬 인터
+   프리터의 코드는 이 저장소의 내용을 변경하지 않습니다.
+
+   Use "Py_DecodeLocale()" to decode a bytes string to get a wchar_t*
+   string.
+
+   Deprecated since version 3.11, will be removed in version 3.15.
+
+wchar_t *Py_GetProgramName()
+    * Part of the 안정 ABI.*
+
+   Return the program name set with "PyConfig.program_name", or the
+   default. The returned string points into static storage; the caller
+   should not modify its value.
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("executable")" ("sys.executable") instead.
+
+wchar_t *Py_GetPrefix()
+    * Part of the 안정 ABI.*
+
+   Return the *prefix* for installed platform-independent files. This
+   is derived through a number of complicated rules from the program
+   name set with "PyConfig.program_name" and some environment
+   variables; for example, if the program name is
+   "'/usr/local/bin/python'", the prefix is "'/usr/local'". The
+   returned string points into static storage; the caller should not
+   modify its value.  This corresponds to the **prefix** variable in
+   the top-level "Makefile" and the "--prefix" argument to the
+   **configure** script at build time.  The value is available to
+   Python code as "sys.base_prefix". It is only useful on Unix.  See
+   also the next function.
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("base_prefix")" ("sys.base_prefix") instead. Use
+   "PyConfig_Get("prefix")" ("sys.prefix") if virtual environments
+   need to be handled.
+
+wchar_t *Py_GetExecPrefix()
+    * Part of the 안정 ABI.*
+
+   Return the *exec-prefix* for installed platform-*dependent* files.
+   This is derived through a number of complicated rules from the
+   program name set with "PyConfig.program_name" and some environment
+   variables; for example, if the program name is
+   "'/usr/local/bin/python'", the exec-prefix is "'/usr/local'".  The
+   returned string points into static storage; the caller should not
+   modify its value.  This corresponds to the **exec_prefix** variable
+   in the top-level "Makefile" and the "--exec-prefix" argument to the
+   **configure** script at build  time.  The value is available to
+   Python code as "sys.base_exec_prefix".  It is only useful on Unix.
+
+   배경: exec-prefix는 플랫폼 종속적 파일(가령 실행 파일과 공유 라이브
+   러리)이 다른 디렉터리 트리에 설치될 때 prefix와 다릅니다. 일반 설치
+   에서, 플랫폼 종속적 파일은 "/usr/local/plat" 서브 트리에 설치되고
+   플랫폼 독립적 파일은 "/usr/local"에 설치될 수 있습니다.
+
+   일반적으로 말해서, 플랫폼은 하드웨어와 소프트웨어 제품군의 조합입니
+   다, 예를 들어 Solaris 2.x 운영 체제를 실행하는 Sparc 기계들은 같은
+   플랫폼으로 간주하지만, Solaris 2.x를 실행하는 Intel 기계는 다른 플
+   랫폼이며, 리눅스를 실행하는 Intel 기계는 또 다른 플랫폼입니다. 같은
+   운영 체제의 서로 다른 주 개정판도 일반적으로 다른 플랫폼을 형성합니
+   다. 비 유닉스 운영 체제는 다른 이야기입니다; 이러한 시스템의 설치
+   전략이 너무 다르기 때문에 prefix와 exec-prefix는 의미가 없으며, 빈
+   문자열로 설정됩니다. 컴파일된 파이썬 바이트 코드 파일은 플랫폼 독립
+   적임에 유의하십시오 (그러나 이들을 컴파일하는데 사용된 파이썬 버전
+   에는 종속적입니다!).
+
+   시스템 관리자는 "/usr/local/plat"을 각 플랫폼에 대해 다른 파일 시스
+   템으로 사용하면서 플랫폼 간에 "/usr/local"을 공유하도록 **mount**나
+   **automount** 프로그램을 구성하는 방법을 알 것입니다.
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("base_exec_prefix")" ("sys.base_exec_prefix")
+   instead. Use "PyConfig_Get("exec_prefix")" ("sys.exec_prefix") if
+   virtual environments need to be handled.
+
+wchar_t *Py_GetProgramFullPath()
+    * Part of the 안정 ABI.*
+
+   Return the full program name of the Python executable; this is
+   computed as a side-effect of deriving the default module search
+   path  from the program name (set by "PyConfig.program_name"). The
+   returned string points into static storage; the caller should not
+   modify its value.  The value is available to Python code as
+   "sys.executable".
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("executable")" ("sys.executable") instead.
+
+wchar_t *Py_GetPath()
+    * Part of the 안정 ABI.*
+
+   Return the default module search path; this is computed from the
+   program name (set by "PyConfig.program_name") and some environment
+   variables. The returned string consists of a series of directory
+   names separated by a platform dependent delimiter character.  The
+   delimiter character is "':'" on Unix and macOS, "';'" on Windows.
+   The returned string points into static storage; the caller should
+   not modify its value.  The list "sys.path" is initialized with this
+   value on interpreter startup; it can be (and usually is) modified
+   later to change the search path for loading modules.
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("module_search_paths")" ("sys.path") instead.
+
+const char *Py_GetVersion()
+    * Part of the 안정 ABI.*
+
+   이 파이썬 인터프리터의 버전을 반환합니다. 이것은 다음과 같은 문자열
+   입니다
+
+      "3.0a5+ (py3k:63103M, May 12 2008, 00:53:55) \n[GCC 4.2.3]"
+
+   The first word (up to the first space character) is the current
+   Python version; the first characters are the major and minor
+   version separated by a period.  The returned string points into
+   static storage; the caller should not modify its value.  The value
+   is available to Python code as "sys.version".
+
+   See also the "Py_Version" constant.
+
+const char *Py_GetPlatform()
+    * Part of the 안정 ABI.*
+
+   Return the platform identifier for the current platform.  On Unix,
+   this is formed from the "official" name of the operating system,
+   converted to lower case, followed by the major revision number;
+   e.g., for Solaris 2.x, which is also known as SunOS 5.x, the value
+   is "'sunos5'".  On macOS, it is "'darwin'".  On Windows, it is
+   "'win'".  The returned string points into static storage; the
+   caller should not modify its value.  The value is available to
+   Python code as "sys.platform".
+
+const char *Py_GetCopyright()
+    * Part of the 안정 ABI.*
+
+   현재 파이썬 버전에 대한 공식 저작권 문자열을 반환합니다, 예를 들어
+
+   "'Copyright 1991-1995 Stichting Mathematisch Centrum, Amsterdam'"
+
+   반환된 문자열은 정적 저장소를 가리킵니다; 호출자는 값을 수정해서는
+   안 됩니다. 이 값은 파이썬 코드에서 "sys.copyright"로 사용할 수 있습
+   니다.
+
+const char *Py_GetCompiler()
+    * Part of the 안정 ABI.*
+
+   현재 파이썬 버전을 빌드하는 데 사용된 컴파일러 표시를 대괄호 감싸서
+   반환합니다, 예를 들면:
+
+      "[GCC 2.7.2.2]"
+
+   반환된 문자열은 정적 저장소를 가리킵니다; 호출자는 값을 수정해서는
+   안 됩니다. 이 값은 파이썬 코드에서 변수 "sys.version"의 일부로 제공
+   됩니다.
+
+const char *Py_GetBuildInfo()
+    * Part of the 안정 ABI.*
+
+   현재 파이썬 인터프리터 인스턴스의 시퀀스 번호와 빌드 날짜 및 시간에
+   대한 정보를 반환합니다, 예를 들어
+
+      "#67, Aug  1 1997, 22:34:28"
+
+   반환된 문자열은 정적 저장소를 가리킵니다; 호출자는 값을 수정해서는
+   안 됩니다. 이 값은 파이썬 코드에서 변수 "sys.version"의 일부로 제공
+   됩니다.
+
+void PySys_SetArgvEx(int argc, wchar_t **argv, int updatepath)
+    * Part of the 안정 ABI.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.argv", "PyConfig.parse_argv" and "PyConfig.safe_path"
+   should be used instead, see Python Initialization Configuration.
+
+   *argc* 및 *argv*에 기반해서 "sys.argv"를 설정합니다. 이 매개 변수는
+   프로그램의 "main()" 함수에 전달된 것과 유사하지만, 첫 번째 항목이
+   파이썬 인터프리터를 호스팅하는 실행 파일이 아니라 실행될 스크립트
+   파일을 참조해야 한다는 차이점이 있습니다. 실행할 스크립트가 없으면,
+   *argv*의 첫 번째 항목은 빈 문자열일 수 있습니다. 이 함수가
+   "sys.argv" 초기화에 실패하면, "Py_FatalError()"를 사용하여 치명적인
+   조건을 표시합니다.
+
+   *updatepath*가 0이면, 여기까지가 이 함수가 하는 모든 일입니다.
+   *updatepath*가 0이 아니면, 함수는 다음 알고리즘에 따라 "sys.path"도
+   수정합니다:
+
+   * 기존 스크립트의 이름이 "argv[0]"으로 전달되면, 스크립트가 있는 디
+     렉터리의 절대 경로가 "sys.path" 앞에 추가됩니다.
+
+   * 그렇지 않으면 (즉, *argc*가 "0"이거나 "argv[0]"이 기존 파일 이름
+     을 가리키지 않으면), "sys.path" 앞에 빈 문자열이 추가됩니다, 이는
+     현재 작업 디렉터리(""."")를 앞에 추가하는 것과 같습니다.
+
+   Use "Py_DecodeLocale()" to decode a bytes string to get a wchar_t*
+   string.
+
+   See also "PyConfig.orig_argv" and "PyConfig.argv" members of the
+   Python Initialization Configuration.
+
+   참고:
+
+     It is recommended that applications embedding the Python
+     interpreter for purposes other than executing a single script
+     pass "0" as *updatepath*, and update "sys.path" themselves if
+     desired. See **CVE 2008-5983**.3.1.3 이전 버전에서는,
+     "PySys_SetArgv()"를 호출한 후 첫 번째 "sys.path" 요소를 수동으로
+     제거하여 같은 효과를 얻을 수 있습니다, 예를 들어 다음을 사용하여:
+
+        PyRun_SimpleString("import sys; sys.path.pop(0)\n");
+
+   Added in version 3.1.3.
+
+   Deprecated since version 3.11, will be removed in version 3.15.
+
+void PySys_SetArgv(int argc, wchar_t **argv)
+    * Part of the 안정 ABI.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.argv" and "PyConfig.parse_argv" should be used instead,
+   see Python Initialization Configuration.
+
+   이 함수는 **python** 인터프리터가 "-I"로 시작되지 않는 한
+   *updatepath*가 "1"로 설정된 "PySys_SetArgvEx()"처럼 작동합니다.
+
+   Use "Py_DecodeLocale()" to decode a bytes string to get a wchar_t*
+   string.
+
+   See also "PyConfig.orig_argv" and "PyConfig.argv" members of the
+   Python Initialization Configuration.
+
+   버전 3.4에서 변경: *updatepath* 값은 "-I"에 따라 다릅니다.
+
+   Deprecated since version 3.11, will be removed in version 3.15.
+
+void Py_SetPythonHome(const wchar_t *home)
+    * Part of the 안정 ABI.*
+
+   This API is kept for backward compatibility: setting
+   "PyConfig.home" should be used instead, see Python Initialization
+   Configuration.
+
+   기본 "홈" 디렉터리, 즉 표준 파이썬 라이브러리의 위치를 설정합니다.
+   인자 문자열의 의미는 "PYTHONHOME" 을 참조하십시오.
+
+   인자는 프로그램을 실행하는 동안 내용이 변경되지 않는 정적 저장소에
+   있는 0으로 끝나는 문자열을 가리켜야 합니다. 파이썬 인터프리터의 코
+   드는 이 저장소의 내용을 변경하지 않습니다.
+
+   Use "Py_DecodeLocale()" to decode a bytes string to get a wchar_t*
+   string.
+
+   Deprecated since version 3.11, will be removed in version 3.15.
+
+wchar_t *Py_GetPythonHome()
+    * Part of the 안정 ABI.*
+
+   Return the default "home", that is, the value set by
+   "PyConfig.home", or the value of the "PYTHONHOME" environment
+   variable if it is set.
+
+   This function should not be called before "Py_Initialize()",
+   otherwise it returns "NULL".
+
+   버전 3.10에서 변경: It now returns "NULL" if called before
+   "Py_Initialize()".
+
+   Deprecated since version 3.13, will be removed in version 3.15: Use
+   "PyConfig_Get("home")" or the "PYTHONHOME" environment variable
+   instead.
+
+
+스레드 상태와 전역 인터프리터 록
+================================
+
+Unless on a *free-threaded* build of *CPython*, the Python interpreter
+is not fully thread-safe.  In order to support multi-threaded Python
+programs, there's a global lock, called the *global interpreter lock*
+or *GIL*, that must be held by the current thread before it can safely
+access Python objects. Without the lock, even the simplest operations
+could cause problems in a multi-threaded program: for example, when
+two threads simultaneously increment the reference count of the same
+object, the reference count could end up being incremented only once
+instead of twice.
+
+따라서, *GIL*을 획득한 스레드만 파이썬 객체에서 작동하거나 파이썬/C
+API 함수를 호출할 수 있다는 규칙이 있습니다. 동시 실행을 모방하기 위해
+인터프리터는 정기적으로 스레드 전환을 시도합니다
+("sys.setswitchinterval()"을 참조하십시오). 록은 파일 읽기나 쓰기와 같
+은 잠재적인 블로킹 I/O 연산에 대해서도 해제되므로, 그동안 다른 파이썬
+스레드가 실행될 수 있습니다.
+
+The Python interpreter keeps some thread-specific bookkeeping
+information inside a data structure called "PyThreadState", known as a
+*thread state*. Each OS thread has a thread-local pointer to a
+"PyThreadState"; a thread state referenced by this pointer is
+considered to be *attached*.
+
+A thread can only have one *attached thread state* at a time. An
+attached thread state is typically analogous with holding the *GIL*,
+except on *free-threaded* builds.  On builds with the *GIL* enabled,
+*attaching* a thread state will block until the *GIL* can be acquired.
+However,  even on builds with the *GIL* disabled, it is still required
+to have an attached thread state to call most of the C API.
+
+In general, there will always be an *attached thread state* when using
+Python's C API. Only in some specific cases (such as in a
+"Py_BEGIN_ALLOW_THREADS" block) will the thread not have an attached
+thread state. If uncertain, check if "PyThreadState_GetUnchecked()"
+returns "NULL".
+
+
+Detaching the thread state from extension code
+----------------------------------------------
+
+Most extension code manipulating the *thread state* has the following
+simple structure:
+
+   Save the thread state in a local variable.
+   ... Do some blocking I/O operation ...
+   Restore the thread state from the local variable.
+
+이것은 매우 일반적이어서 이를 단순화하기 위해 한 쌍의 매크로가 존재합
+니다:
+
+   Py_BEGIN_ALLOW_THREADS
+   ... Do some blocking I/O operation ...
+   Py_END_ALLOW_THREADS
+
+"Py_BEGIN_ALLOW_THREADS" 매크로는 새 블록을 열고 숨겨진 지역 변수를 선
+언합니다; "Py_END_ALLOW_THREADS" 매크로는 블록을 닫습니다.
+
+위의 블록은 다음 코드로 확장됩니다:
+
+   PyThreadState *_save;
+
+   _save = PyEval_SaveThread();
+   ... Do some blocking I/O operation ...
+   PyEval_RestoreThread(_save);
+
+Here is how these functions work:
+
+The *attached thread state* holds the *GIL* for the entire
+interpreter. When detaching the *attached thread state*, the *GIL* is
+released, allowing other threads to attach a thread state to their own
+thread, thus getting the *GIL* and can start executing. The pointer to
+the prior *attached thread state* is stored as a local variable. Upon
+reaching "Py_END_ALLOW_THREADS", the thread state that was previously
+*attached* is passed to "PyEval_RestoreThread()". This function will
+block until another releases its *thread state*, thus allowing the old
+*thread state* to get re-attached and the C API can be called again.
+
+For *free-threaded* builds, the *GIL* is normally out of the question,
+but detaching the *thread state* is still required for blocking I/O
+and long operations. The difference is that threads don't have to wait
+for the *GIL* to be released to attach their thread state, allowing
+true multi-core parallelism.
+
+참고:
+
+  Calling system I/O functions is the most common use case for
+  detaching the *thread state*, but it can also be useful before
+  calling long-running computations which don't need access to Python
+  objects, such as compression or cryptographic functions operating
+  over memory buffers. For example, the standard "zlib" and "hashlib"
+  modules detach the *thread state* when compressing or hashing data.
+
+
+파이썬이 만들지 않은 스레드
+---------------------------
+
+When threads are created using the dedicated Python APIs (such as the
+"threading" module), a thread state is automatically associated to
+them and the code showed above is therefore correct.  However, when
+threads are created from C (for example by a third-party library with
+its own thread management), they don't hold the *GIL*, because they
+don't have an *attached thread state*.
+
+If you need to call Python code from these threads (often this will be
+part of a callback API provided by the aforementioned third-party
+library), you must first register these threads with the interpreter
+by creating an *attached thread state* before you can start using the
+Python/C API.  When you are done, you should detach the *thread
+state*, and finally free it.
+
+"PyGILState_Ensure()"와 "PyGILState_Release()" 함수는 위의 모든 작업을
+자동으로 수행합니다. C 스레드에서 파이썬을 호출하는 일반적인 관용구는
+다음과 같습니다:
+
+   PyGILState_STATE gstate;
+   gstate = PyGILState_Ensure();
+
+   /* Perform Python actions here. */
+   result = CallSomeFunction();
+   /* evaluate result or handle exception */
+
+   /* Release the thread. No Python API allowed beyond this point. */
+   PyGILState_Release(gstate);
+
+Note that the "PyGILState_*" functions assume there is only one global
+interpreter (created automatically by "Py_Initialize()").  Python
+supports the creation of additional interpreters (using
+"Py_NewInterpreter()"), but mixing multiple interpreters and the
+"PyGILState_*" API is unsupported. This is because
+"PyGILState_Ensure()" and similar functions default to *attaching* a
+*thread state* for the main interpreter, meaning that the thread can't
+safely interact with the calling subinterpreter.
+
+
+Supporting subinterpreters in non-Python threads
+------------------------------------------------
+
+If you would like to support subinterpreters with non-Python created
+threads, you must use the "PyThreadState_*" API instead of the
+traditional "PyGILState_*" API.
+
+In particular, you must store the interpreter state from the calling
+function and pass it to "PyThreadState_New()", which will ensure that
+the *thread state* is targeting the correct interpreter:
+
+   /* The return value of PyInterpreterState_Get() from the
+      function that created this thread. */
+   PyInterpreterState *interp = ThreadData->interp;
+   PyThreadState *tstate = PyThreadState_New(interp);
+   PyThreadState_Swap(tstate);
+
+   /* GIL of the subinterpreter is now held.
+      Perform Python actions here. */
+   result = CallSomeFunction();
+   /* evaluate result or handle exception */
+
+   /* Destroy the thread state. No Python API allowed beyond this point. */
+   PyThreadState_Clear(tstate);
+   PyThreadState_DeleteCurrent();
+
+
+fork()에 대한 주의 사항
+-----------------------
+
+스레드에 대해 주목해야 할 또 다른 중요한 점은 C "fork()" 호출 시 스레
+드의 동작입니다. "fork()"를 사용하는 대부분의 시스템에서는, 프로세스가
+포크한 후에 포크를 발행한 스레드만 존재합니다. 이는 록을 처리해야 하는
+방법과 CPython 런타임에 저장된 모든 상태 모두에 구체적인 영향을 미칩니
+다.
+
+The fact that only the "current" thread remains means any locks held
+by other threads will never be released. Python solves this for
+"os.fork()" by acquiring the locks it uses internally before the fork,
+and releasing them afterwards. In addition, it resets any Lock objects
+in the child. When extending or embedding Python, there is no way to
+inform Python of additional (non-Python) locks that need to be
+acquired before or reset after a fork. OS facilities such as
+"pthread_atfork()" would need to be used to accomplish the same thing.
+Additionally, when extending or embedding Python, calling "fork()"
+directly rather than through "os.fork()" (and returning to or calling
+into Python) may result in a deadlock by one of Python's internal
+locks being held by a thread that is defunct after the fork.
+"PyOS_AfterFork_Child()" tries to reset the necessary locks, but is
+not always able to.
+
+다른 모든 스레드가 사라진다는 사실은 또한 CPython의 런타임 상태가
+"os.fork()"와 마찬가지로 적절하게 정리되어야 함을 의미합니다. 이것은
+현재 인터프리터와 다른 모든 "PyInterpreterState" 객체에 속하는 다른 모
+든 "PyThreadState" 객체를 파이널리제이션 하는 것을 의미합니다. 이것과
+"메인" 인터프리터의 특수한 특성으로 인해, "fork()"는 CPython 전역 런타
+임이 원래 초기화된 인터프리터의 "메인" 스레드에서만 호출되어야 합니다.
+유일한 예외는 "exec()"가 그 후에 즉시 호출되는 경우입니다.
+
+
+Cautions regarding runtime finalization
+---------------------------------------
+
+In the late stage of *interpreter shutdown*, after attempting to wait
+for non-daemon threads to exit (though this can be interrupted by
+"KeyboardInterrupt") and running the "atexit" functions, the runtime
+is marked as *finalizing*: "Py_IsFinalizing()" and
+"sys.is_finalizing()" return true.  At this point, only the
+*finalization thread* that initiated finalization (typically the main
+thread) is allowed to acquire the *GIL*.
+
+If any thread, other than the finalization thread, attempts to attach
+a *thread state* during finalization, either explicitly or implicitly,
+the thread enters **a permanently blocked state** where it remains
+until the program exits.  In most cases this is harmless, but this can
+result in deadlock if a later stage of finalization attempts to
+acquire a lock owned by the blocked thread, or otherwise waits on the
+blocked thread.
+
+Gross? Yes. This prevents random crashes and/or unexpectedly skipped
+C++ finalizations further up the call stack when such threads were
+forcibly exited here in CPython 3.13 and earlier. The CPython runtime
+*thread state* C APIs have never had any error reporting or handling
+expectations at *thread state* attachment time that would've allowed
+for graceful exit from this situation. Changing that would require new
+stable C APIs and rewriting the majority of C code in the CPython
+ecosystem to use those with error handling.
+
+
+고수준 API
+----------
+
+다음은 C 확장 코드를 작성하거나 파이썬 인터프리터를 내장할 때 가장 일
+반적으로 사용되는 형과 함수입니다:
+
+type PyInterpreterState
+    * Part of the 제한된 API (as an opaque struct).*
+
+   이 자료 구조는 여러 협력 스레드가 공유하는 상태를 나타냅니다. 같은
+   인터프리터에 속하는 스레드는 모듈 관리와 몇 가지 다른 내부 항목을
+   공유합니다. 이 구조체에는 공개 멤버가 없습니다.
+
+   다른 인터프리터에 속한 스레드는 사용 가능한 메모리, 열린 파일 기술
+   자 등과 같은 프로세스 상태를 제외하고는, 처음에는 아무것도 공유하지
+   않습니다. 전역 인터프리터 록은 어떤 인터프리터에 속해 있는지에 관계
+   없이 모든 스레드에서 공유됩니다.
+
+   버전 3.12에서 변경: **PEP 684** introduced the possibility of a
+   per-interpreter GIL. See "Py_NewInterpreterFromConfig()".
+
+type PyThreadState
+    * Part of the 제한된 API (as an opaque struct).*
+
+   This data structure represents the state of a single thread.  The
+   only public data member is:
+
+   PyInterpreterState *interp
+
+      This thread's interpreter state.
+
+void PyEval_InitThreads()
+    * Part of the 안정 ABI.*
+
+   아무것도 하지 않는 폐지된 함수.
+
+   파이썬 3.6과 이전 버전에서는, 이 함수가 존재하지 않으면 GIL을 만들
+   었습니다.
+
+   버전 3.9에서 변경: 이제 이 함수는 아무 작업도 수행하지 않습니다.
+
+   버전 3.7에서 변경: 이 함수는 이제 "Py_Initialize()"에 의해 호출되어
+   서, 여러분은 더는 직접 호출할 필요가 없습니다.
+
+   버전 3.2에서 변경: 이 함수는 더는 "Py_Initialize()" 전에 호출할 수
+   없습니다.
+
+   버전 3.9부터 폐지됨.
+
+PyThreadState *PyEval_SaveThread()
+    * Part of the 안정 ABI.*
+
+   Detach the *attached thread state* and return it. The thread will
+   have no *thread state* upon returning.
+
+void PyEval_RestoreThread(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Set the *attached thread state* to *tstate*. The passed *thread
+   state* **should not** be *attached*, otherwise deadlock ensues.
+   *tstate* will be attached upon returning.
+
+   참고:
+
+     Calling this function from a thread when the runtime is
+     finalizing will hang the thread until the program exits, even if
+     the thread was not created by Python.  Refer to Cautions
+     regarding runtime finalization for more details.
+
+   버전 3.14에서 변경: Hangs the current thread, rather than
+   terminating it, if called while the interpreter is finalizing.
+
+PyThreadState *PyThreadState_Get()
+    * Part of the 안정 ABI.*
+
+   Return the *attached thread state*. If the thread has no attached
+   thread state, (such as when inside of "Py_BEGIN_ALLOW_THREADS"
+   block), then this issues a fatal error (so that the caller needn't
+   check for "NULL").
+
+   See also "PyThreadState_GetUnchecked()".
+
+PyThreadState *PyThreadState_GetUnchecked()
+
+   Similar to "PyThreadState_Get()", but don't kill the process with a
+   fatal error if it is NULL. The caller is responsible to check if
+   the result is NULL.
+
+   Added in version 3.13: In Python 3.5 to 3.12, the function was
+   private and known as "_PyThreadState_UncheckedGet()".
+
+PyThreadState *PyThreadState_Swap(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Set the *attached thread state* to *tstate*, and return the *thread
+   state* that was attached prior to calling.
+
+   This function is safe to call without an *attached thread state*;
+   it will simply return "NULL" indicating that there was no prior
+   thread state.
+
+   더 보기: "PyEval_ReleaseThread()"
+
+   참고:
+
+     Similar to "PyGILState_Ensure()", this function will hang the
+     thread if the runtime is finalizing.
+
+다음 함수는 스레드 로컬 저장소를 사용하며, 서브 인터프리터와 호환되지
+않습니다:
+
+type PyGILState_STATE
+    * Part of the 안정 ABI.*
+
+   The type of the value returned by "PyGILState_Ensure()" and passed
+   to "PyGILState_Release()".
+
+   enumerator PyGILState_LOCKED
+
+      The GIL was already held when "PyGILState_Ensure()" was called.
+
+   enumerator PyGILState_UNLOCKED
+
+      The GIL was not held when "PyGILState_Ensure()" was called.
+
+PyGILState_STATE PyGILState_Ensure()
+    * Part of the 안정 ABI.*
+
+   Ensure that the current thread is ready to call the Python C API
+   regardless of the current state of Python, or of the *attached
+   thread state*. This may be called as many times as desired by a
+   thread as long as each call is matched with a call to
+   "PyGILState_Release()". In general, other thread-related APIs may
+   be used between "PyGILState_Ensure()" and "PyGILState_Release()"
+   calls as long as the thread state is restored to its previous state
+   before the Release().  For example, normal usage of the
+   "Py_BEGIN_ALLOW_THREADS" and "Py_END_ALLOW_THREADS" macros is
+   acceptable.
+
+   The return value is an opaque "handle" to the *attached thread
+   state* when "PyGILState_Ensure()" was called, and must be passed to
+   "PyGILState_Release()" to ensure Python is left in the same state.
+   Even though recursive calls are allowed, these handles *cannot* be
+   shared - each unique call to "PyGILState_Ensure()" must save the
+   handle for its call to "PyGILState_Release()".
+
+   When the function returns, there will be an *attached thread state*
+   and the thread will be able to call arbitrary Python code.  Failure
+   is a fatal error.
+
+   경고:
+
+     Calling this function when the runtime is finalizing is unsafe.
+     Doing so will either hang the thread until the program ends, or
+     fully crash the interpreter in rare cases. Refer to Cautions
+     regarding runtime finalization for more details.
+
+   버전 3.14에서 변경: Hangs the current thread, rather than
+   terminating it, if called while the interpreter is finalizing.
+
+void PyGILState_Release(PyGILState_STATE)
+    * Part of the 안정 ABI.*
+
+   이전에 획득 한 모든 자원을 해제합니다. 이 호출 후에, 파이썬의 상태
+   는 해당 "PyGILState_Ensure()" 호출 이전과 같습니다 (그러나 일반적으
+   로 이 상태는 호출자에게 알려지지 않아서, GILState API를 사용합니다
+   ).
+
+   "PyGILState_Ensure()"에 대한 모든 호출은 같은 스레드에서
+   "PyGILState_Release()"에 대한 호출과 쌍을 이뤄야 합니다.
+
+PyThreadState *PyGILState_GetThisThreadState()
+    * Part of the 안정 ABI.*
+
+   Get the *attached thread state* for this thread.  May return "NULL"
+   if no GILState API has been used on the current thread.  Note that
+   the main thread always has such a thread-state, even if no auto-
+   thread-state call has been made on the main thread.  This is mainly
+   a helper/diagnostic function.
+
+   참고:
+
+     This function may return non-"NULL" even when the *thread state*
+     is detached. Prefer "PyThreadState_Get()" or
+     "PyThreadState_GetUnchecked()" for most cases.
+
+   더 보기: "PyThreadState_Get()"
+
+int PyGILState_Check()
+
+   Return "1" if the current thread is holding the *GIL* and "0"
+   otherwise. This function can be called from any thread at any time.
+   Only if it has had its *thread state* initialized via
+   "PyGILState_Ensure()" will it return "1". This is mainly a
+   helper/diagnostic function.  It can be useful for example in
+   callback contexts or memory allocation functions when knowing that
+   the *GIL* is locked can allow the caller to perform sensitive
+   actions or otherwise behave differently.
+
+   참고:
+
+     If the current Python process has ever created a subinterpreter,
+     this function will *always* return "1". Prefer
+     "PyThreadState_GetUnchecked()" for most cases.
+
+   Added in version 3.4.
+
+다음 매크로는 일반적으로 후행 세미콜론 없이 사용됩니다; 파이썬 소스 배
+포에서 사용 예를 찾으십시오.
+
+Py_BEGIN_ALLOW_THREADS
+    * Part of the 안정 ABI.*
+
+   이 매크로는 "{ PyThreadState *_save; _save = PyEval_SaveThread();"
+   로 확장됩니다. 여는 중괄호가 포함되어 있음에 유의하십시오; 뒤따르는
+   "Py_END_ALLOW_THREADS" 매크로와 일치해야 합니다. 이 매크로에 대한
+   자세한 내용은 위를 참조하십시오.
+
+Py_END_ALLOW_THREADS
+    * Part of the 안정 ABI.*
+
+   이 매크로는 "PyEval_RestoreThread(_save); }"로 확장됩니다. 닫는 중
+   괄호가 포함되어 있음에 유의하십시오; 이전 "Py_BEGIN_ALLOW_THREADS"
+   매크로와 일치해야 합니다. 이 매크로에 대한 자세한 내용은 위를 참조
+   하십시오.
+
+Py_BLOCK_THREADS
+    * Part of the 안정 ABI.*
+
+   이 매크로는 "PyEval_RestoreThread(_save);" 로 확장됩니다: 닫는 중괄
+   호가 없는 "Py_END_ALLOW_THREADS"와 동등합니다.
+
+Py_UNBLOCK_THREADS
+    * Part of the 안정 ABI.*
+
+   이 매크로는 "_save = PyEval_SaveThread();" 로 확장됩니다: 여는 중괄
+   호와 변수 선언이 없는 "Py_BEGIN_ALLOW_THREADS"와 동등합니다.
+
+
+저수준 API
+----------
+
+다음 함수는 모두 "Py_Initialize()" 이후에 호출되어야 합니다.
+
+버전 3.7에서 변경: "Py_Initialize()" now initializes the *GIL* and
+sets an *attached thread state*.
+
+PyInterpreterState *PyInterpreterState_New()
+    * Part of the 안정 ABI.*
+
+   Create a new interpreter state object.  An *attached thread state*
+   is not needed, but may optionally exist if it is necessary to
+   serialize calls to this function.
+
+   인자 없이 감사 이벤트 "cpython.PyInterpreterState_New"를 발생시킵니
+   다.
+
+void PyInterpreterState_Clear(PyInterpreterState *interp)
+    * Part of the 안정 ABI.*
+
+   Reset all information in an interpreter state object.  There must
+   be an *attached thread state* for the interpreter.
+
+   인자 없이 감사 이벤트 "cpython.PyInterpreterState_Clear"를 발생시킵
+   니다.
+
+void PyInterpreterState_Delete(PyInterpreterState *interp)
+    * Part of the 안정 ABI.*
+
+   Destroy an interpreter state object.  There **should not** be an
+   *attached thread state* for the target interpreter. The interpreter
+   state must have been reset with a previous call to
+   "PyInterpreterState_Clear()".
+
+PyThreadState *PyThreadState_New(PyInterpreterState *interp)
+    * Part of the 안정 ABI.*
+
+   Create a new thread state object belonging to the given interpreter
+   object. An *attached thread state* is not needed.
+
+void PyThreadState_Clear(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Reset all information in a *thread state* object.  *tstate* must be
+   *attached*
+
+   버전 3.9에서 변경: This function now calls the
+   "PyThreadState.on_delete" callback. Previously, that happened in
+   "PyThreadState_Delete()".
+
+   버전 3.13에서 변경: The "PyThreadState.on_delete" callback was
+   removed.
+
+void PyThreadState_Delete(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Destroy a *thread state* object.  *tstate* should not be *attached*
+   to any thread. *tstate* must have been reset with a previous call
+   to "PyThreadState_Clear()".
+
+void PyThreadState_DeleteCurrent(void)
+
+   Detach the *attached thread state* (which must have been reset with
+   a previous call to "PyThreadState_Clear()") and then destroy it.
+
+   No *thread state* will be *attached* upon returning.
+
+PyFrameObject *PyThreadState_GetFrame(PyThreadState *tstate)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   파이썬 스레드 상태 *tstate*의 현재 프레임을 가져옵니다.
+
+   Return a *strong reference*. Return "NULL" if no frame is currently
+   executing.
+
+   "PyEval_GetFrame()"도 참조하십시오.
+
+   *tstate* must not be "NULL", and must be *attached*.
+
+   Added in version 3.9.
+
+uint64_t PyThreadState_GetID(PyThreadState *tstate)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   Get the unique *thread state* identifier of the Python thread state
+   *tstate*.
+
+   *tstate* must not be "NULL", and must be *attached*.
+
+   Added in version 3.9.
+
+PyInterpreterState *PyThreadState_GetInterpreter(PyThreadState *tstate)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   파이썬 스레드 상태 *tstate*의 인터프리터를 가져옵니다.
+
+   *tstate* must not be "NULL", and must be *attached*.
+
+   Added in version 3.9.
+
+void PyThreadState_EnterTracing(PyThreadState *tstate)
+
+   Suspend tracing and profiling in the Python thread state *tstate*.
+
+   Resume them using the "PyThreadState_LeaveTracing()" function.
+
+   Added in version 3.11.
+
+void PyThreadState_LeaveTracing(PyThreadState *tstate)
+
+   Resume tracing and profiling in the Python thread state *tstate*
+   suspended by the "PyThreadState_EnterTracing()" function.
+
+   See also "PyEval_SetTrace()" and "PyEval_SetProfile()" functions.
+
+   Added in version 3.11.
+
+int PyUnstable_ThreadState_SetStackProtection(PyThreadState *tstate, void *stack_start_addr, size_t stack_size)
+
+   *이것은 불안정 API. It may change without warning in minor
+   releases.*
+
+   Set the stack protection start address and stack protection size of
+   a Python thread state.
+
+   On success, return "0". On failure, set an exception and return
+   "-1".
+
+   CPython implements recursion control for C code by raising
+   "RecursionError" when it notices that the machine execution stack
+   is close to overflow. See for example the "Py_EnterRecursiveCall()"
+   function. For this, it needs to know the location of the current
+   thread's stack, which it normally gets from the operating system.
+   When the stack is changed, for example using context switching
+   techniques like the Boost library's "boost::context", you must call
+   "PyUnstable_ThreadState_SetStackProtection()" to inform CPython of
+   the change.
+
+   Call "PyUnstable_ThreadState_SetStackProtection()" either before or
+   after changing the stack. Do not call any other Python C API
+   between the call and the stack change.
+
+   See "PyUnstable_ThreadState_ResetStackProtection()" for undoing
+   this operation.
+
+   Added in version 3.14.1:
+
+   경고:
+
+     This function was added in a bugfix release, and extensions that
+     use it will be incompatible with Python 3.14.0. Most packaging
+     tools for Python are not able to handle this incompatibility
+     automatically, and will need explicit configuration. When using
+     PyPA standards (wheels and source distributions), specify
+     "Requires-Python: != 3.14.0.*" in core metadata.
+
+void PyUnstable_ThreadState_ResetStackProtection(PyThreadState *tstate)
+
+   *이것은 불안정 API. It may change without warning in minor
+   releases.*
+
+   Reset the stack protection start address and stack protection size
+   of a Python thread state to the operating system defaults.
+
+   See "PyUnstable_ThreadState_SetStackProtection()" for an
+   explanation.
+
+   Added in version 3.14.1:
+
+   경고:
+
+     This function was added in a bugfix release, and extensions that
+     use it will be incompatible with Python 3.14.0. Most packaging
+     tools for Python are not able to handle this incompatibility
+     automatically, and will need explicit configuration. When using
+     PyPA standards (wheels and source distributions), specify
+     "Requires-Python: != 3.14.0.*" in core metadata.
+
+PyInterpreterState *PyInterpreterState_Get(void)
+    * Part of the 안정 ABI 버전 3.9 이후로.*
+
+   현재 인터프리터를 가져옵니다.
+
+   Issue a fatal error if there no *attached thread state*. It cannot
+   return NULL.
+
+   Added in version 3.9.
+
+int64_t PyInterpreterState_GetID(PyInterpreterState *interp)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   인터프리터의 고유 ID를 반환합니다. 그렇게 하는데 에러가 발생하면
+   "-1"이 반환되고 에러가 설정됩니다.
+
+   The caller must have an *attached thread state*.
+
+   Added in version 3.7.
+
+PyObject *PyInterpreterState_GetDict(PyInterpreterState *interp)
+    *반환값: 빌린 참조.** Part of the 안정 ABI 버전 3.8 이후로.*
+
+   인터프리터별 데이터가 저장될 수 있는 딕셔너리를 반환합니다. 이 함수
+   가 "NULL"을 반환하면 예외는 발생하지 않았고 호출자는 인터프리터별
+   딕셔너리를 사용할 수 없다고 가정해야 합니다.
+
+   이것은 확장이 인터프리터별 상태 정보를 저장하는 데 사용해야 하는
+   "PyModule_GetState()"를 대체하는 것이 아닙니다.
+
+   The returned dictionary is borrowed from the interpreter and is
+   valid until interpreter shutdown.
+
+   Added in version 3.8.
+
+typedef PyObject *(*_PyFrameEvalFunction)(PyThreadState *tstate, _PyInterpreterFrame *frame, int throwflag)
+
+   프레임 평가 함수의 형.
+
+   *throwflag* 매개 변수는 제너레이터의 "throw()" 메서드에서 사용됩니
+   다: 0이 아니면, 현재 예외를 처리합니다.
+
+   버전 3.9에서 변경: 이제 함수는 *tstate* 매개 변수를 취합니다.
+
+   버전 3.11에서 변경: The *frame* parameter changed from
+   "PyFrameObject*" to "_PyInterpreterFrame*".
+
+_PyFrameEvalFunction _PyInterpreterState_GetEvalFrameFunc(PyInterpreterState *interp)
+
+   프레임 평가 함수를 가져옵니다.
+
+   **PEP 523** "CPython에 프레임 평가 API 추가"를 참조하십시오.
+
+   Added in version 3.9.
+
+void _PyInterpreterState_SetEvalFrameFunc(PyInterpreterState *interp, _PyFrameEvalFunction eval_frame)
+
+   프레임 평가 함수를 설정합니다.
+
+   **PEP 523** "CPython에 프레임 평가 API 추가"를 참조하십시오.
+
+   Added in version 3.9.
+
+PyObject *PyThreadState_GetDict()
+    *반환값: 빌린 참조.** Part of the 안정 ABI.*
+
+   Return a dictionary in which extensions can store thread-specific
+   state information.  Each extension should use a unique key to use
+   to store state in the dictionary.  It is okay to call this function
+   when no *thread state* is *attached*. If this function returns
+   "NULL", no exception has been raised and the caller should assume
+   no thread state is attached.
+
+int PyThreadState_SetAsyncExc(unsigned long id, PyObject *exc)
+    * Part of the 안정 ABI.*
+
+   Asynchronously raise an exception in a thread. The *id* argument is
+   the thread id of the target thread; *exc* is the exception object
+   to be raised. This function does not steal any references to *exc*.
+   To prevent naive misuse, you must write your own C extension to
+   call this.  Must be called with an *attached thread state*. Returns
+   the number of thread states modified; this is normally one, but
+   will be zero if the thread id isn't found.  If *exc* is "NULL", the
+   pending exception (if any) for the thread is cleared. This raises
+   no exceptions.
+
+   버전 3.7에서 변경: The type of the *id* parameter changed from long
+   to unsigned long.
+
+void PyEval_AcquireThread(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   *Attach* *tstate* to the current thread, which must not be "NULL"
+   or already *attached*.
+
+   The calling thread must not already have an *attached thread
+   state*.
+
+   참고:
+
+     Calling this function from a thread when the runtime is
+     finalizing will hang the thread until the program exits, even if
+     the thread was not created by Python.  Refer to Cautions
+     regarding runtime finalization for more details.
+
+   버전 3.8에서 변경: "PyEval_RestoreThread()",
+   "Py_END_ALLOW_THREADS()" 및 "PyGILState_Ensure()"와 일관되도록 갱신
+   되었으며, 인터프리터가 파이널리제이션 하는 동안 호출되면 현재 스레
+   드를 종료합니다.
+
+   버전 3.14에서 변경: Hangs the current thread, rather than
+   terminating it, if called while the interpreter is finalizing.
+
+   "PyEval_RestoreThread()"는 (스레드가 초기화되지 않았을 때조차) 항상
+   사용할 수 있는 고수준 함수입니다.
+
+void PyEval_ReleaseThread(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Detach the *attached thread state*. The *tstate* argument, which
+   must not be "NULL", is only used to check that it represents the
+   *attached thread state* --- if it isn't, a fatal error is reported.
+
+   "PyEval_SaveThread()"는 (스레드가 초기화되지 않은 경우에조차) 항상
+   사용할 수 있는 고수준 함수입니다.
+
+
+서브 인터프리터 지원
+====================
+
+대부분의 경우, 단일 파이썬 인터프리터만 내장할 것입니다만, 같은 프로세
+스, 어쩌면 같은 스레드에서 여러 독립 인터프리터를 만들어야 하는 경우가
+있습니다. 서브 인터프리터는 그렇게 할 수 있도록 합니다.
+
+"메인" 인터프리터는 런타임이 초기화될 때 만들어지는 첫 번째 인터프리터
+입니다. 보통은 프로세스에서 유일한 파이썬 인터프리터입니다. 서브 인터
+프리터와 달리, 메인 인터프리터는 시그널 처리와 같은 고유한 프로세스 전
+역 책임을 갖습니다. 또한 런타임 초기화 동안 실행을 담당하며 일반적으로
+런타임 파이널리제이션 동안 활성 인터프리터입니다.
+"PyInterpreterState_Main()" 함수는 그것의 상태에 대한 포인터를 반환합
+니다.
+
+"PyThreadState_Swap()" 함수를 사용하여 서브 인터프리터 간에 전환할 수
+있습니다. 다음 함수를 사용하여 만들고 파괴할 수 있습니다:
+
+type PyInterpreterConfig
+
+   Structure containing most parameters to configure a sub-
+   interpreter. Its values are used only in
+   "Py_NewInterpreterFromConfig()" and never modified by the runtime.
+
+   Added in version 3.12.
+
+   Structure fields:
+
+   int use_main_obmalloc
+
+      If this is "0" then the sub-interpreter will use its own
+      "object" allocator state. Otherwise it will use (share) the main
+      interpreter's.
+
+      If this is "0" then "check_multi_interp_extensions" must be "1"
+      (non-zero). If this is "1" then "gil" must not be
+      "PyInterpreterConfig_OWN_GIL".
+
+   int allow_fork
+
+      If this is "0" then the runtime will not support forking the
+      process in any thread where the sub-interpreter is currently
+      active. Otherwise fork is unrestricted.
+
+      Note that the "subprocess" module still works when fork is
+      disallowed.
+
+   int allow_exec
+
+      If this is "0" then the runtime will not support replacing the
+      current process via exec (e.g. "os.execv()") in any thread where
+      the sub-interpreter is currently active. Otherwise exec is
+      unrestricted.
+
+      Note that the "subprocess" module still works when exec is
+      disallowed.
+
+   int allow_threads
+
+      If this is "0" then the sub-interpreter's "threading" module
+      won't create threads. Otherwise threads are allowed.
+
+   int allow_daemon_threads
+
+      If this is "0" then the sub-interpreter's "threading" module
+      won't create daemon threads. Otherwise daemon threads are
+      allowed (as long as "allow_threads" is non-zero).
+
+   int check_multi_interp_extensions
+
+      If this is "0" then all extension modules may be imported,
+      including legacy (single-phase init) modules, in any thread
+      where the sub-interpreter is currently active. Otherwise only
+      multi-phase init extension modules (see **PEP 489**) may be
+      imported. (Also see "Py_mod_multiple_interpreters".)
+
+      This must be "1" (non-zero) if "use_main_obmalloc" is "0".
+
+   int gil
+
+      This determines the operation of the GIL for the sub-
+      interpreter. It may be one of the following:
+
+      PyInterpreterConfig_DEFAULT_GIL
+
+         Use the default selection ("PyInterpreterConfig_SHARED_GIL").
+
+      PyInterpreterConfig_SHARED_GIL
+
+         Use (share) the main interpreter's GIL.
+
+      PyInterpreterConfig_OWN_GIL
+
+         Use the sub-interpreter's own GIL.
+
+      If this is "PyInterpreterConfig_OWN_GIL" then
+      "PyInterpreterConfig.use_main_obmalloc" must be "0".
+
+PyStatus Py_NewInterpreterFromConfig(PyThreadState **tstate_p, const PyInterpreterConfig *config)
+
+   새 서브 인터프리터를 만듭니다. 이것은 파이썬 코드 실행을 위한 (거의
+   ) 완전히 분리된 환경입니다. 특히, 새 인터프리터에는 기본 모듈
+   "builtins", "__main__" 및 "sys"를 포함하여, 모든 임포트 된 모듈의
+   개별, 독립 버전을 갖습니다. 로드된 모듈 테이블("sys.modules")과 모
+   듈 검색 경로("sys.path")도 별개입니다. 새 환경에는 "sys.argv" 변수
+   가 없습니다. 새로운 표준 I/O 스트림 파일 객체 "sys.stdin",
+   "sys.stdout" 및 "sys.stderr"을 갖습니다 (단, 같은 하부 파일 기술자
+   를 참조합니다).
+
+   The given *config* controls the options with which the interpreter
+   is initialized.
+
+   Upon success, *tstate_p* will be set to the first *thread state*
+   created in the new sub-interpreter.  This thread state is
+   *attached*. Note that no actual thread is created; see the
+   discussion of thread states below.  If creation of the new
+   interpreter is unsuccessful, *tstate_p* is set to "NULL"; no
+   exception is set since the exception state is stored in the
+   *attached thread state*, which might not exist.
+
+   Like all other Python/C API functions, an *attached thread state*
+   must be present before calling this function, but it might be
+   detached upon returning. On success, the returned thread state will
+   be *attached*. If the sub-interpreter is created with its own *GIL*
+   then the *attached thread state* of the calling interpreter will be
+   detached. When the function returns, the new interpreter's *thread
+   state* will be *attached* to the current thread and the previous
+   interpreter's *attached thread state* will remain detached.
+
+   Added in version 3.12.
+
+   Sub-interpreters are most effective when isolated from each other,
+   with certain functionality restricted:
+
+      PyInterpreterConfig config = {
+          .use_main_obmalloc = 0,
+          .allow_fork = 0,
+          .allow_exec = 0,
+          .allow_threads = 1,
+          .allow_daemon_threads = 0,
+          .check_multi_interp_extensions = 1,
+          .gil = PyInterpreterConfig_OWN_GIL,
+      };
+      PyThreadState *tstate = NULL;
+      PyStatus status = Py_NewInterpreterFromConfig(&tstate, &config);
+      if (PyStatus_Exception(status)) {
+          Py_ExitStatusException(status);
+      }
+
+   Note that the config is used only briefly and does not get
+   modified. During initialization the config's values are converted
+   into various "PyInterpreterState" values.  A read-only copy of the
+   config may be stored internally on the "PyInterpreterState".
+
+   확장 모듈은 다음과 같이 (서브) 인터프리터 간에 공유됩니다:
+
+   * 다단계 초기화를 사용하는 모듈의 경우, 예를 들어
+     "PyModule_FromDefAndSpec()", 각 인터프리터에 대해 별도의 모듈 객
+     체가 만들어지고 초기화됩니다. C 수준 정적과 전역 변수만 이러한 모
+     듈 객체 간에 공유됩니다.
+
+   * 단단계 초기화를 사용하는 모듈의 경우, 예를 들어
+     "PyModule_Create()", 특정 확장이 처음 임포트 될 때, 정상적으로 초
+     기화되고, 모듈 딕셔너리의 (얕은) 사본이 저장됩니다. 다른 (서브)
+     인터프리터가 같은 확장을 임포트 할 때, 새 모듈이 초기화되고 이 복
+     사본의 내용으로 채워집니다; 확장의 "init" 함수는 호출되지 않습니
+     다. 따라서 모듈 딕셔너리의 객체는 (서브) 인터프리터 간에 공유되어
+     , 원치 않는 동작을 일으킬 수 있습니다 (아래 버그와 주의 사항을 참
+     조하십시오).
+
+     이것은 인터프리터가 "Py_FinalizeEx()"와 "Py_Initialize()"를 호출
+     하여 완전히 다시 초기화된 후 확장을 임포트 할 때 일어나는 것과 다
+     름에 유의하십시오; 이 경우, 확장의 "initmodule" 함수가 다시 *호출
+     됩니다*. 다단계 초기화와 마찬가지로, 이는 C 수준의 정적과 전역 변
+     수만 이러한 모듈 간에 공유됨을 의미합니다.
+
+PyThreadState *Py_NewInterpreter(void)
+    * Part of the 안정 ABI.*
+
+   Create a new sub-interpreter.  This is essentially just a wrapper
+   around "Py_NewInterpreterFromConfig()" with a config that preserves
+   the existing behavior.  The result is an unisolated sub-interpreter
+   that shares the main interpreter's GIL, allows fork/exec, allows
+   daemon threads, and allows single-phase init modules.
+
+void Py_EndInterpreter(PyThreadState *tstate)
+    * Part of the 안정 ABI.*
+
+   Destroy the (sub-)interpreter represented by the given *thread
+   state*. The given thread state must be *attached*. When the call
+   returns, there will be no *attached thread state*. All thread
+   states associated with this interpreter are destroyed.
+
+   "Py_FinalizeEx()" will destroy all sub-interpreters that haven't
+   been explicitly destroyed at that point.
+
+
+A Per-Interpreter GIL
+---------------------
+
+Using "Py_NewInterpreterFromConfig()" you can create a sub-interpreter
+that is completely isolated from other interpreters, including having
+its own GIL.  The most important benefit of this isolation is that
+such an interpreter can execute Python code without being blocked by
+other interpreters or blocking any others.  Thus a single Python
+process can truly take advantage of multiple CPU cores when running
+Python code.  The isolation also encourages a different approach to
+concurrency than that of just using threads. (See **PEP 554** and
+**PEP 684**.)
+
+Using an isolated interpreter requires vigilance in preserving that
+isolation.  That especially means not sharing any objects or mutable
+state without guarantees about thread-safety.  Even objects that are
+otherwise immutable (e.g. "None", "(1, 5)") can't normally be shared
+because of the refcount.  One simple but less-efficient approach
+around this is to use a global lock around all use of some state (or
+object). Alternately, effectively immutable objects (like integers or
+strings) can be made safe in spite of their refcounts by making them
+*immortal*. In fact, this has been done for the builtin singletons,
+small integers, and a number of other builtin objects.
+
+If you preserve isolation then you will have access to proper multi-
+core computing without the complications that come with free-
+threading. Failure to preserve isolation will expose you to the full
+consequences of free-threading, including races and hard-to-debug
+crashes.
+
+Aside from that, one of the main challenges of using multiple isolated
+interpreters is how to communicate between them safely (not break
+isolation) and efficiently.  The runtime and stdlib do not provide any
+standard approach to this yet.  A future stdlib module would help
+mitigate the effort of preserving isolation and expose effective tools
+for communicating (and sharing) data between interpreters.
+
+Added in version 3.12.
+
+
+버그와 주의 사항
+----------------
+
+서브 인터프리터(및 메인 인터프리터)는 같은 프로세스의 일부이기 때문에,
+그들 간의 절연이 완벽하지 않습니다 --- 예를 들어, "os.close()"와 같은
+저수준 파일 연산을 사용하면 서로의 열린 파일에 (실수로 혹은 악의적으로
+) 영향을 미칠 수 있습니다. (서브) 인터프리터 간에 확장이 공유되는 방식
+때문에, 일부 확장이 제대로 작동하지 않을 수 있습니다; 이것은 특히 단단
+계 초기화나 (정적) 전역 변수를 사용할 때 특히 그렇습니다. 한 서브 인터
+프리터에서 만든 객체를 다른 (서브) 인터프리터의 이름 공간에 삽입할 수
+있습니다; 가능하면 피해야 합니다.
+
+서브 인터프리터 간에 사용자 정의 함수, 메서드, 인스턴스 또는 클래스를
+공유하지 않도록 특별한 주의를 기울여야 합니다. 이러한 객체에 의해 실행
+되는 임포트 연산은 잘못된 (서브) 인터프리터의 로드된 모듈 딕셔너리에
+영향을 미칠 수 있기 때문입니다. 위의 것들에서 접근할 수 있는 객체를 공
+유하지 않는 것도 마찬가지로 중요합니다.
+
+Also note that combining this functionality with "PyGILState_*" APIs
+is delicate, because these APIs assume a bijection between Python
+thread states and OS-level threads, an assumption broken by the
+presence of sub-interpreters. It is highly recommended that you don't
+switch sub-interpreters between a pair of matching
+"PyGILState_Ensure()" and "PyGILState_Release()" calls. Furthermore,
+extensions (such as "ctypes") using these APIs to allow calling of
+Python code from non-Python created threads will probably be broken
+when using sub-interpreters.
+
+
+비동기 알림
+===========
+
+메인 인터프리터 스레드에 비동기 알림을 보내는 메커니즘이 제공됩니다.
+이러한 알림은 함수 포인터와 void 포인터 인자의 형태를 취합니다.
+
+int Py_AddPendingCall(int (*func)(void*), void *arg)
+    * Part of the 안정 ABI.*
+
+   메인 인터프리터 스레드에서 호출할 함수를 예약합니다. 성공하면 "0"이
+   반환되고 *func*는 메인 스레드에서 호출되기 위해 큐에 추가됩니다. 실
+   패 시, 예외 설정 없이 "-1"이 반환됩니다.
+
+   성공적으로 큐에 넣으면, *func*는 *arg* 인자를 사용하여 *결국* 메인
+   인터프리터 스레드에서 호출됩니다. 정상적으로 실행되는 파이썬 코드와
+   비교할 때 비동기적으로 호출되지만, 다음 두 조건이 모두 충족됩니다:
+
+   * *바이트 코드* 경계에서;
+
+   * with the main thread holding an *attached thread state* (*func*
+     can therefore use the full C API).
+
+   *func* must return "0" on success, or "-1" on failure with an
+   exception set.  *func* won't be interrupted to perform another
+   asynchronous notification recursively, but it can still be
+   interrupted to switch threads if the *thread state* is detached.
+
+   This function doesn't need an *attached thread state*. However, to
+   call this function in a subinterpreter, the caller must have an
+   *attached thread state*. Otherwise, the function *func* can be
+   scheduled to be called from the wrong interpreter.
+
+   경고:
+
+     이것은 매우 특별한 경우에만 유용한, 저수준 함수입니다. *func*가
+     가능한 한 빨리 호출된다는 보장은 없습니다. 메인 스레드가 시스템
+     호출을 실행 중이라 바쁘면, 시스템 호출이 반환되기 전에 *func*가
+     호출되지 않습니다. 이 함수는 일반적으로 임의의 C 스레드에서 파이
+     썬 코드를 호출하는 데 적합하지 **않습니다**. 대신, PyGILState API
+     를 사용하십시오.
+
+   Added in version 3.1.
+
+   버전 3.9에서 변경: 이 함수가 서브 인터프리터에서 호출되면, *func*
+   함수는 이제 메인 인터프리터에서 호출되지 않고 서브 인터프리터에서
+   호출되도록 예약됩니다. 이제 각 서브 인터프리터는 자체 예약된 호출
+   목록을 갖습니다.
+
+   버전 3.12에서 변경: This function now always schedules *func* to be
+   run in the main interpreter.
+
+int Py_MakePendingCalls(void)
+    * Part of the 안정 ABI.*
+
+   Execute all pending calls. This is usually executed automatically
+   by the interpreter.
+
+   This function returns "0" on success, and returns "-1" with an
+   exception set on failure.
+
+   If this is not called in the main thread of the main interpreter,
+   this function does nothing and returns "0". The caller must hold an
+   *attached thread state*.
+
+   Added in version 3.1.
+
+   버전 3.12에서 변경: This function only runs pending calls in the
+   main interpreter.
+
+
+프로파일링과 추적
+=================
+
+파이썬 인터프리터는 프로파일링과 실행 추적 기능을 연결하기 위한 몇 가
+지 저수준 지원을 제공합니다. 프로파일링, 디버깅 및 커버리지 분석 도구
+에 사용됩니다.
+
+이 C 인터페이스를 사용하면 프로파일링이나 추적 코드가 파이썬 수준의 콜
+러블 객체를 통해 호출하는 오버헤드를 피하고, 대신 직접 C 함수를 호출할
+수 있습니다. 시설의 필수 어트리뷰트는 변경되지 않았습니다; 인터페이스
+는 추적 함수를 스레드별로 설치할 수 있도록 하며, 추적 함수에 보고되는
+기본 이벤트는 이전 버전의 파이썬 수준 추적 함수에 보고된 것과 같습니다
+.
+
+typedef int (*Py_tracefunc)(PyObject *obj, PyFrameObject *frame, int what, PyObject *arg)
+
+   The type of the trace function registered using
+   "PyEval_SetProfile()" and "PyEval_SetTrace()". The first parameter
+   is the object passed to the registration function as *obj*, *frame*
+   is the frame object to which the event pertains, *what* is one of
+   the constants "PyTrace_CALL", "PyTrace_EXCEPTION", "PyTrace_LINE",
+   "PyTrace_RETURN", "PyTrace_C_CALL", "PyTrace_C_EXCEPTION",
+   "PyTrace_C_RETURN", or "PyTrace_OPCODE", and *arg* depends on the
+   value of *what*:
+
+   +---------------------------------+------------------------------------------+
+   | *what*의 값                     | *arg*의 의미                             |
+   |=================================|==========================================|
+   | "PyTrace_CALL"                  | 항상 "Py_None".                          |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_EXCEPTION"             | "sys.exc_info()"에서 반환된 예외 정보.   |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_LINE"                  | 항상 "Py_None".                          |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_RETURN"                | 호출자에게 반환되는 값, 또는 예외로 인한 |
+   |                                 | 것이면 "NULL".                           |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_C_CALL"                | 호출되는 함수 객체.                      |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_C_EXCEPTION"           | 호출되는 함수 객체.                      |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_C_RETURN"              | 호출되는 함수 객체.                      |
+   +---------------------------------+------------------------------------------+
+   | "PyTrace_OPCODE"                | 항상 "Py_None".                          |
+   +---------------------------------+------------------------------------------+
+
+int PyTrace_CALL
+
+   함수나 메서드에 대한 새 호출이 보고되거나, 제너레이터에 대한 새 항
+   목이 보고될 때 "Py_tracefunc" 함수에 대한 *what* 매개 변수의 값. 제
+   너레이터 함수에 대한 이터레이터의 생성은 해당 프레임의 파이썬 바이
+   트 코드로의 제어 전송이 없기 때문에 보고되지 않음에 유의하십시오.
+
+int PyTrace_EXCEPTION
+
+   예외가 발생했을 때 "Py_tracefunc" 함수에 대한 *what* 매개 변수의 값
+   . 콜백 함수는 실행되는 프레임 내에서 바이트 코드가 처리된 후 예외가
+   설정될 때 *what*에 대해 이 값으로 호출됩니다. 이것의 효과는 예외 전
+   파로 인해 파이썬 스택이 되감기는 것입니다, 예외가 전파되어 각 프레
+   임으로 반환할 때 콜백이 호출됩니다. 추적 함수만 이러한 이벤트를 수
+   신합니다; 프로파일러에는 필요하지 않습니다.
+
+int PyTrace_LINE
+
+   The value passed as the *what* parameter to a "Py_tracefunc"
+   function (but not a profiling function) when a line-number event is
+   being reported. It may be disabled for a frame by setting
+   "f_trace_lines" to *0* on that frame.
+
+int PyTrace_RETURN
+
+   호출이 반환되려고 할 때 "Py_tracefunc" 함수에 대한 *what* 매개 변수
+   의 값.
+
+int PyTrace_C_CALL
+
+   C 함수가 호출되려고 할 때 "Py_tracefunc" 함수에 대한 *what* 매개 변
+   수의 값.
+
+int PyTrace_C_EXCEPTION
+
+   C 함수에서 예외가 발생했을 때 "Py_tracefunc" 함수에 대한 *what* 매
+   개 변수의 값.
+
+int PyTrace_C_RETURN
+
+   C 함수가 반환했을 때 "Py_tracefunc" 함수에 대한 *what* 매개 변수의
+   값.
+
+int PyTrace_OPCODE
+
+   The value for the *what* parameter to "Py_tracefunc" functions (but
+   not profiling functions) when a new opcode is about to be executed.
+   This event is not emitted by default: it must be explicitly
+   requested by setting "f_trace_opcodes" to *1* on the frame.
+
+void PyEval_SetProfile(Py_tracefunc func, PyObject *obj)
+
+   Set the profiler function to *func*.  The *obj* parameter is passed
+   to the function as its first parameter, and may be any Python
+   object, or "NULL".  If the profile function needs to maintain
+   state, using a different value for *obj* for each thread provides a
+   convenient and thread-safe place to store it.  The profile function
+   is called for all monitored events except "PyTrace_LINE"
+   "PyTrace_OPCODE" and "PyTrace_EXCEPTION".
+
+   See also the "sys.setprofile()" function.
+
+   The caller must have an *attached thread state*.
+
+void PyEval_SetProfileAllThreads(Py_tracefunc func, PyObject *obj)
+
+   Like "PyEval_SetProfile()" but sets the profile function in all
+   running threads belonging to the current interpreter instead of the
+   setting it only on the current thread.
+
+   The caller must have an *attached thread state*.
+
+   As "PyEval_SetProfile()", this function ignores any exceptions
+   raised while setting the profile functions in all threads.
+
+Added in version 3.12.
+
+void PyEval_SetTrace(Py_tracefunc func, PyObject *obj)
+
+   Set the tracing function to *func*.  This is similar to
+   "PyEval_SetProfile()", except the tracing function does receive
+   line-number events and per-opcode events, but does not receive any
+   event related to C function objects being called.  Any trace
+   function registered using "PyEval_SetTrace()" will not receive
+   "PyTrace_C_CALL", "PyTrace_C_EXCEPTION" or "PyTrace_C_RETURN" as a
+   value for the *what* parameter.
+
+   See also the "sys.settrace()" function.
+
+   The caller must have an *attached thread state*.
+
+void PyEval_SetTraceAllThreads(Py_tracefunc func, PyObject *obj)
+
+   Like "PyEval_SetTrace()" but sets the tracing function in all
+   running threads belonging to the current interpreter instead of the
+   setting it only on the current thread.
+
+   The caller must have an *attached thread state*.
+
+   As "PyEval_SetTrace()", this function ignores any exceptions raised
+   while setting the trace functions in all threads.
+
+Added in version 3.12.
+
+
+Reference tracing
+=================
+
+Added in version 3.13.
+
+typedef int (*PyRefTracer)(PyObject*, int event, void *data)
+
+   The type of the trace function registered using
+   "PyRefTracer_SetTracer()". The first parameter is a Python object
+   that has been just created (when **event** is set to
+   "PyRefTracer_CREATE") or about to be destroyed (when **event** is
+   set to "PyRefTracer_DESTROY"). The **data** argument is the opaque
+   pointer that was provided when "PyRefTracer_SetTracer()" was
+   called.
+
+Added in version 3.13.
+
+int PyRefTracer_CREATE
+
+   The value for the *event* parameter to "PyRefTracer" functions when
+   a Python object has been created.
+
+int PyRefTracer_DESTROY
+
+   The value for the *event* parameter to "PyRefTracer" functions when
+   a Python object has been destroyed.
+
+int PyRefTracer_SetTracer(PyRefTracer tracer, void *data)
+
+   Register a reference tracer function. The function will be called
+   when a new Python has been created or when an object is going to be
+   destroyed. If **data** is provided it must be an opaque pointer
+   that will be provided when the tracer function is called. Return
+   "0" on success. Set an exception and return "-1" on error.
+
+   Not that tracer functions **must not** create Python objects inside
+   or otherwise the call will be re-entrant. The tracer also **must
+   not** clear any existing exception or set an exception.  A *thread
+   state* will be active every time the tracer function is called.
+
+   There must be an *attached thread state* when calling this
+   function.
+
+Added in version 3.13.
+
+PyRefTracer PyRefTracer_GetTracer(void **data)
+
+   Get the registered reference tracer function and the value of the
+   opaque data pointer that was registered when
+   "PyRefTracer_SetTracer()" was called. If no tracer was registered
+   this function will return NULL and will set the **data** pointer to
+   NULL.
+
+   There must be an *attached thread state* when calling this
+   function.
+
+Added in version 3.13.
+
+
+고급 디버거 지원
+================
+
+이 함수들은 고급 디버깅 도구에서만 사용하기 위한 것입니다.
+
+PyInterpreterState *PyInterpreterState_Head()
+
+   인터프리터 상태 객체들의 리스트의 머리에 있는 객체를 반환합니다.
+
+PyInterpreterState *PyInterpreterState_Main()
+
+   메인 인터프리터 상태 객체를 반환합니다.
+
+PyInterpreterState *PyInterpreterState_Next(PyInterpreterState *interp)
+
+   인터프리터 상태 객체들의 리스트에서 *interp* 이후의 다음 인터프리터
+   상태 객체를 반환합니다.
+
+PyThreadState *PyInterpreterState_ThreadHead(PyInterpreterState *interp)
+
+   인터프리터 *interp*와 관련된 스레드 리스트에서 첫 번째
+   "PyThreadState" 객체에 대한 포인터를 반환합니다.
+
+PyThreadState *PyThreadState_Next(PyThreadState *tstate)
+
+   같은 "PyInterpreterState" 객체에 속하는 모든 스레드 객체 리스트에서
+   *tstate* 이후의 다음 스레드 상태 객체를 반환합니다.
+
+
+스레드 로컬 저장소 지원
+=======================
+
+The Python interpreter provides low-level support for thread-local
+storage (TLS) which wraps the underlying native TLS implementation to
+support the Python-level thread local storage API ("threading.local").
+The CPython C level APIs are similar to those offered by pthreads and
+Windows: use a thread key and functions to associate a void* value per
+thread.
+
+A *thread state* does *not* need to be *attached* when calling these
+functions; they suppl their own locking.
+
+"Python.h"에는 TLS API 선언이 포함되어 있지 않음에 유의하십시오, 스레
+드 로컬 저장소를 사용하려면 "pythread.h"를 포함해야 합니다.
+
+참고:
+
+  None of these API functions handle memory management on behalf of
+  the void* values.  You need to allocate and deallocate them
+  yourself. If the void* values happen to be PyObject*, these
+  functions don't do refcount operations on them either.
+
+
+스레드별 저장소 (TSS - Thread Specific Storage) API
+---------------------------------------------------
+
+TSS API is introduced to supersede the use of the existing TLS API
+within the CPython interpreter.  This API uses a new type "Py_tss_t"
+instead of int to represent thread keys.
+
+Added in version 3.7.
+
+더 보기: "CPython의 스레드-로컬 저장소를 위한 새로운 C-API" (**PEP 539**)
+
+type Py_tss_t
+
+   이 자료 구조는 스레드 키의 상태를 나타내며, 정의는 하부 TLS 구현에
+   따라 달라질 수 있으며, 키의 초기화 상태를 나타내는 내부 필드가 있습
+   니다. 이 구조체에는 공개 멤버가 없습니다.
+
+   Py_LIMITED_API가 정의되지 않을 때, "Py_tss_NEEDS_INIT"로 이 형의 정
+   적 할당이 허용됩니다.
+
+Py_tss_NEEDS_INIT
+
+   이 매크로는 "Py_tss_t" 변수의 초기화자(initializer)로 확장됩니다.
+   이 매크로는 Py_LIMITED_API에서 정의되지 않음에 유의하십시오.
+
+
+동적 할당
+~~~~~~~~~
+
+Py_LIMITED_API로 빌드된 확장 모듈에 필요한, 빌드 시점에 구현이 불투명
+해서 형의 정적 할당이 불가능한 "Py_tss_t"의 동적 할당.
+
+Py_tss_t *PyThread_tss_alloc()
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   "Py_tss_NEEDS_INIT"로 초기화된 값과 같은 상태의 값을 반환하거나, 동
+   적 할당 실패 시 "NULL"을 반환합니다.
+
+void PyThread_tss_free(Py_tss_t *key)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   Free the given *key* allocated by "PyThread_tss_alloc()", after
+   first calling "PyThread_tss_delete()" to ensure any associated
+   thread locals have been unassigned. This is a no-op if the *key*
+   argument is "NULL".
+
+   참고:
+
+     A freed key becomes a dangling pointer. You should reset the key
+     to "NULL".
+
+
+메서드
+~~~~~~
+
+이 함수들의 매개 변수 *key*는 "NULL"이 아니어야 합니다. 또한, 주어진
+"Py_tss_t"가 "PyThread_tss_create()"로 초기화되지 않았으면,
+"PyThread_tss_set()"과 "PyThread_tss_get()"의 동작은 정의되지 않습니다
+.
+
+int PyThread_tss_is_created(Py_tss_t *key)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   주어진 "Py_tss_t"가 "PyThread_tss_create()"로 초기화되었으면 0이 아
+   닌 값을 반환합니다.
+
+int PyThread_tss_create(Py_tss_t *key)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   TSS 키 초기화에 성공하면 0 값을 반환합니다. *key* 인자가 가리키는
+   값이 "Py_tss_NEEDS_INIT"로 초기화되지 않으면 동작이 정의되지 않습니
+   다. 이 함수는 같은 키에서 반복적으로 호출될 수 있습니다 -- 이미 초
+   기화된 키에 대해 호출하면 아무런 일도 하지 않으며 즉시 성공을 반환
+   합니다.
+
+void PyThread_tss_delete(Py_tss_t *key)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   TSS 키를 삭제하여 모든 스레드에서 키와 관련된 값을 잊게 하고, 키의
+   초기화 상태를 초기화되지 않음으로 변경합니다. 파괴된 키는
+   "PyThread_tss_create()"로 다시 초기화할 수 있습니다. 이 함수는 같은
+   키에서 반복적으로 호출될 수 있습니다 -- 이미 파괴된 키에 대해 호출
+   하면 아무런 일도 하지 않습니다.
+
+int PyThread_tss_set(Py_tss_t *key, void *value)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   Return a zero value to indicate successfully associating a void*
+   value with a TSS key in the current thread.  Each thread has a
+   distinct mapping of the key to a void* value.
+
+void *PyThread_tss_get(Py_tss_t *key)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   Return the void* value associated with a TSS key in the current
+   thread.  This returns "NULL" if no value is associated with the key
+   in the current thread.
+
+
+스레드 로컬 저장소 (TLS) API
+----------------------------
+
+버전 3.7부터 폐지됨: 이 API는 스레드별 저장소 (TSS) API로 대체됩니다.
+
+참고:
+
+  이 버전의 API는 "int"로 안전하게 캐스트 할 수 없는 방식으로 네이티브
+  TLS 키가 정의된 플랫폼을 지원하지 않습니다. 이러한 플랫폼에서,
+  "PyThread_create_key()"는 실패 상태로 즉시 반환되며, 다른 TLS 함수는
+  이러한 플랫폼에서 모두 아무런 일도 하지 않습니다.
+
+위에서 언급한 호환성 문제로 인해, 이 버전의 API를 새 코드에서 사용해서
+는 안 됩니다.
+
+int PyThread_create_key()
+    * Part of the 안정 ABI.*
+
+void PyThread_delete_key(int key)
+    * Part of the 안정 ABI.*
+
+int PyThread_set_key_value(int key, void *value)
+    * Part of the 안정 ABI.*
+
+void *PyThread_get_key_value(int key)
+    * Part of the 안정 ABI.*
+
+void PyThread_delete_key_value(int key)
+    * Part of the 안정 ABI.*
+
+void PyThread_ReInitTLS()
+    * Part of the 안정 ABI.*
+
+
+Synchronization Primitives
+==========================
+
+The C-API provides a basic mutual exclusion lock.
+
+type PyMutex
+
+   A mutual exclusion lock.  The "PyMutex" should be initialized to
+   zero to represent the unlocked state.  For example:
+
+      PyMutex mutex = {0};
+
+   Instances of "PyMutex" should not be copied or moved.  Both the
+   contents and address of a "PyMutex" are meaningful, and it must
+   remain at a fixed, writable location in memory.
+
+   참고:
+
+     A "PyMutex" currently occupies one byte, but the size should be
+     considered unstable.  The size may change in future Python
+     releases without a deprecation period.
+
+   Added in version 3.13.
+
+void PyMutex_Lock(PyMutex *m)
+
+   Lock mutex *m*.  If another thread has already locked it, the
+   calling thread will block until the mutex is unlocked.  While
+   blocked, the thread will temporarily detach the *thread state* if
+   one exists.
+
+   Added in version 3.13.
+
+void PyMutex_Unlock(PyMutex *m)
+
+   Unlock mutex *m*. The mutex must be locked --- otherwise, the
+   function will issue a fatal error.
+
+   Added in version 3.13.
+
+int PyMutex_IsLocked(PyMutex *m)
+
+   Returns non-zero if the mutex *m* is currently locked, zero
+   otherwise.
+
+   참고:
+
+     This function is intended for use in assertions and debugging
+     only and should not be used to make concurrency control
+     decisions, as the lock state may change immediately after the
+     check.
+
+   Added in version 3.14.
+
+
+Python Critical Section API
+---------------------------
+
+The critical section API provides a deadlock avoidance layer on top of
+per-object locks for *free-threaded* CPython.  They are intended to
+replace reliance on the *global interpreter lock*, and are no-ops in
+versions of Python with the global interpreter lock.
+
+Critical sections are intended to be used for custom types implemented
+in C-API extensions. They should generally not be used with built-in
+types like "list" and "dict" because their public C-APIs already use
+critical sections internally, with the notable exception of
+"PyDict_Next()", which requires critical section to be acquired
+externally.
+
+Critical sections avoid deadlocks by implicitly suspending active
+critical sections, hence, they do not provide exclusive access such as
+provided by traditional locks like "PyMutex".  When a critical section
+is started, the per-object lock for the object is acquired. If the
+code executed inside the critical section calls C-API functions then
+it can suspend the critical section thereby releasing the per-object
+lock, so other threads can acquire the per-object lock for the same
+object.
+
+Variants that accept "PyMutex" pointers rather than Python objects are
+also available. Use these variants to start a critical section in a
+situation where there is no "PyObject" -- for example, when working
+with a C type that does not extend or wrap "PyObject" but still needs
+to call into the C API in a manner that might lead to deadlocks.
+
+The functions and structs used by the macros are exposed for cases
+where C macros are not available. They should only be used as in the
+given macro expansions. Note that the sizes and contents of the
+structures may change in future Python versions.
+
+참고:
+
+  Operations that need to lock two objects at once must use
+  "Py_BEGIN_CRITICAL_SECTION2".  You *cannot* use nested critical
+  sections to lock more than one object at once, because the inner
+  critical section may suspend the outer critical sections.  This API
+  does not provide a way to lock more than two objects at once.
+
+Example usage:
+
+   static PyObject *
+   set_field(MyObject *self, PyObject *value)
+   {
+      Py_BEGIN_CRITICAL_SECTION(self);
+      Py_SETREF(self->field, Py_XNewRef(value));
+      Py_END_CRITICAL_SECTION();
+      Py_RETURN_NONE;
+   }
+
+In the above example, "Py_SETREF" calls "Py_DECREF", which can call
+arbitrary code through an object's deallocation function.  The
+critical section API avoids potential deadlocks due to reentrancy and
+lock ordering by allowing the runtime to temporarily suspend the
+critical section if the code triggered by the finalizer blocks and
+calls "PyEval_SaveThread()".
+
+Py_BEGIN_CRITICAL_SECTION(op)
+
+   Acquires the per-object lock for the object *op* and begins a
+   critical section.
+
+   In the free-threaded build, this macro expands to:
+
+      {
+          PyCriticalSection _py_cs;
+          PyCriticalSection_Begin(&_py_cs, (PyObject*)(op))
+
+   In the default build, this macro expands to "{".
+
+   Added in version 3.13.
+
+Py_BEGIN_CRITICAL_SECTION_MUTEX(m)
+
+   Locks the mutex *m* and begins a critical section.
+
+   In the free-threaded build, this macro expands to:
+
+      {
+           PyCriticalSection _py_cs;
+           PyCriticalSection_BeginMutex(&_py_cs, m)
+
+   Note that unlike "Py_BEGIN_CRITICAL_SECTION", there is no cast for
+   the argument of the macro - it must be a "PyMutex" pointer.
+
+   On the default build, this macro expands to "{".
+
+   Added in version 3.14.
+
+Py_END_CRITICAL_SECTION()
+
+   Ends the critical section and releases the per-object lock.
+
+   In the free-threaded build, this macro expands to:
+
+          PyCriticalSection_End(&_py_cs);
+      }
+
+   In the default build, this macro expands to "}".
+
+   Added in version 3.13.
+
+Py_BEGIN_CRITICAL_SECTION2(a, b)
+
+   Acquires the per-objects locks for the objects *a* and *b* and
+   begins a critical section.  The locks are acquired in a consistent
+   order (lowest address first) to avoid lock ordering deadlocks.
+
+   In the free-threaded build, this macro expands to:
+
+      {
+          PyCriticalSection2 _py_cs2;
+          PyCriticalSection2_Begin(&_py_cs2, (PyObject*)(a), (PyObject*)(b))
+
+   In the default build, this macro expands to "{".
+
+   Added in version 3.13.
+
+Py_BEGIN_CRITICAL_SECTION2_MUTEX(m1, m2)
+
+   Locks the mutexes *m1* and *m2* and begins a critical section.
+
+   In the free-threaded build, this macro expands to:
+
+      {
+           PyCriticalSection2 _py_cs2;
+           PyCriticalSection2_BeginMutex(&_py_cs2, m1, m2)
+
+   Note that unlike "Py_BEGIN_CRITICAL_SECTION2", there is no cast for
+   the arguments of the macro - they must be "PyMutex" pointers.
+
+   On the default build, this macro expands to "{".
+
+   Added in version 3.14.
+
+Py_END_CRITICAL_SECTION2()
+
+   Ends the critical section and releases the per-object locks.
+
+   In the free-threaded build, this macro expands to:
+
+          PyCriticalSection2_End(&_py_cs2);
+      }
+
+   In the default build, this macro expands to "}".
+
+   Added in version 3.13.
+
+
+Legacy Locking APIs
+-------------------
+
+These APIs are obsolete since Python 3.13 with the introduction of
+"PyMutex".
+
+버전 3.15에서 변경: These APIs are now a simple wrapper around
+"PyMutex".
+
+type PyThread_type_lock
+
+   A pointer to a mutual exclusion lock.
+
+type PyLockStatus
+
+   The result of acquiring a lock with a timeout.
+
+   enumerator PY_LOCK_FAILURE
+
+      Failed to acquire the lock.
+
+   enumerator PY_LOCK_ACQUIRED
+
+      The lock was successfully acquired.
+
+   enumerator PY_LOCK_INTR
+
+      The lock was interrupted by a signal.
+
+PyThread_type_lock PyThread_allocate_lock(void)
+    * Part of the 안정 ABI.*
+
+   Allocate a new lock.
+
+   On success, this function returns a lock; on failure, this function
+   returns "0" without an exception set.
+
+   The caller does not need to hold an *attached thread state*.
+
+   버전 3.15에서 변경: This function now always uses "PyMutex". In
+   prior versions, this would use a lock provided by the operating
+   system.
+
+void PyThread_free_lock(PyThread_type_lock lock)
+    * Part of the 안정 ABI.*
+
+   Destroy *lock*. The lock should not be held by any thread when
+   calling this.
+
+   The caller does not need to hold an *attached thread state*.
+
+PyLockStatus PyThread_acquire_lock_timed(PyThread_type_lock lock, long long microseconds, int intr_flag)
+    * Part of the 안정 ABI.*
+
+   Acquire *lock* with a timeout.
+
+   This will wait for *microseconds* microseconds to acquire the lock.
+   If the timeout expires, this function returns "PY_LOCK_FAILURE". If
+   *microseconds* is "-1", this will wait indefinitely until the lock
+   has been released.
+
+   If *intr_flag* is "1", acquiring the lock may be interrupted by a
+   signal, in which case this function returns "PY_LOCK_INTR". Upon
+   interruption, it's generally expected that the caller makes a call
+   to "Py_MakePendingCalls()" to propagate an exception to Python
+   code.
+
+   If the lock is successfully acquired, this function returns
+   "PY_LOCK_ACQUIRED".
+
+   The caller does not need to hold an *attached thread state*.
+
+int PyThread_acquire_lock(PyThread_type_lock lock, int waitflag)
+    * Part of the 안정 ABI.*
+
+   Acquire *lock*.
+
+   If *waitflag* is "1" and another thread currently holds the lock,
+   this function will wait until the lock can be acquired and will
+   always return "1".
+
+   If *waitflag* is "0" and another thread holds the lock, this
+   function will not wait and instead return "0". If the lock is not
+   held by any other thread, then this function will acquire it and
+   return "1".
+
+   Unlike "PyThread_acquire_lock_timed()", acquiring the lock cannot
+   be interrupted by a signal.
+
+   The caller does not need to hold an *attached thread state*.
+
+int PyThread_release_lock(PyThread_type_lock lock)
+    * Part of the 안정 ABI.*
+
+   Release *lock*. If *lock* is not held, then this function issues a
+   fatal error.
+
+   The caller does not need to hold an *attached thread state*.
+
+
+Operating System Thread APIs
+============================
+
+PYTHREAD_INVALID_THREAD_ID
+
+   Sentinel value for an invalid thread ID.
+
+   This is currently equivalent to "(unsigned long)-1".
+
+unsigned long PyThread_start_new_thread(void (*func)(void*), void *arg)
+    * Part of the 안정 ABI.*
+
+   Start function *func* in a new thread with argument *arg*. The
+   resulting thread is not intended to be joined.
+
+   *func* must not be "NULL", but *arg* may be "NULL".
+
+   On success, this function returns the identifier of the new thread;
+   on failure, this returns "PYTHREAD_INVALID_THREAD_ID".
+
+   The caller does not need to hold an *attached thread state*.
+
+unsigned long PyThread_get_thread_ident(void)
+    * Part of the 안정 ABI.*
+
+   Return the identifier of the current thread, which will never be
+   zero.
+
+   This function cannot fail, and the caller does not need to hold an
+   *attached thread state*.
+
+   더 보기: "threading.get_ident()"
+
+PyObject *PyThread_GetInfo(void)
+    * Part of the 안정 ABI 버전 3.3 이후로.*
+
+   Get general information about the current thread in the form of a
+   struct sequence object. This information is accessible as
+   "sys.thread_info" in Python.
+
+   On success, this returns a new *strong reference* to the thread
+   information; on failure, this returns "NULL" with an exception set.
+
+   The caller must hold an *attached thread state*.
+
+PY_HAVE_THREAD_NATIVE_ID
+
+   This macro is defined when the system supports native thread IDs.
+
+unsigned long PyThread_get_thread_native_id(void)
+    * Part of the 안정 ABI on platforms with native thread IDs.*
+
+   Get the native identifier of the current thread as it was assigned
+   by the operating system's kernel, which will never be less than
+   zero.
+
+   This function is only available when "PY_HAVE_THREAD_NATIVE_ID" is
+   defined.
+
+   This function cannot fail, and the caller does not need to hold an
+   *attached thread state*.
+
+   더 보기: "threading.get_native_id()"
+
+void PyThread_exit_thread(void)
+    * Part of the 안정 ABI.*
+
+   Terminate the current thread. This function is generally considered
+   unsafe and should be avoided. It is kept solely for backwards
+   compatibility.
+
+   This function is only safe to call if all functions in the full
+   call stack are written to safely allow it.
+
+   경고:
+
+     If the current system uses POSIX threads (also known as
+     "pthreads"), this calls *pthread_exit(3)*, which attempts to
+     unwind the stack and call C++ destructors on some libc
+     implementations. However, if a "noexcept" function is reached, it
+     may terminate the process. Other systems, such as macOS, do
+     unwinding.On Windows, this function calls "_endthreadex()", which
+     kills the thread without calling C++ destructors.In any case,
+     there is a risk of corruption on the thread's stack.
+
+   버전 3.14부터 폐지됨.
+
+void PyThread_init_thread(void)
+    * Part of the 안정 ABI.*
+
+   Initialize "PyThread*" APIs. Python executes this function
+   automatically, so there's little need to call it from an extension
+   module.
+
+int PyThread_set_stacksize(size_t size)
+    * Part of the 안정 ABI.*
+
+   Set the stack size of the current thread to *size* bytes.
+
+   This function returns "0" on success, "-1" if *size* is invalid, or
+   "-2" if the system does not support changing the stack size. This
+   function does not set exceptions.
+
+   The caller does not need to hold an *attached thread state*.
+
+size_t PyThread_get_stacksize(void)
+    * Part of the 안정 ABI.*
+
+   Return the stack size of the current thread in bytes, or "0" if the
+   system's default stack size is in use.
+
+   The caller does not need to hold an *attached thread state*.

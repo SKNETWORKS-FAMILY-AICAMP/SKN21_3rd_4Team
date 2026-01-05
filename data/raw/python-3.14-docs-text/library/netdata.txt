@@ -1,0 +1,122 @@
+인터넷 데이터 처리
+******************
+
+이 장에서는 인터넷에서 일반적으로 사용되는 데이터 형식 처리를 지원하는
+모듈에 관해 설명합니다.
+
+* "email" --- 전자 메일과 MIME 처리 패키지
+
+  * "email.message": 전자 메일 메시지 표현
+
+  * "email.parser": 전자 메일 메시지 구문 분석
+
+    * FeedParser API
+
+    * Parser API
+
+    * 추가 사항
+
+  * "email.generator": MIME 문서 생성
+
+  * "email.policy": 정책 객체
+
+  * "email.errors": 예외와 결함 클래스
+
+  * "email.headerregistry": 사용자 정의 헤더 객체
+
+  * "email.contentmanager": MIME 콘텐츠 관리
+
+    * 콘텐츠 관리자 인스턴스
+
+  * "email": 예제
+
+  * "email.message.Message": "compat32" API를 사용하여 이메일 메시지
+    표현하기
+
+  * "email.mime": 처음부터 이메일과 MIME 객체 만들기
+
+  * "email.header": 국제화된 헤더
+
+  * "email.charset": 문자 집합 표현
+
+  * "email.encoders": 인코더
+
+  * "email.utils": 기타 유틸리티
+
+  * "email.iterators": 이터레이터
+
+* "json" --- JSON 인코더와 디코더
+
+  * 기본 사용법
+
+  * 인코더와 디코더
+
+  * 예외
+
+  * 표준 준수와 상호 운용성
+
+    * 문자 인코딩
+
+    * 무한대와 NaN 숫자 값
+
+    * 오브젝트 내에서 반복된 이름
+
+    * 오브젝트나 배열이 아닌 최상윗값
+
+    * 구현 제약 사항
+
+  * Command-line interface
+
+    * Command-line options
+
+* "mailbox" --- 다양한 형식의 사서함 조작하기
+
+  * "Mailbox" 객체
+
+    * "Maildir" 객체
+
+    * "mbox" 객체
+
+    * "MH" 객체
+
+    * "Babyl" 객체
+
+    * "MMDF" 객체
+
+  * "Message" 객체
+
+    * "MaildirMessage" 객체
+
+    * "mboxMessage" 객체
+
+    * "MHMessage" 객체
+
+    * "BabylMessage" 객체
+
+    * "MMDFMessage" 객체
+
+  * 예외
+
+  * 예
+
+* "mimetypes" --- 파일명을 MIME 유형에 매핑
+
+  * MimeTypes objects
+
+  * Command-line usage
+
+  * Command-line example
+
+* "base64" --- Base16, Base32, Base64, Base85 데이터 인코딩
+
+  * RFC 4648 Encodings
+
+  * Base85 Encodings
+
+  * Legacy Interface
+
+  * Security Considerations
+
+* "binascii" --- 바이너리와 ASCII 간의 변환
+
+* "quopri" --- MIME quoted-printable 데이터 인코딩과 디코딩

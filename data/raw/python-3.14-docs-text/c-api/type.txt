@@ -1,0 +1,643 @@
+형 객체
+*******
+
+type PyTypeObject
+    * Part of the 제한된 API (as an opaque struct).*
+
+   내장형을 기술하는 데 사용되는 객체의 C 구조체.
+
+PyTypeObject PyType_Type
+    * Part of the 안정 ABI.*
+
+   이것은 형 객체의 형 객체입니다; 파이썬 계층의 "type"과 같은 객체입
+   니다.
+
+int PyType_Check(PyObject *o)
+
+   객체 *o*가 표준형 객체에서 파생된 형의 인스턴스를 포함하여 형 객체
+   면 0이 아닌 값을 반환합니다. 다른 모든 경우 0을 반환합니다. 이 함수
+   는 항상 성공합니다.
+
+int PyType_CheckExact(PyObject *o)
+
+   객체 *o*가 형 객체이지만, 표준형 객체의 서브 형이 아니면 0이 아닌
+   값을 반환합니다. 다른 모든 경우 0을 반환합니다. 이 함수는 항상 성공
+   합니다.
+
+unsigned int PyType_ClearCache()
+    * Part of the 안정 ABI.*
+
+   내부 조회 캐시를 지웁니다. 현재의 버전 태그를 반환합니다.
+
+unsigned long PyType_GetFlags(PyTypeObject *type)
+    * Part of the 안정 ABI.*
+
+   *type*의 "tp_flags" 멤버를 반환합니다. 이 함수는 주로
+   "Py_LIMITED_API"와 함께 사용하기 위한 것입니다; 개별 플래그 비트는
+   파이썬 배포 간에 안정적인 것으로 보장되지만, "tp_flags" 자체에 대한
+   액세스는 제한된 API 일부가 아닙니다.
+
+   Added in version 3.2.
+
+   버전 3.4에서 변경: 반환형은 이제 "long"이 아니라 "unsigned long"입
+   니다.
+
+PyObject *PyType_GetDict(PyTypeObject *type)
+
+   Return the type object's internal namespace, which is otherwise
+   only exposed via a read-only proxy ("cls.__dict__"). This is a
+   replacement for accessing "tp_dict" directly. The returned
+   dictionary must be treated as read-only.
+
+   This function is meant for specific embedding and language-binding
+   cases, where direct access to the dict is necessary and indirect
+   access (e.g. via the proxy or "PyObject_GetAttr()") isn't adequate.
+
+   Extension modules should continue to use "tp_dict", directly or
+   indirectly, when setting up their own types.
+
+   Added in version 3.12.
+
+void PyType_Modified(PyTypeObject *type)
+    * Part of the 안정 ABI.*
+
+   형과 그것의 모든 서브 형에 대한 내부 검색 캐시를 무효로 합니다. 형
+   의 어트리뷰트나 베이스 클래스를 수동으로 수정한 후에는 이 함수를 호
+   출해야 합니다.
+
+int PyType_AddWatcher(PyType_WatchCallback callback)
+
+   Register *callback* as a type watcher. Return a non-negative
+   integer ID which must be passed to future calls to
+   "PyType_Watch()". In case of error (e.g. no more watcher IDs
+   available), return "-1" and set an exception.
+
+   In free-threaded builds, "PyType_AddWatcher()" is not thread-safe,
+   so it must be called at start up (before spawning the first
+   thread).
+
+   Added in version 3.12.
+
+int PyType_ClearWatcher(int watcher_id)
+
+   Clear watcher identified by *watcher_id* (previously returned from
+   "PyType_AddWatcher()"). Return "0" on success, "-1" on error (e.g.
+   if *watcher_id* was never registered.)
+
+   An extension should never call "PyType_ClearWatcher" with a
+   *watcher_id* that was not returned to it by a previous call to
+   "PyType_AddWatcher()".
+
+   Added in version 3.12.
+
+int PyType_Watch(int watcher_id, PyObject *type)
+
+   Mark *type* as watched. The callback granted *watcher_id* by
+   "PyType_AddWatcher()" will be called whenever "PyType_Modified()"
+   reports a change to *type*. (The callback may be called only once
+   for a series of consecutive modifications to *type*, if
+   "_PyType_Lookup()" is not called on *type* between the
+   modifications; this is an implementation detail and subject to
+   change.)
+
+   An extension should never call "PyType_Watch" with a *watcher_id*
+   that was not returned to it by a previous call to
+   "PyType_AddWatcher()".
+
+   Added in version 3.12.
+
+int PyType_Unwatch(int watcher_id, PyObject *type)
+
+   Mark *type* as not watched. This undoes a previous call to
+   "PyType_Watch()". *type* must not be "NULL".
+
+   An extension should never call this function with a *watcher_id*
+   that was not returned to it by a previous call to
+   "PyType_AddWatcher()".
+
+   On success, this function returns "0". On failure, this function
+   returns "-1" with an exception set.
+
+   Added in version 3.12.
+
+typedef int (*PyType_WatchCallback)(PyObject *type)
+
+   Type of a type-watcher callback function.
+
+   The callback must not modify *type* or cause "PyType_Modified()" to
+   be called on *type* or any type in its MRO; violating this rule
+   could cause infinite recursion.
+
+   Added in version 3.12.
+
+int PyType_HasFeature(PyTypeObject *o, int feature)
+
+   형 객체 *o*가 기능 *feature*를 설정하면 0이 아닌 값을 반환합니다.
+   형 기능은 단일 비트 플래그로 표시됩니다.
+
+int PyType_FastSubclass(PyTypeObject *type, int flag)
+
+   Return non-zero if the type object *type* sets the subclass flag
+   *flag*. Subclass flags are denoted by "Py_TPFLAGS_*_SUBCLASS". This
+   function is used by many "_Check" functions for common types.
+
+   더 보기:
+
+     "PyObject_TypeCheck()", which is used as a slower alternative in
+     "_Check" functions for types that don't come with subclass flags.
+
+int PyType_IS_GC(PyTypeObject *o)
+
+   형 객체가 순환 검출기에 대한 지원을 포함하고 있으면 참을 반환합니다
+   . 이것은 형 플래그 "Py_TPFLAGS_HAVE_GC"를 검사합니다.
+
+int PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b)
+    * Part of the 안정 ABI.*
+
+   *a*가 *b*의 서브 형이면 참을 반환합니다.
+
+   이 함수는 실제 서브 형만 검사합니다. 즉, "__subclasscheck__()"가
+   *b*에 대해 호출되지 않습니다. "issubclass()"가 수행하는 것과 같은
+   검사를 하려면 "PyObject_IsSubclass()"를 호출하십시오.
+
+PyObject *PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Generic handler for the "tp_alloc" slot of a type object.  Uses
+   Python's default memory allocation mechanism to allocate memory for
+   a new instance, zeros the memory, then initializes the memory as if
+   by calling "PyObject_Init()" or "PyObject_InitVar()".
+
+   Do not call this directly to allocate memory for an object; call
+   the type's "tp_alloc" slot instead.
+
+   For types that support garbage collection (i.e., the
+   "Py_TPFLAGS_HAVE_GC" flag is set), this function behaves like
+   "PyObject_GC_New" or "PyObject_GC_NewVar" (except the memory is
+   guaranteed to be zeroed before initialization), and should be
+   paired with "PyObject_GC_Del()" in "tp_free". Otherwise, it behaves
+   like "PyObject_New" or "PyObject_NewVar" (except the memory is
+   guaranteed to be zeroed before initialization) and should be paired
+   with "PyObject_Free()" in "tp_free".
+
+PyObject *PyType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Generic handler for the "tp_new" slot of a type object.  Creates a
+   new instance using the type's "tp_alloc" slot and returns the
+   resulting object.
+
+int PyType_Ready(PyTypeObject *type)
+    * Part of the 안정 ABI.*
+
+   형 개체를 마무리합니다. 초기화를 완료하려면 모든 형 객체에 대해 이
+   메서드를 호출해야 합니다. 이 함수는 형의 베이스 클래스에서 상속된
+   슬롯을 추가합니다. 성공 시 "0"을 반환하고, 오류 시 "-1"을 반환하고
+   예외를 설정합니다.
+
+   참고:
+
+     If some of the base classes implements the GC protocol and the
+     provided type does not include the "Py_TPFLAGS_HAVE_GC" in its
+     flags, then the GC protocol will be automatically implemented
+     from its parents. On the contrary, if the type being created does
+     include "Py_TPFLAGS_HAVE_GC" in its flags then it **must**
+     implement the GC protocol itself by at least implementing the
+     "tp_traverse" handle.
+
+PyObject *PyType_GetName(PyTypeObject *type)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.11 이후로.*
+
+   Return the type's name. Equivalent to getting the type's "__name__"
+   attribute.
+
+   Added in version 3.11.
+
+PyObject *PyType_GetQualName(PyTypeObject *type)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.11 이후로.*
+
+   Return the type's qualified name. Equivalent to getting the type's
+   "__qualname__" attribute.
+
+   Added in version 3.11.
+
+PyObject *PyType_GetFullyQualifiedName(PyTypeObject *type)
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   Return the type's fully qualified name. Equivalent to
+   "f"{type.__module__}.{type.__qualname__}"", or "type.__qualname__"
+   if "type.__module__" is not a string or is equal to ""builtins"".
+
+   Added in version 3.13.
+
+PyObject *PyType_GetModuleName(PyTypeObject *type)
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   Return the type's module name. Equivalent to getting the
+   "type.__module__" attribute.
+
+   Added in version 3.13.
+
+void *PyType_GetSlot(PyTypeObject *type, int slot)
+    * Part of the 안정 ABI 버전 3.4 이후로.*
+
+   지정된 슬롯에 저장된 함수 포인터를 반환합니다. 결과가 "NULL"이면,
+   슬롯이 "NULL"이거나 함수가 유효하지 않은 매개 변수로 호출되었음을
+   나타냅니다. 호출자는 일반적으로 결과 포인터를 적절한 함수 형으로 캐
+   스팅합니다.
+
+   *slot* 인자의 가능한 값은 "PyType_Slot.slot"을 참조하십시오.
+
+   Added in version 3.4.
+
+   버전 3.10에서 변경: "PyType_GetSlot()" can now accept all types.
+   Previously, it was limited to heap types.
+
+PyObject *PyType_GetModule(PyTypeObject *type)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   "PyType_FromModuleAndSpec()"를 사용하여 형을 만들 때 지정된 형과 관
+   련된 모듈 객체를 반환합니다.
+
+   주어진 형과 연관된 모듈이 없으면, "TypeError"를 설정하고 "NULL"을
+   반환합니다.
+
+   이 함수는 일반적으로 메서드가 정의된 모듈을 가져오는 데 사용됩니다.
+   이러한 메서드에서, "PyType_GetModule(Py_TYPE(self))"는 의도한 결과
+   를 반환하지 않을 수 있음에 유의하십시오. "Py_TYPE(self)"는 의도한
+   클래스의 *서브 클래스*일 수 있으며, 서브 클래스가 반드시 슈퍼 클래
+   스와 같은 모듈에 정의된 것은 아닙니다. 메서드를 정의하는 클래스를
+   얻으려면 "PyCMethod"를 참조하십시오. "PyCMethod"를 사용할 수 없는
+   경우는 "PyType_GetModuleByDef()"를 참조하세요.
+
+   Added in version 3.9.
+
+void *PyType_GetModuleState(PyTypeObject *type)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   주어진 형과 관련된 모듈 객체의 상태를 반환합니다.
+   "PyType_GetModule()" 결과에 "PyModule_GetState()"를 호출하는 바로
+   가기입니다.
+
+   주어진 형과 연관된 모듈이 없으면, "TypeError"를 설정하고 "NULL"을
+   반환합니다.
+
+   *type*에 연관된 모듈이 있지만, 상태가 "NULL"이면, 예외를 설정하지
+   않고 "NULL"을 반환합니다.
+
+   Added in version 3.9.
+
+PyObject *PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
+    *반환값: 빌린 참조.** Part of the 안정 ABI 버전 3.13 이후로.*
+
+   Find the first superclass whose module was created from the given
+   "PyModuleDef" *def*, and return that module.
+
+   모듈을 찾을 수 없으면, "TypeError"를 발생시키고 "NULL"을 반환합니다
+   .
+
+   This function is intended to be used together with
+   "PyModule_GetState()" to get module state from slot methods (such
+   as "tp_init" or "nb_add") and other places where a method's
+   defining class cannot be passed using the "PyCMethod" calling
+   convention.
+
+   The returned reference is *borrowed* from *type*, and will be valid
+   as long as you hold a reference to *type*. Do not release it with
+   "Py_DECREF()" or similar.
+
+   Added in version 3.11.
+
+int PyType_GetBaseByToken(PyTypeObject *type, void *token, PyTypeObject **result)
+    * Part of the 안정 ABI 버전 3.14 이후로.*
+
+   Find the first superclass in *type*'s *method resolution order*
+   whose "Py_tp_token" token is equal to the given one.
+
+   * If found, set **result* to a new *strong reference* to it and
+     return "1".
+
+   * If not found, set **result* to "NULL" and return "0".
+
+   * On error, set **result* to "NULL" and return "-1" with an
+     exception set.
+
+   The *result* argument may be "NULL", in which case **result* is not
+   set. Use this if you need only the return value.
+
+   The *token* argument may not be "NULL".
+
+   Added in version 3.14.
+
+int PyUnstable_Type_AssignVersionTag(PyTypeObject *type)
+
+   *이것은 불안정 API. It may change without warning in minor
+   releases.*
+
+   Attempt to assign a version tag to the given type.
+
+   Returns 1 if the type already had a valid version tag or a new one
+   was assigned, or 0 if a new tag could not be assigned.
+
+   Added in version 3.12.
+
+int PyType_SUPPORTS_WEAKREFS(PyTypeObject *type)
+
+   Return true if instances of *type* support creating weak
+   references, false otherwise. This function always succeeds. *type*
+   must not be "NULL".
+
+   더 보기:
+
+     * 약한 참조 객체
+
+     * "weakref"
+
+
+힙에 할당된 형 만들기
+=====================
+
+다음 함수와 구조체는 힙 형을 만드는 데 사용됩니다.
+
+PyObject *PyType_FromMetaclass(PyTypeObject *metaclass, PyObject *module, PyType_Spec *spec, PyObject *bases)
+    * Part of the 안정 ABI 버전 3.12 이후로.*
+
+   *spec*으로 힙 형을 만들고 반환합니다 ("Py_TPFLAGS_HEAPTYPE"을 찹고
+   하세요).
+
+   The metaclass *metaclass* is used to construct the resulting type
+   object. When *metaclass* is "NULL", the metaclass is derived from
+   *bases* (or *Py_tp_base[s]* slots if *bases* is "NULL", see below).
+
+   Metaclasses that override "tp_new" are not supported, except if
+   "tp_new" is "NULL".
+
+   The *bases* argument can be used to specify base classes; it can
+   either be only one class or a tuple of classes. If *bases* is
+   "NULL", the "Py_tp_bases" slot is used instead. If that also is
+   "NULL", the "Py_tp_base" slot is used instead. If that also is
+   "NULL", the new type derives from "object".
+
+   *module* 인자는 새 클래스가 정의된 모듈을 기록하는 데 사용할 수 있
+   습니다. 모듈 객체나 "NULL"이어야 합니다. "NULL"이 아니면, 모듈은 새
+   형과 연관되며 나중에 "PyType_GetModule()"로 가져올 수 있습니다. 연
+   관된 모듈은 서브 클래스에 상속되지 않습니다; 각 클래스에 대해 개별
+   적으로 지정해야 합니다.
+
+   이 함수는 새로운 형에 "PyType_Ready()"를 호출합니다.
+
+   Note that this function does *not* fully match the behavior of
+   calling "type()" or using the "class" statement. With user-provided
+   base types or metaclasses, prefer calling "type" (or the metaclass)
+   over "PyType_From*" functions. Specifically:
+
+   * "__new__()" is not called on the new class (and it must be set to
+     "type.__new__").
+
+   * "__init__()" is not called on the new class.
+
+   * "__init_subclass__()" is not called on any bases.
+
+   * "__set_name__()" is not called on new descriptors.
+
+   Added in version 3.12.
+
+PyObject *PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.10 이후로.*
+
+   "PyType_FromMetaclass(NULL, module, spec, bases)"와 동등합니다.
+
+   Added in version 3.9.
+
+   버전 3.10에서 변경: The function now accepts a single class as the
+   *bases* argument and "NULL" as the "tp_doc" slot.
+
+   버전 3.12에서 변경: The function now finds and uses a metaclass
+   corresponding to the provided base classes.  Previously, only
+   "type" instances were returned.The "tp_new" of the metaclass is
+   *ignored*. which may result in incomplete initialization. Creating
+   classes whose metaclass overrides "tp_new" is deprecated.
+
+   버전 3.14에서 변경: Creating classes whose metaclass overrides
+   "tp_new" is no longer allowed.
+
+PyObject *PyType_FromSpecWithBases(PyType_Spec *spec, PyObject *bases)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.3 이후로.*
+
+   "PyType_FromMetaclass(NULL, NULL, spec, bases)"와 동등합니다.
+
+   Added in version 3.3.
+
+   버전 3.12에서 변경: The function now finds and uses a metaclass
+   corresponding to the provided base classes.  Previously, only
+   "type" instances were returned.The "tp_new" of the metaclass is
+   *ignored*. which may result in incomplete initialization. Creating
+   classes whose metaclass overrides "tp_new" is deprecated.
+
+   버전 3.14에서 변경: Creating classes whose metaclass overrides
+   "tp_new" is no longer allowed.
+
+PyObject *PyType_FromSpec(PyType_Spec *spec)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   "PyType_FromMetaclass(NULL, NULL, spec, NULL)"와 동등합니다.
+
+   버전 3.12에서 변경: The function now finds and uses a metaclass
+   corresponding to the base classes provided in *Py_tp_base[s]*
+   slots. Previously, only "type" instances were returned.The "tp_new"
+   of the metaclass is *ignored*. which may result in incomplete
+   initialization. Creating classes whose metaclass overrides "tp_new"
+   is deprecated.
+
+   버전 3.14에서 변경: Creating classes whose metaclass overrides
+   "tp_new" is no longer allowed.
+
+int PyType_Freeze(PyTypeObject *type)
+    * Part of the 안정 ABI 버전 3.14 이후로.*
+
+   Make a type immutable: set the "Py_TPFLAGS_IMMUTABLETYPE" flag.
+
+   All base classes of *type* must be immutable.
+
+   On success, return "0". On error, set an exception and return "-1".
+
+   The type must not be used before it's made immutable. For example,
+   type instances must not be created before the type is made
+   immutable.
+
+   Added in version 3.14.
+
+type PyType_Spec
+    * Part of the 안정 ABI (including all members).*
+
+   형의 행동을 정의하는 구조체.
+
+   const char *name
+
+      형의 이름, "PyTypeObject.tp_name"을 설정하는 데 사용됩니다.
+
+   int basicsize
+
+      양수면, 인스턴스의 바이트 수 크기를 지정합니다.
+      "PyTypeObject.tp_basicsize"를 설정하는 데 사용됩니다.
+
+      If zero, specifies that "tp_basicsize" should be inherited.
+
+      If negative, the absolute value specifies how much space
+      instances of the class need *in addition* to the superclass. Use
+      "PyObject_GetTypeData()" to get a pointer to subclass-specific
+      memory reserved this way. For negative "basicsize", Python will
+      insert padding when needed to meet "tp_basicsize"'s alignment
+      requirements.
+
+      버전 3.12에서 변경: Previously, this field could not be
+      negative.
+
+   int itemsize
+
+      가변 크기 형의 한 요소의 바이트 수 크기.
+      "PyTypeObject.tp_itemsize"를 설정하는 데 사용됩니다. 주의 사항은
+      "tp_itemsize" 설명서를 참조하세요.
+
+      If zero, "tp_itemsize" is inherited. Extending arbitrary
+      variable-sized classes is dangerous, since some types use a
+      fixed offset for variable-sized memory, which can then overlap
+      fixed-sized memory used by a subclass. To help prevent mistakes,
+      inheriting "itemsize" is only possible in the following
+      situations:
+
+      * 베이스는 가변 크기가 아닙니다 ("tp_itemsize" 입니다).
+
+      * The requested "PyType_Spec.basicsize" is positive, suggesting
+        that the memory layout of the base class is known.
+
+      * The requested "PyType_Spec.basicsize" is zero, suggesting that
+        the subclass does not access the instance's memory directly.
+
+      * With the "Py_TPFLAGS_ITEMS_AT_END" flag.
+
+   unsigned int flags
+
+      형 플래그, "PyTypeObject.tp_flags"를 설정하는 데 사용됩니다.
+
+      "Py_TPFLAGS_HEAPTYPE" 플래그가 설정되어 있지 않으면,
+      "PyType_FromSpecWithBases()" 가 자동으로 플래그를 설정합니다.
+
+   PyType_Slot *slots
+
+      "PyType_Slot" 구조체의 배열. 특수 슬롯값 "{0, NULL}"에 의해 종료
+      됩니다.
+
+      Each slot ID should be specified at most once.
+
+type PyType_Slot
+    * Part of the 안정 ABI (including all members).*
+
+   형의 선택적 기능을 정의하는 구조체, 슬롯 ID와 값 포인터를 포함합니
+   다.
+
+   int slot
+
+      슬롯 ID.
+
+      슬롯 ID는 구조체 "PyTypeObject", "PyNumberMethods",
+      "PySequenceMethods", "PyMappingMethods" 및 "PyAsyncMethods" 의
+      필드 이름에 "Py_" 접두사를 붙인 이름을 사용합니다. 예를 들어, :
+
+      * "Py_tp_dealloc" to set "PyTypeObject.tp_dealloc"
+
+      * "Py_nb_add" to set "PyNumberMethods.nb_add"
+
+      * "Py_sq_length" to set "PySequenceMethods.sq_length"
+
+      An additional slot is supported that does not correspond to a
+      "PyTypeObject" struct field:
+
+      * "Py_tp_token"
+
+      다음 “offset” 필드는 "PyType_Slot"을 사용하여 설정할 수 없습니다
+      :
+
+      * "tp_weaklistoffset" (가능하면 대신
+        "Py_TPFLAGS_MANAGED_WEAKREF"를 사용하세요)
+
+      * "tp_dictoffset" (가능하면 대신 "Py_TPFLAGS_MANAGED_DICT"를 사
+        용하세요)
+
+      * "tp_vectorcall_offset" (PyMemberDef에서
+        ""__vectorcalloffset__""를 사용하세요)
+
+      If it is not possible to switch to a "MANAGED" flag (for
+      example, for vectorcall or to support Python older than 3.12),
+      specify the offset in "Py_tp_members". See PyMemberDef
+      documentation for details.
+
+      The following internal fields cannot be set at all when creating
+      a heap type:
+
+      * "tp_dict", "tp_mro", "tp_cache", "tp_subclasses", and
+        "tp_weaklist".
+
+      일부 플랫폼에서는 "Py_tp_bases"나 "Py_tp_base"를 설정하는 것이
+      문제가 될 수 있습니다. 문제를 피하려면, 대신
+      "PyType_FromSpecWithBases()" 의 *bases* 인자를 사용하십시오.
+
+      버전 3.9에서 변경: "PyBufferProcs"의 슬롯은 제한 없는 API에서 설
+      정할 수 있습니다.
+
+      버전 3.11에서 변경: "bf_getbuffer" and "bf_releasebuffer" are
+      now available under the limited API.
+
+      버전 3.14에서 변경: The field "tp_vectorcall" can now be set
+      using "Py_tp_vectorcall".  See the field's documentation for
+      details.
+
+   void *pfunc
+
+      슬롯의 원하는 값입니다. 대부분 이것은 함수에 대한 포인터입니다.
+
+      *pfunc* values may not be "NULL", except for the following
+      slots:
+
+      * "Py_tp_doc"
+
+      * "Py_tp_token" (for clarity, prefer "Py_TP_USE_SPEC" rather
+        than "NULL")
+
+Py_tp_token
+    * Part of the 안정 ABI 버전 3.14 이후로.*
+
+   A "slot" that records a static memory layout ID for a class.
+
+   If the "PyType_Spec" of the class is statically allocated, the
+   token can be set to the spec using the special value
+   "Py_TP_USE_SPEC":
+
+      static PyType_Slot foo_slots[] = {
+         {Py_tp_token, Py_TP_USE_SPEC},
+
+   It can also be set to an arbitrary pointer, but you must ensure
+   that:
+
+   * The pointer outlives the class, so it's not reused for something
+     else while the class exists.
+
+   * It "belongs" to the extension module where the class lives, so it
+     will not clash with other extensions.
+
+   Use "PyType_GetBaseByToken()" to check if a class's superclass has
+   a given token -- that is, check whether the memory layout is
+   compatible.
+
+   To get the token for a given class (without considering
+   superclasses), use "PyType_GetSlot()" with "Py_tp_token".
+
+   Added in version 3.14.
+
+   Py_TP_USE_SPEC
+       * Part of the 안정 ABI 버전 3.14 이후로.*
+
+      Used as a value with "Py_tp_token" to set the token to the
+      class's "PyType_Spec". Expands to "NULL".
+
+      Added in version 3.14.

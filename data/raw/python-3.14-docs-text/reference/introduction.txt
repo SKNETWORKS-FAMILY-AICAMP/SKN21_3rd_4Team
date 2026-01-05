@@ -1,0 +1,196 @@
+1. 개요
+*******
+
+이 레퍼런스 설명서는 파이썬 프로그래밍 언어를 설명합니다. 자습서를 목
+표로 하고 있지 않습니다.
+
+가능한 한 정확하려고 노력하고 있지만, 문법과 어휘 분석 이외의 모든 것
+에는 형식 규격보다는 자연어를 사용합니다. 이 선택이 평균적인 독자들이
+문서를 좀 더 잘 이해하도록 만들지만, 동시에 모호해질 가능성 역시 만듭
+니다. 결과적으로, 만약 여러분이 화성에서 왔고 이 문서만으로 파이썬을
+다시 구현하려고 하면, 아마도 여러 가지를 짐작해야 할 것이고 결국 많이
+다른 언어를 만드는 것으로 끝날 것입니다. 반면에, 여러분이 파이썬을 사
+용하고 있고 언어의 특정 영역에 대한 정확한 규칙에 대해 궁금해하고 있다
+면 거의 확실히 이곳에서 답을 찾을 수 있습니다. 좀 더 형식화된 정의를
+보고 싶다면, 아마도 여러분의 시간을 기부하는 편이 좋습니다 --- 그렇지
+않으면 클로닝 기계를 발명하거나 :-).
+
+참조 문서에 너무 많은 구현 세부 사항을 넣는 것은 위험합니다. 구현은 변
+경될 것이고 같은 언어의 다른 구현도 좀 다른 방식으로 동작할 수 있습니
+다. 반면에 (대안 구현이 점차 지지도를 높여가고 있기는 하지만) CPython
+은 가장 널리 사용되는 파이썬 구현이고, 그것의 특별한 경우 들은 때로 언
+급할 가치가 있습니다. 구현이 추가의 제약을 내포하고 있는 경우는 특히
+그렇습니다. 그래서, 텍스트 중간중간 짧은 "구현 노트" 가 튀어나오는 것
+을 보게 될 것입니다.
+
+모든 파이썬 구현에는 많은 내장 표준 모듈들이 따라옵니다. 이것들은 파이
+썬 표준 라이브러리 에 기술되어 있습니다. 언어 정의에 주목할 만한 방식
+으로 관계될 경우 몇몇 내장 모듈들은 따로 언급됩니다.
+
+
+1.1. 대안 구현들
+================
+
+눈에 띄게 널리 사용되는 파이썬 구현이 존재하기는 하지만, 특정한 관심사
+를 가진 대상들에게 호소력을 가진 여러 대안 구현들이 존재합니다.
+
+알려진 구현들은:
+
+CPython
+   원조이기도 하고 가장 잘 관리되고 있는 C로 작성된 파이썬 구현입니다.
+   언어의 새로운 기능은 보통 여기에서 처음 등장합니다.
+
+Jython
+   파이썬 자바구현. 이 구현은 자바 응용 프로그램을 위한 스크립트 언어
+   로 사용되거나, 자바 클래스 라이브러리를 활용하는 응용 프로그램을 만
+   드는데 사용될 수 있습니다. 종종 자바 라이브러리의 테스트를 만드는
+   데 사용되기도 합니다. 더 자세한 정보는 Jython 웹사이트 에서 찾을 수
+   있습니다.
+
+Python for .NET
+   이 구현은 실제로는 CPython 구현을 사용하지만, 매니지드(managed)
+   .NET 응용 프로그램이고 .NET 라이브러리를 제공합니다. Bryan Lloyd가
+   만들었습니다다. 더 자세한 정보는 Python for .NET 홈페이지 에서 제공
+   됩니다.
+
+IronPython
+   .NET을 위한 대안 파이썬. Python.NET 과는 달리 이것은 IL을 생성하고,
+   파이썬 코드를 .NET 어셈블리로 직접 컴파일하는 완전한 파이썬 구현입
+   니다. Jim Hugunin 이 만들었는데, Jython 의 원저자이기도 합니다. 자
+   세한 정보는 IronPython 웹사이트 에서 얻을 수 있습니다.
+
+PyPy
+   완전히 파이썬으로 작성된 파이썬 구현. 스택 리스(stackless) 지원이나
+   JIT 컴파일러와 같이 다른 구현에서는 찾을 수 없는 고급 기능을 제공합
+   니다. 이 프로젝트의 목표 중 하나는 (파이썬으로 쓰였기 때문에) 인터
+   프리터 수정을 쉽게 만들어서 언어 자체에 대한 실험을 북돋는 것입니다
+   . 자세한 정보는 PyPy 프로젝트의 홈페이지 에서 찾을 수 있습니다.
+
+각 구현은 이 설명서에서 설명되는 언어와 조금씩 각기 다른 방법으로 벗어
+나거나, 표준 파이썬 문서에서 다루는 범위 밖의 특별한 정보들을 소개합니
+다. 여러분이 사용 중인 구현에 대해 어떤 것을 더 알아야 하는지 판단하기
+위해서는 구현 별로 제공되는 문서를 참조할 필요가 있습니다.
+
+
+1.2. 표기법
+===========
+
+The descriptions of lexical analysis and syntax use a grammar notation
+that is a mixture of EBNF and PEG. For example:
+
+   name:   letter (letter | digit | "_")*
+   letter: "a"..."z" | "A"..."Z"
+   digit:  "0"..."9"
+
+In this example, the first line says that a "name" is a "letter"
+followed by a sequence of zero or more "letter"s, "digit"s, and
+underscores. A "letter" in turn is any of the single characters "'a'"
+through "'z'" and "A" through "Z"; a "digit" is a single character
+from "0" to "9".
+
+Each rule begins with a name (which identifies the rule that's being
+defined) followed by a colon, ":". The definition to the right of the
+colon uses the following syntax elements:
+
+* "name": A name refers to another rule. Where possible, it is a link
+  to the rule's definition.
+
+  * "TOKEN": An uppercase name refers to a *token*. For the purposes
+    of grammar definitions, tokens are the same as rules.
+
+* ""text"", "'text'": Text in single or double quotes must match
+  literally (without the quotes). The type of quote is chosen
+  according to the meaning of "text":
+
+  * "'if'": A name in single quotes denotes a keyword.
+
+  * ""case"": A name in double quotes denotes a soft-keyword.
+
+  * "'@'": A non-letter symbol in single quotes denotes an "OP" token,
+    that is, a delimiter or operator.
+
+* "e1 e2": Items separated only by whitespace denote a sequence. Here,
+  "e1" must be followed by "e2".
+
+* "e1 | e2": A vertical bar is used to separate alternatives. It
+  denotes PEG's "ordered choice": if "e1" matches, "e2" is not
+  considered. In traditional PEG grammars, this is written as a slash,
+  "/", rather than a vertical bar. See **PEP 617** for more background
+  and details.
+
+* "e*": A star means zero or more repetitions of the preceding item.
+
+* "e+": Likewise, a plus means one or more repetitions.
+
+* "[e]": A phrase enclosed in square brackets means zero or one
+  occurrences. In other words, the enclosed phrase is optional.
+
+* "e?": A question mark has exactly the same meaning as square
+  brackets: the preceding item is optional.
+
+* "(e)": Parentheses are used for grouping.
+
+The following notation is only used in lexical definitions.
+
+* ""a"..."z"": Two literal characters separated by three dots mean a
+  choice of any single character in the given (inclusive) range of
+  ASCII characters.
+
+* "<...>": A phrase between angular brackets gives an informal
+  description of the matched symbol (for example, "<any ASCII
+  character except "\">"), or an abbreviation that is defined in
+  nearby text (for example, "<Lu>").
+
+Some definitions also use *lookaheads*, which indicate that an element
+must (or must not) match at a given position, but without consuming
+any input:
+
+* "&e": a positive lookahead (that is, "e" is required to match)
+
+* "!e": a negative lookahead (that is, "e" is required *not* to match)
+
+The unary operators ("*", "+", "?") bind as tightly as possible; the
+vertical bar ("|") binds most loosely.
+
+White space is only meaningful to separate tokens.
+
+Rules are normally contained on a single line, but rules that are too
+long may be wrapped:
+
+   literal: stringliteral | bytesliteral
+            | integer | floatnumber | imagnumber
+
+Alternatively, rules may be formatted with the first line ending at
+the colon, and each alternative beginning with a vertical bar on a new
+line. For example:
+
+   literal:
+      | stringliteral
+      | bytesliteral
+      | integer
+      | floatnumber
+      | imagnumber
+
+This does *not* mean that there is an empty first alternative.
+
+
+1.2.1. Lexical and Syntactic definitions
+----------------------------------------
+
+There is some difference between *lexical* and *syntactic* analysis:
+the *lexical analyzer* operates on the individual characters of the
+input source, while the *parser* (syntactic analyzer) operates on the
+stream of *tokens* generated by the lexical analysis. However, in some
+cases the exact boundary between the two phases is a CPython
+implementation detail.
+
+The practical difference between the two is that in *lexical*
+definitions, all whitespace is significant. The lexical analyzer
+discards all whitespace that is not converted to tokens like
+"token.INDENT" or "NEWLINE". *Syntactic* definitions then use these
+tokens, rather than source characters.
+
+This documentation uses the same BNF grammar for both styles of
+definitions. All uses of BNF in the next chapter (어휘 분석) are
+lexical definitions; uses in subsequent chapters are syntactic
+definitions.

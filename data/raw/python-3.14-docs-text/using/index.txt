@@ -1,0 +1,96 @@
+파이썬 설정 및 사용법
+*********************
+
+설명서의 이 부분은 여러 플랫폼에서 파이썬 환경을 설정하고, 인터프리터
+를 호출하며, 파이썬으로 작업하기 더 쉽게 만드는 것들에 관한 일반적인
+정보를 다루는데 할당되었습니다.
+
+* 1. 명령 줄과 환경
+
+  * 1.1. 명령 줄
+
+  * 1.2. 환경 변수
+
+* 2. 유닉스 플랫폼에서 파이썬 사용하기
+
+  * 2.1. 최신 버전의 파이썬 내려받기와 설치
+
+  * 2.2. 파이썬 빌드하기
+
+  * 2.3. 파이썬 관련 경로와 파일
+
+  * 2.4. 잡동사니
+
+  * 2.5. Custom OpenSSL
+
+* 3. Configure Python
+
+  * 3.1. Build Requirements
+
+  * 3.2. Generated files
+
+  * 3.3. Configure Options
+
+  * 3.4. Python Build System
+
+  * 3.5. Compiler and linker flags
+
+* 4. 윈도우에서 파이썬 사용하기
+
+  * 4.1. Python install manager
+
+  * 4.2. 내장 가능한 패키지
+
+  * 4.3. nuget.org 패키지
+
+  * 4.4. 대체 번들
+
+  * 4.5. Supported Windows versions
+
+  * 4.6. Removing the MAX_PATH limitation
+
+  * 4.7. UTF-8 모드
+
+  * 4.8. 모듈 찾기
+
+  * 4.9. 추가 모듈
+
+  * 4.10. 윈도우에서 파이썬 컴파일하기
+
+  * 4.11. The full installer (deprecated)
+
+  * 4.12. Python launcher for Windows (deprecated)
+
+* 5. macOS 에서 파이썬 사용하기
+
+  * 5.1. "python.org"에서 제공하는 macOS용 파이썬 사용하기
+
+  * 5.2. Alternative Distributions
+
+  * 5.3. 추가 파이썬 패키지 설치하기
+
+  * 5.4. GUI 프로그래밍
+
+  * 5.5. Advanced Topics
+
+  * 5.6. 기타 자원
+
+* 6. Using Python on Android
+
+  * 6.1. Adding Python to an Android app
+
+  * 6.2. Building a Python package for Android
+
+* 7. Using Python on iOS
+
+  * 7.1. Python at runtime on iOS
+
+  * 7.2. Installing Python on iOS
+
+  * 7.3. App Store Compliance
+
+* 8. 편집기와 IDE
+
+  * 8.1. IDLE --- Python editor and shell
+
+  * 8.2. 다른 편집기와 IDE

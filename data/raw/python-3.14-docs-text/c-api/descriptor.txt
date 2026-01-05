@@ -1,0 +1,113 @@
+디스크립터 객체
+***************
+
+"디스크립터"는 객체의 일부 어트리뷰트를 기술하는 객체입니다. 그것들은
+형 객체의 딕셔너리에 있습니다.
+
+PyTypeObject PyProperty_Type
+    * Part of the 안정 ABI.*
+
+   내장 디스크립터 형들을 위한 형 객체.
+
+PyObject *PyDescr_NewGetSet(PyTypeObject *type, struct PyGetSetDef *getset)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+PyObject *PyDescr_NewMember(PyTypeObject *type, struct PyMemberDef *meth)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+PyTypeObject PyMemberDescr_Type
+    * Part of the 안정 ABI.*
+
+   The type object for member descriptor objects created from
+   "PyMemberDef" structures. These descriptors expose fields of a C
+   struct as attributes on a type, and correspond to
+   "types.MemberDescriptorType" objects in Python.
+
+PyTypeObject PyGetSetDescr_Type
+    * Part of the 안정 ABI.*
+
+   The type object for get/set descriptor objects created from
+   "PyGetSetDef" structures. These descriptors implement attributes
+   whose value is computed by C getter and setter functions, and are
+   used for many built-in type attributes.
+
+PyObject *PyDescr_NewMethod(PyTypeObject *type, struct PyMethodDef *meth)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+PyTypeObject PyMethodDescr_Type
+    * Part of the 안정 ABI.*
+
+   The type object for method descriptor objects created from
+   "PyMethodDef" structures. These descriptors expose C functions as
+   methods on a type, and correspond to "types.MemberDescriptorType"
+   objects in Python.
+
+PyObject *PyDescr_NewWrapper(PyTypeObject *type, struct wrapperbase *wrapper, void *wrapped)
+    *반환값: 새 참조.*
+
+PyTypeObject PyWrapperDescr_Type
+    * Part of the 안정 ABI.*
+
+   The type object for wrapper descriptor objects created by
+   "PyDescr_NewWrapper()" and "PyWrapper_New()". Wrapper descriptors
+   are used internally to expose special methods implemented via
+   wrapper structures, and appear in Python as
+   "types.WrapperDescriptorType" objects.
+
+PyObject *PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+int PyDescr_IsData(PyObject *descr)
+
+   Return non-zero if the descriptor object *descr* describes a data
+   attribute, or "0" if it describes a method.  *descr* must be a
+   descriptor object; there is no error checking.
+
+PyObject *PyWrapper_New(PyObject*, PyObject*)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+
+Built-in descriptors
+====================
+
+PyTypeObject PySuper_Type
+    * Part of the 안정 ABI.*
+
+   The type object for super objects. This is the same object as
+   "super" in the Python layer.
+
+PyTypeObject PyClassMethod_Type
+
+   The type of class method objects. This is the same object as
+   "classmethod" in the Python layer.
+
+PyTypeObject PyClassMethodDescr_Type
+    * Part of the 안정 ABI.*
+
+   The type object for C-level class method descriptor objects. This
+   is the type of the descriptors created for "classmethod()" defined
+   in C extension types, and is the same object as "classmethod" in
+   Python.
+
+PyObject *PyClassMethod_New(PyObject *callable)
+
+   Create a new "classmethod" object wrapping *callable*. *callable*
+   must be a callable object and must not be "NULL".
+
+   On success, this function returns a *strong reference* to a new
+   class method descriptor. On failure, this function returns "NULL"
+   with an exception set.
+
+PyTypeObject PyStaticMethod_Type
+
+   The type of static method objects. This is the same object as
+   "staticmethod" in the Python layer.
+
+PyObject *PyStaticMethod_New(PyObject *callable)
+
+   Create a new "staticmethod" object wrapping *callable*. *callable*
+   must be a callable object and must not be "NULL".
+
+   On success, this function returns a *strong reference* to a new
+   static method descriptor. On failure, this function returns "NULL"
+   with an exception set.

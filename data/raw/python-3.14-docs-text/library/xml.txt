@@ -1,0 +1,87 @@
+XML 처리 모듈
+*************
+
+**소스 코드:** Lib/xml/
+
+======================================================================
+
+XML 처리를 위한 파이썬의 인터페이스는 "xml" 패키지로 묶여있습니다.
+
+참고:
+
+  If you need to parse untrusted or unauthenticated data, see XML
+  security.
+
+"xml" 패키지의 모듈들은 최소한 하나의 SAX 호환 XML 구문 분석기가 있도
+록 요구함에 유의해야 합니다. Expat 구문 분석기가 파이썬에 포함되어 있
+으므로, "xml.parsers.expat" 모듈을 항상 사용할 수 있습니다.
+
+"xml.dom" 과 "xml.sax" 패키지에 대한 설명서는 DOM과 SAX 인터페이스에
+대한 파이썬 바인딩의 정의입니다.
+
+XML 처리 서브 모듈은 다음과 같습니다:
+
+* "xml.etree.ElementTree": ElementTree API, 간단하고 가벼운 XML 프로세
+  서
+
+* "xml.dom": DOM API 정의
+
+* "xml.dom.minidom": 최소 DOM 구현
+
+* "xml.dom.pulldom": 부분 DOM 트리 구축 지원
+
+* "xml.sax": SAX2 베이스 클래스와 편리 함수
+
+* "xml.parsers.expat": Expat 구문 분석기 바인딩
+
+
+XML security
+============
+
+An attacker can abuse XML features to carry out denial of service
+attacks, access local files, generate network connections to other
+machines, or circumvent firewalls when attacker-controlled XML is
+being parsed, in Python or elsewhere.
+
+The built-in XML parsers of Python rely on the library libexpat,
+commonly called Expat, for parsing XML.
+
+By default, Expat itself does not access local files or create network
+connections.
+
+Expat versions lower than 2.7.2 may be vulnerable to the "billion
+laughs", "quadratic blowup" and "large tokens" vulnerabilities, or to
+disproportional use of dynamic memory. Python bundles a copy of Expat,
+and whether Python uses the bundled or a system-wide Expat, depends on
+how the Python interpreter "has been configured" in your environment.
+Python may be vulnerable if it uses such older versions of Expat.
+Check "pyexpat.EXPAT_VERSION".
+
+"xmlrpc" is **vulnerable** to the "decompression bomb" attack.
+
+billion laughs(억만 웃음) / exponential entity expansion(지수적 엔티티
+확장)
+   지수적 엔티티 확장으로도 알려진, Billion Laughs 공격은 여러 수준의
+   중첩된 엔티티를 사용합니다. 각 엔티티는 다른 엔티티를 여러 번 참조
+   하며, 최종 엔티티 정의에는 작은 문자열이 포함됩니다. 지수적인 확장
+   으로 수 기가바이트의 텍스트가 생성되고 많은 메모리와 CPU 시간이 소
+   모됩니다.
+
+quadratic blowup entity expansion(이차 폭발 엔티티 확장)
+   이차 폭발 공격은 Billion Laughs 공격과 유사합니다; 이 역시 엔티티
+   확장을 남용합니다. 중첩된 엔티티 대신 2천 개 이상의 문자를 갖는 커
+   다란 엔티티 하나를 계속 반복합니다. 공격은 지수적인 경우만큼 효율적
+   이지 않지만 깊이 중첩된 엔티티를 금지하는 구문 분석기 대응책을 우회
+   합니다.
+
+decompression bomb(압축해제 폭탄)
+   압축 해제 폭탄(일명 ZIP bomb)은 gzip 압축된 HTTP 스트림이나 LZMA 압
+   축 파일과 같은, 압축된 XML 스트림을 구문 분석할 수 있는 모든 XML 라
+   이브러리에 적용됩니다. 공격자는 전송된 데이터의 양을 3배 이상 줄일
+   수 있습니다.
+
+large tokens(대형 토큰)
+   Expat needs to re-parse unfinished tokens; without the protection
+   introduced in Expat 2.6.0, this can lead to quadratic runtime that
+   can be used to cause denial of service in the application parsing
+   XML. The issue is known as **CVE 2023-52425**.

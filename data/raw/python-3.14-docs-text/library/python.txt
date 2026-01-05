@@ -1,0 +1,238 @@
+파이썬 실행시간 서비스
+**********************
+
+이 장에서 설명하는 모듈들은 파이썬 인터프리터와 그 환경과의 상호 작용
+과 관련된 다양한 서비스를 제공합니다. 다음은 개요입니다:
+
+* "sys" --- 시스템 특정 파라미터와 함수
+
+* "sys.monitoring" --- Execution event monitoring
+
+  * Tool identifiers
+
+    * Registering and using tools
+
+  * Events
+
+    * Local events
+
+    * Deprecated event
+
+    * Ancillary events
+
+    * Other events
+
+    * The STOP_ITERATION event
+
+  * Turning events on and off
+
+    * Setting events globally
+
+    * Per code object events
+
+    * Disabling events
+
+  * Registering callback functions
+
+    * Callback function arguments
+
+* "sysconfig" --- 파이썬의 구성 정보에 접근하기
+
+  * 구성 변수
+
+  * 설치 경로
+
+  * User scheme
+
+    * "posix_user"
+
+    * "nt_user"
+
+    * "osx_framework_user"
+
+  * Home scheme
+
+    * "posix_home"
+
+  * Prefix scheme
+
+    * "posix_prefix"
+
+    * "nt"
+
+  * 설치 경로 함수
+
+  * 기타 함수
+
+  * Command-line usage
+
+* "builtins" --- 내장 객체
+
+* "__main__" --- 최상위 코드 환경
+
+  * "__name__ == '__main__'"
+
+    * "최상위 코드 환경" 이란 무엇인가요?
+
+    * 관용적 사용법
+
+    * 패키징 고려 사항
+
+  * 파이썬 패키지의 "__main__.py"
+
+    * 관용적 사용법
+
+  * "import __main__"
+
+* "warnings" --- 경고 제어
+
+  * 경고 범주
+
+  * 경고 필터
+
+    * Repeated Warning Suppression Criteria
+
+    * 경고 필터 설명
+
+    * 기본 경고 필터
+
+    * 기본 필터 재정의
+
+  * 일시적인 경고 억제
+
+  * 경고 테스트
+
+  * 새 버전의 종속성에 대한 코드 갱신
+
+  * 사용 가능한 함수
+
+  * 사용 가능한 컨텍스트 관리자
+
+  * Concurrent safety of Context Managers
+
+* "dataclasses" --- 데이터 클래스
+
+  * Module contents
+
+  * 초기화 후처리
+
+  * 클래스 변수
+
+  * 초기화 전용 변수
+
+  * 고정 인스턴스
+
+  * 계승
+
+  * Re-ordering of keyword-only parameters in "__init__()"
+
+  * 기본 팩토리 함수
+
+  * 가변 기본값
+
+  * Descriptor-typed fields
+
+* "contextlib" --- "with" 문 컨텍스트를 위한 유틸리티
+
+  * 유틸리티
+
+  * 예제와 조리법
+
+    * 일정하지 않은 수의 컨텍스트 관리자 지원
+
+    * "__enter__" 메서드에서 발생하는 예외 잡기
+
+    * "__enter__" 구현에서 정리하기
+
+    * "try-finally"와 플래그 변수 사용 교체하기
+
+    * 함수 데코레이터로 컨텍스트 관리자 사용하기
+
+  * 일회용, 재사용 가능 및 재진입 가능 컨텍스트 관리자
+
+    * 재진입 가능 컨텍스트 관리자
+
+    * 재사용 가능 컨텍스트 관리자
+
+* "abc" --- 추상 베이스 클래스
+
+* "atexit" --- 종료 처리기
+
+  * "atexit" 예제
+
+* "traceback" --- 스택 트레이스백 인쇄와 조회
+
+  * 모듈 수준 함수
+
+  * "TracebackException" 객체
+
+  * "StackSummary" 객체
+
+  * "FrameSummary" 객체
+
+  * Examples of Using the Module-Level Functions
+
+  * "TracebackException"을 사용하는 예제
+
+* "__future__" --- 퓨처 문 정의
+
+  * Module Contents
+
+* "gc" --- 가비지 수거기 인터페이스
+
+* "inspect" --- 라이브 객체 검사
+
+  * 형과 멤버
+
+  * 소스 코드 가져오기
+
+  * Signature 객체로 콜러블 검사하기
+
+  * 클래스와 함수
+
+  * 인터프리터 스택
+
+  * 정적으로 어트리뷰트 가져오기
+
+  * 제너레이터, 코루틴 및 비동기 제너레이터의 현재 상태
+
+  * 코드 객체 비트 플래그
+
+  * Buffer flags
+
+  * Command-line interface
+
+* "annotationlib" --- Functionality for introspecting annotations
+
+  * Annotation semantics
+
+  * Classes
+
+  * Functions
+
+  * Recipes
+
+    * Using annotations in a metaclass
+
+  * Limitations of the "STRING" format
+
+  * Limitations of the "FORWARDREF" format
+
+  * Security implications of introspecting annotations
+
+* "site" --- 사이트별 구성 훅
+
+  * "sitecustomize"
+
+  * "usercustomize"
+
+  * Readline 구성
+
+  * 모듈 내용
+
+  * Command-line interface
+
+더 보기:
+
+  * See the "concurrent.interpreters" module, which similarly exposes
+    core runtime functionality.

@@ -1,0 +1,1807 @@
+유니코드 객체와 코덱
+********************
+
+
+유니코드 객체
+=============
+
+파이썬 3.3에서 **PEP 393**을 구현한 이후, 유니코드 객체는 내부적으로
+다양한 표현을 사용하여 전체 유니코드 문자 범위를 처리하면서 메모리 효
+율성을 유지합니다. 모든 코드 포인트가 128, 256 또는 65536 미만인 문자
+열에 대한 특별한 경우가 있습니다; 그렇지 않으면, 코드 포인트는 1114112
+(전체 유니코드 범위) 미만이어야 합니다.
+
+UTF-8 representation is created on demand and cached in the Unicode
+object.
+
+참고:
+
+  "Py_UNICODE" 표현은 폐지된 API와 함께 파이썬 3.12에서 제거되었습니다
+  . 자세한 정보는 **PEP 623**을 참조하십시오.
+
+
+유니코드 형
+-----------
+
+다음은 파이썬에서 유니코드 구현에 사용되는 기본 유니코드 객체 형입니다
+:
+
+PyTypeObject PyUnicode_Type
+    * Part of the 안정 ABI.*
+
+   This instance of "PyTypeObject" represents the Python Unicode type.
+   It is exposed to Python code as "str".
+
+PyTypeObject PyUnicodeIter_Type
+    * Part of the 안정 ABI.*
+
+   This instance of "PyTypeObject" represents the Python Unicode
+   iterator type. It is used to iterate over Unicode string objects.
+
+type Py_UCS4
+type Py_UCS2
+type Py_UCS1
+    * Part of the 안정 ABI.*
+
+   이 형들은 각각 32비트, 16비트 및 8비트의 문자를 포함하기에 충분한
+   부호 없는 정수 형을 위한 typedef 입니다. 단일 유니코드 문자를 처리
+   할 때는, "Py_UCS4"를 사용하십시오.
+
+   Added in version 3.3.
+
+type PyASCIIObject
+type PyCompactUnicodeObject
+type PyUnicodeObject
+
+   이 "PyObject" 서브 형들은 파이썬 유니코드 객체를 나타냅니다. 거의
+   모든 경우에, 유니코드 객체를 처리하는 모든 API 함수가 "PyObject" 포
+   인터를 취하고 반환하므로 직접 사용해서는 안 됩니다.
+
+   Added in version 3.3.
+
+다음 API는 빠른 검사를 수행하고 유니코드 객체의 내부 읽기 전용 데이터
+에 액세스하는 데 사용할 수 있는 C 매크로와 정적 인라인 함수입니다:
+
+int PyUnicode_Check(PyObject *obj)
+
+   객체 *obj*가 유니코드 객체이거나 유니코드 서브 형의 인스턴스이면 참
+   을 반환합니다. 이 함수는 항상 성공합니다.
+
+int PyUnicode_CheckExact(PyObject *obj)
+
+   객체 *obj*가 유니코드 객체이지만, 서브 형의 인스턴스가 아니면 참을
+   반환합니다. 이 함수는 항상 성공합니다.
+
+Py_ssize_t PyUnicode_GET_LENGTH(PyObject *unicode)
+
+   유니코드 문자열의 길이를 코드 포인트로 반환합니다. *unicode*는 "규
+   범적(canonical)" 표현의 유니코드 객체여야 합니다 (검사하지 않습니다
+   ).
+
+   Added in version 3.3.
+
+Py_UCS1 *PyUnicode_1BYTE_DATA(PyObject *unicode)
+Py_UCS2 *PyUnicode_2BYTE_DATA(PyObject *unicode)
+Py_UCS4 *PyUnicode_4BYTE_DATA(PyObject *unicode)
+
+   직접 문자 액세스를 위해 UCS1, UCS2 또는 UCS4 정수 형으로 캐스트 된
+   규범적(canonical) 표현에 대한 포인터를 반환합니다. 규범적
+   (canonical) 표현이 올바른 문자 크기인지 검사하지 않습니다;
+   "PyUnicode_KIND()"를 사용하여 올바른 함수를 선택하십시오.
+
+   Added in version 3.3.
+
+PyUnicode_1BYTE_KIND
+PyUnicode_2BYTE_KIND
+PyUnicode_4BYTE_KIND
+
+   "PyUnicode_KIND()" 매크로의 값을 반환합니다.
+
+   Added in version 3.3.
+
+   버전 3.12에서 변경: "PyUnicode_WCHAR_KIND"는 제거되었습니다.
+
+int PyUnicode_KIND(PyObject *unicode)
+
+   이 유니코드 객체가 데이터를 저장하는 데 사용하는 문자 당 바이트 수
+   를 나타내는 PyUnicode 종류 상수 (위를 참조하십시오) 중 하나를 반환
+   합니다. *unicode*는 "규범적(canonical)" 표현의 유니코드 객체여야 합
+   니다 (검사하지 않습니다).
+
+   Added in version 3.3.
+
+void *PyUnicode_DATA(PyObject *unicode)
+
+   원시 유니코드 버퍼에 대한 void 포인터를 반환합니다. *unicode*는 "규
+   범적(canonical)" 표현의 유니코드 객체여야 합니다 (검사하지 않습니다
+   ).
+
+   Added in version 3.3.
+
+void PyUnicode_WRITE(int kind, void *data, Py_ssize_t index, Py_UCS4 value)
+
+   Write the code point *value* to the given zero-based *index* in a
+   string.
+
+   The *kind* value and *data* pointer must have been obtained from a
+   string using "PyUnicode_KIND()" and "PyUnicode_DATA()"
+   respectively. You must hold a reference to that string while
+   calling "PyUnicode_WRITE()". All requirements of
+   "PyUnicode_WriteChar()" also apply.
+
+   The function performs no checks for any of its requirements, and is
+   intended for usage in loops.
+
+   Added in version 3.3.
+
+Py_UCS4 PyUnicode_READ(int kind, void *data, Py_ssize_t index)
+
+   규범적(canonical) 표현 *data*("PyUnicode_DATA()"로 얻은 대로)에서
+   코드 포인트를 읽습니다. 검사나 준비(ready) 호출이 수행되지 않습니다
+   .
+
+   Added in version 3.3.
+
+Py_UCS4 PyUnicode_READ_CHAR(PyObject *unicode, Py_ssize_t index)
+
+   "규범적(canonical)" 표현이어야 하는, 유니코드 객체 *unicode*에서 문
+   자를 읽습니다. 여러 연속 읽기를 수행한다면 "PyUnicode_READ()"보다
+   효율성이 떨어집니다.
+
+   Added in version 3.3.
+
+Py_UCS4 PyUnicode_MAX_CHAR_VALUE(PyObject *unicode)
+
+   "규범적(canonical)" 표현이어야 하는, *unicode*를 기반으로 다른 문자
+   열을 만드는 데 적합한 최대 코드 포인트를 반환합니다. 이것은 항상 근
+   사치이지만 문자열을 이터레이트 하는 것보다 효율적입니다.
+
+   Added in version 3.3.
+
+int PyUnicode_IsIdentifier(PyObject *unicode)
+    * Part of the 안정 ABI.*
+
+   언어 정의에 따라 문자열이 유효한 식별자이면 "1"을 반환합니다, 섹션
+   Names (identifiers and keywords). 그렇지 않으면 "0"을 반환합니다.
+
+   버전 3.9에서 변경: 문자열이 준비(ready)되지 않았을 때, 이 함수는 더
+   는 "Py_FatalError()"를 호출하지 않습니다.
+
+unsigned int PyUnicode_IS_ASCII(PyObject *unicode)
+
+   Return true if the string only contains ASCII characters.
+   Equivalent to "str.isascii()".
+
+   Added in version 3.2.
+
+
+유니코드 문자 속성
+------------------
+
+유니코드는 다양한 문자 속성을 제공합니다. 가장 자주 필요한 것은 파이썬
+구성에 따라 C 함수에 매핑되는 이러한 매크로를 통해 사용할 수 있습니다.
+
+int Py_UNICODE_ISSPACE(Py_UCS4 ch)
+
+   *ch*가 공백 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISLOWER(Py_UCS4 ch)
+
+   *ch*가 소문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISUPPER(Py_UCS4 ch)
+
+   *ch*가 대문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISTITLE(Py_UCS4 ch)
+
+   *ch*가 제목 케이스 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISLINEBREAK(Py_UCS4 ch)
+
+   *ch*가 줄 바꿈 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISDECIMAL(Py_UCS4 ch)
+
+   *ch*가 10진수 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISDIGIT(Py_UCS4 ch)
+
+   *ch*가 디짓(digit) 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISNUMERIC(Py_UCS4 ch)
+
+   *ch*가 숫자(numeric) 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISALPHA(Py_UCS4 ch)
+
+   *ch*가 알파벳 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISALNUM(Py_UCS4 ch)
+
+   *ch*가 영숫자 문자인지에 따라 "1"이나 "0"을 반환합니다.
+
+int Py_UNICODE_ISPRINTABLE(Py_UCS4 ch)
+
+   *ch*가 "str.isprintable()"의 의미에서 인쇄 가능한 문자인지에 따라
+   "1"이나 "0"을 반환합니다.
+
+다음 API는 빠른 직접 문자 변환에 사용할 수 있습니다:
+
+Py_UCS4 Py_UNICODE_TOLOWER(Py_UCS4 ch)
+
+   소문자로 변환된 문자 *ch*를 반환합니다.
+
+Py_UCS4 Py_UNICODE_TOUPPER(Py_UCS4 ch)
+
+   대문자로 변환된 문자 *ch*를 반환합니다.
+
+Py_UCS4 Py_UNICODE_TOTITLE(Py_UCS4 ch)
+
+   제목 케이스로 변환된 문자 *ch*를 반환합니다.
+
+int Py_UNICODE_TODECIMAL(Py_UCS4 ch)
+
+   10진 양의 정수로 변환된 문자 *ch*를 반환합니다. 이것이 불가능하면
+   "-1"을 반환합니다. 이 함수는 예외를 발생시키지 않습니다.
+
+int Py_UNICODE_TODIGIT(Py_UCS4 ch)
+
+   한 자리 정수로 변환된 문자 *ch*를 반환합니다. 이것이 불가능하면
+   "-1"을 반환합니다. 이 함수는 예외를 발생시키지 않습니다.
+
+double Py_UNICODE_TONUMERIC(Py_UCS4 ch)
+
+   double로 변환된 문자 *ch*를 반환합니다. 이것이 불가능하면 "-1.0"을
+   반환합니다. 이 함수는 예외를 발생시키지 않습니다.
+
+다음 API를 사용하여 서로게이트를 다룰 수 있습니다:
+
+int Py_UNICODE_IS_SURROGATE(Py_UCS4 ch)
+
+   *ch*가 서로게이트인지 확인합니다 ("0xD800 <= ch <= 0xDFFF").
+
+int Py_UNICODE_IS_HIGH_SURROGATE(Py_UCS4 ch)
+
+   *ch*가 상위 서로게이트인지 확인합니다 ("0xD800 <= ch <= 0xDBFF").
+
+int Py_UNICODE_IS_LOW_SURROGATE(Py_UCS4 ch)
+
+   *ch*가 하위 서로게이트인지 확인합니다 ("0xDC00 <= ch <= 0xDFFF").
+
+Py_UCS4 Py_UNICODE_HIGH_SURROGATE(Py_UCS4 ch)
+
+   Return the high UTF-16 surrogate ("0xD800" to "0xDBFF") for a
+   Unicode code point in the range "[0x10000; 0x10FFFF]".
+
+Py_UCS4 Py_UNICODE_LOW_SURROGATE(Py_UCS4 ch)
+
+   Return the low UTF-16 surrogate ("0xDC00" to "0xDFFF") for a
+   Unicode code point in the range "[0x10000; 0x10FFFF]".
+
+Py_UCS4 Py_UNICODE_JOIN_SURROGATES(Py_UCS4 high, Py_UCS4 low)
+
+   Join two surrogate code points and return a single "Py_UCS4" value.
+   *high* and *low* are respectively the leading and trailing
+   surrogates in a surrogate pair. *high* must be in the range
+   "[0xD800; 0xDBFF]" and *low* must be in the range "[0xDC00;
+   0xDFFF]".
+
+
+유니코드 문자열 생성과 액세스
+-----------------------------
+
+유니코드 객체를 만들고 기본 시퀀스 속성에 액세스하려면 다음 API를 사용
+하십시오:
+
+PyObject *PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
+    *반환값: 새 참조.*
+
+   새 유니코드 객체를 만듭니다. *maxchar*은 문자열에 배치할 실제 최대
+   코드 포인트여야 합니다. 근삿값으로, 127, 255, 65535, 1114111 시퀀스
+   에서 가장 가까운 값으로 올림 할 수 있습니다.
+
+   On error, set an exception and return "NULL".
+
+   After creation, the string can be filled by
+   "PyUnicode_WriteChar()", "PyUnicode_CopyCharacters()",
+   "PyUnicode_Fill()", "PyUnicode_WRITE()" or similar. Since strings
+   are supposed to be immutable, take care to not “use” the result
+   while it is being modified. In particular, before it's filled with
+   its final contents, a string:
+
+   * must not be hashed,
+
+   * must not be "converted to UTF-8", or another non-"canonical"
+     representation,
+
+   * must not have its reference count changed,
+
+   * must not be shared with code that might do one of the above.
+
+   This list is not exhaustive. Avoiding these uses is your
+   responsibility; Python does not always check these requirements.
+
+   To avoid accidentally exposing a partially-written string object,
+   prefer using the "PyUnicodeWriter" API, or one of the
+   "PyUnicode_From*" functions below.
+
+   Added in version 3.3.
+
+PyObject *PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
+    *반환값: 새 참조.*
+
+   주어진 *kind*(가능한 값은 "PyUnicode_KIND()"에 의해 반환된
+   "PyUnicode_1BYTE_KIND" 등입니다)로 새로운 유니코드 객체를 만듭니다.
+   *buffer*는 kind에 따라 문자 당 1, 2 또는 4바이트의 *size* 단위의 배
+   열을 가리켜야 합니다.
+
+   If necessary, the input *buffer* is copied and transformed into the
+   canonical representation.  For example, if the *buffer* is a UCS4
+   string ("PyUnicode_4BYTE_KIND") and it consists only of codepoints
+   in the UCS1 range, it will be transformed into UCS1
+   ("PyUnicode_1BYTE_KIND").
+
+   Added in version 3.3.
+
+PyObject *PyUnicode_FromStringAndSize(const char *str, Py_ssize_t size)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   char 버퍼 *str*에서 유니코드 객체를 만듭니다. 바이트는 UTF-8로 인코
+   딩된 것으로 해석됩니다. 버퍼는 새 객체에 복사됩니다. 반환 값은 공유
+   객체일 수 있습니다, 즉, 데이터 수정이 허용되지 않습니다.
+
+   이 함수는 다음과 같은 경우에 "SystemError"를 발생시킵니다:
+
+   * *size* < 0,
+
+   * *str* is "NULL" and *size* > 0
+
+   버전 3.12에서 변경: *str* == "NULL" with *size* > 0 is not allowed
+   anymore.
+
+PyObject *PyUnicode_FromString(const char *str)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-8로 인코딩된 널-종료 char 버퍼 *str*에서 유니코드 객체를 만듭니
+   다.
+
+PyObject *PyUnicode_FromFormat(const char *format, ...)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   C "printf()"-스타일 *format* 문자열과 가변 개수의 인자를 취해서, 결
+   과 파이썬 유니코드 문자열의 크기를 계산하고 포맷된 값이 들어간 문자
+   열을 반환합니다. 변수 인자는 C형이어야 하며 *format* ASCII 인코딩된
+   문자열의 포맷 문자와 정확히 일치해야 합니다.
+
+   A conversion specifier contains two or more characters and has the
+   following components, which must occur in this order:
+
+   1. The "'%'" character, which marks the start of the specifier.
+
+   2. Conversion flags (optional), which affect the result of some
+      conversion types.
+
+   3. Minimum field width (optional). If specified as an "'*'"
+      (asterisk), the actual width is given in the next argument,
+      which must be of type int, and the object to convert comes after
+      the minimum field width and optional precision.
+
+   4. Precision (optional), given as a "'.'" (dot) followed by the
+      precision. If specified as "'*'" (an asterisk), the actual
+      precision is given in the next argument, which must be of type
+      int, and the value to convert comes after the precision.
+
+   5. Length modifier (optional).
+
+   6. Conversion type.
+
+   The conversion flag characters are:
+
+   +---------+---------------------------------------------------------------+
+   | Flag    | Meaning                                                       |
+   |=========|===============================================================|
+   | "0"     | The conversion will be zero padded for numeric values.        |
+   +---------+---------------------------------------------------------------+
+   | "-"     | The converted value is left adjusted (overrides the "0" flag  |
+   |         | if both are given).                                           |
+   +---------+---------------------------------------------------------------+
+
+   The length modifiers for following integer conversions ("d", "i",
+   "o", "u", "x", or "X") specify the type of the argument (int by
+   default):
+
+   +------------+-------------------------------------------------------+
+   | Modifier   | 형                                                    |
+   |============|=======================================================|
+   | "l"        | long 또는 unsigned long                               |
+   +------------+-------------------------------------------------------+
+   | "ll"       | long long 또는 unsigned long long                     |
+   +------------+-------------------------------------------------------+
+   | "j"        | "intmax_t" 또는 "uintmax_t"                           |
+   +------------+-------------------------------------------------------+
+   | "z"        | "size_t" 또는 "ssize_t"                               |
+   +------------+-------------------------------------------------------+
+   | "t"        | "ptrdiff_t"                                           |
+   +------------+-------------------------------------------------------+
+
+   The length modifier "l" for following conversions "s" or "V"
+   specify that the type of the argument is const wchar_t*.
+
+   The conversion specifiers are:
+
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | Conversion Specifier              | 형                                | 주석                              |
+   |===================================|===================================|===================================|
+   | "%"                               | *n/a*                             | 리터럴 "%" 문자.                  |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "d", "i"                          | Specified by the length modifier  | The decimal representation of a   |
+   |                                   |                                   | signed C integer.                 |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "u"                               | Specified by the length modifier  | The decimal representation of an  |
+   |                                   |                                   | unsigned C integer.               |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "o"                               | Specified by the length modifier  | The octal representation of an    |
+   |                                   |                                   | unsigned C integer.               |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "x"                               | Specified by the length modifier  | The hexadecimal representation of |
+   |                                   |                                   | an unsigned C integer             |
+   |                                   |                                   | (lowercase).                      |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "X"                               | Specified by the length modifier  | The hexadecimal representation of |
+   |                                   |                                   | an unsigned C integer             |
+   |                                   |                                   | (uppercase).                      |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "c"                               | int                               | 단일 문자.                        |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "s"                               | const char* 또는 const wchar_t*   | 널-종료 C 문자 배열.              |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "p"                               | const void*                       | C 포인터의 16진수 표현. 플랫폼의  |
+   |                                   |                                   | "printf"가 산출하는 내용과 관계없 |
+   |                                   |                                   | 이 리터럴 "0x"로 시작하는 것이 보 |
+   |                                   |                                   | 장된다는 점을 제외하면 거의       |
+   |                                   |                                   | "printf("%p")"와 동등합니다.      |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "A"                               | PyObject*                         | "ascii()"를 호출한 결과.          |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "U"                               | PyObject*                         | 유니코드 객체.                    |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "V"                               | PyObject*, const char* 또는 const | 유니코드 객체("NULL"일 수 있습니  |
+   |                                   | wchar_t*                          | 다)와 두 번째 매개 변수로서 널-종 |
+   |                                   |                                   | 료 C 문자 배열 (첫 번째 매개 변수 |
+   |                                   |                                   | 가 "NULL"이면 사용됩니다).        |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "S"                               | PyObject*                         | "PyObject_Str()"을 호출한 결과.   |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "R"                               | PyObject*                         | "PyObject_Repr()"을 호출한 결과.  |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "T"                               | PyObject*                         | Get the fully qualified name of   |
+   |                                   |                                   | an object type; call              |
+   |                                   |                                   | "PyType_GetFullyQualifiedName()". |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "#T"                              | PyObject*                         | Similar to "T" format, but use a  |
+   |                                   |                                   | colon (":") as separator between  |
+   |                                   |                                   | the module name and the qualified |
+   |                                   |                                   | name.                             |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "N"                               | PyTypeObject*                     | Get the fully qualified name of a |
+   |                                   |                                   | type; call                        |
+   |                                   |                                   | "PyType_GetFullyQualifiedName()". |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+   | "#N"                              | PyTypeObject*                     | Similar to "N" format, but use a  |
+   |                                   |                                   | colon (":") as separator between  |
+   |                                   |                                   | the module name and the qualified |
+   |                                   |                                   | name.                             |
+   +-----------------------------------+-----------------------------------+-----------------------------------+
+
+   참고:
+
+     너비 포매터 단위는 바이트가 아닌 문자 수입니다. 정밀도 포매터 단
+     위는 ""%s""와 ""%V""의 경우는 바이트 수나 (길이 수정자 "l"이 사용
+     되면) "wchar_t" 항목이고 ("PyObject*" 인자가 "NULL"이면), ""%A"",
+     ""%U"", ""%S"", ""%R"" 및 ""%V""의 경우 문자 수입니다
+     ("PyObject*" 인자가 "NULL"이 아니면).
+
+   참고:
+
+     Unlike to C "printf()" the "0" flag has effect even when a
+     precision is given for integer conversions ("d", "i", "u", "o",
+     "x", or "X").
+
+   버전 3.2에서 변경: ""%lld""와 ""%llu""에 대한 지원이 추가되었습니다
+   .
+
+   버전 3.3에서 변경: ""%li"", ""%lli"" 및 ""%zi""에 대한 지원이 추가
+   되었습니다.
+
+   버전 3.4에서 변경: ""%s"", ""%A"", ""%U"", ""%V"", ""%S"", ""%R""에
+   대한 너비와 정밀도 포매터 지원이 추가되었습니다.
+
+   버전 3.12에서 변경: Support for conversion specifiers "o" and "X".
+   Support for length modifiers "j" and "t". Length modifiers are now
+   applied to all integer conversions. Length modifier "l" is now
+   applied to conversion specifiers "s" and "V". Support for variable
+   width and precision "*". Support for flag "-".인식할 수 없는 포맷
+   문자는 이제 "SystemError"를 설정합니다. 이전 버전에서는 나머지 포맷
+   문자열이 모두 결과 문자열에 그대로 복사되고, 추가 인자는 버려지도록
+   했습니다.
+
+   버전 3.13에서 변경: "%T", "%#T", "%N" 및 "%#N"에 대한 지원이 추가되
+   었습니다.
+
+PyObject *PyUnicode_FromFormatV(const char *format, va_list vargs)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   정확히 두 개의 인자를 취한다는 점을 제외하면
+   "PyUnicode_FromFormat()"과 동일합니다.
+
+PyObject *PyUnicode_FromObject(PyObject *obj)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   필요하면 유니코드 서브 형의 인스턴스를 새로운 진짜 유니코드 객체에
+   복사합니다. *obj*가 이미 (서브 형이 아닌) 진짜 유니코드 객체이면,
+   객체에 대한 새로운 *강한 참조*를 반환합니다.
+
+   유니코드나 이의 서브 형 이외의 객체는 "TypeError"를 발생시킵니다.
+
+PyObject *PyUnicode_FromOrdinal(int ordinal)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   주어진 유니코드 코드 포인트 *ordinal*로 유니코드 객체를 만듭니다.
+
+   The ordinal must be in "range(0x110000)". A "ValueError" is raised
+   in the case it is not.
+
+PyObject *PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   인코딩된 객체 *obj*를 유니코드 객체로 디코딩합니다.
+
+   "bytes", "bytearray" 및 기타 *바이트열류 객체*는 주어진 *encoding*
+   에 따라 *errors*로 정의한 에러 처리를 사용하여 디코딩됩니다. 둘 다
+   "NULL"이 될 수 있고, 이 경우 인터페이스는 기본값을 사용합니다 (자세
+   한 내용은 내장 코덱를 참조하십시오).
+
+   유니코드 객체를 포함한 다른 모든 객체는 "TypeError"가 설정되도록 합
+   니다.
+
+   API는 에러가 있으면 "NULL"을 반환합니다. 호출자는 반환된 객체의 참
+   조 횟수를 감소시킬 책임이 있습니다.
+
+void PyUnicode_Append(PyObject **p_left, PyObject *right)
+    * Part of the 안정 ABI.*
+
+   Append the string *right* to the end of *p_left*. *p_left* must
+   point to a *strong reference* to a Unicode object;
+   "PyUnicode_Append()" releases ("steals") this reference.
+
+   On error, set **p_left* to "NULL" and set an exception.
+
+   On success, set **p_left* to a new strong reference to the result.
+
+void PyUnicode_AppendAndDel(PyObject **p_left, PyObject *right)
+    * Part of the 안정 ABI.*
+
+   The function is similar to "PyUnicode_Append()", with the only
+   difference being that it decrements the reference count of *right*
+   by one.
+
+PyObject *PyUnicode_BuildEncodingMap(PyObject *string)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Return a mapping suitable for decoding a custom single-byte
+   encoding. Given a Unicode string *string* of up to 256 characters
+   representing an encoding table, returns either a compact internal
+   mapping object or a dictionary mapping character ordinals to byte
+   values. Raises a "TypeError" and return "NULL" on invalid input.
+
+   Added in version 3.2.
+
+const char *PyUnicode_GetDefaultEncoding(void)
+    * Part of the 안정 ABI.*
+
+   Return the name of the default string encoding, ""utf-8"". See
+   "sys.getdefaultencoding()".
+
+   The returned string does not need to be freed, and is valid until
+   interpreter shutdown.
+
+Py_ssize_t PyUnicode_GetLength(PyObject *unicode)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   유니코드 객체의 길이를 코드 포인트로 반환합니다.
+
+   On error, set an exception and return "-1".
+
+   Added in version 3.3.
+
+Py_ssize_t PyUnicode_CopyCharacters(PyObject *to, Py_ssize_t to_start, PyObject *from, Py_ssize_t from_start, Py_ssize_t how_many)
+
+   한 유니코드 객체에서 다른 객체로 문자를 복사합니다. 이 함수는 필요
+   하면 문자 변환을 수행하고 가능하면 "memcpy()"로 폴백합니다. 에러 시
+   "-1"을 반환하고 예외를 설정합니다, 그렇지 않으면 복사된 문자 수를
+   반환합니다.
+
+   The string must not have been “used” yet. See "PyUnicode_New()" for
+   details.
+
+   Added in version 3.3.
+
+int PyUnicode_Resize(PyObject **unicode, Py_ssize_t length);
+    * Part of the 안정 ABI.*
+
+   Resize a Unicode object **unicode* to the new *length* in code
+   points.
+
+   Try to resize the string in place (which is usually faster than
+   allocating a new string and copying characters), or create a new
+   string.
+
+   **unicode* is modified to point to the new (resized) object and "0"
+   is returned on success. Otherwise, "-1" is returned and an
+   exception is set, and **unicode* is left untouched.
+
+   The function doesn't check string content, the result may not be a
+   string in canonical representation.
+
+Py_ssize_t PyUnicode_Fill(PyObject *unicode, Py_ssize_t start, Py_ssize_t length, Py_UCS4 fill_char)
+
+   문자로 문자열을 채웁니다: *fill_char*을
+   "unicode[start:start+length]"에 씁니다.
+
+   *fill_char*이 문자열 최대 문자보다 크거나, 문자열에 둘 이상의 참조
+   가 있으면 실패합니다.
+
+   The string must not have been “used” yet. See "PyUnicode_New()" for
+   details.
+
+   기록된 문자 수를 반환하거나, 에러 시 "-1"을 반환하고 예외를 발생시
+   킵니다.
+
+   Added in version 3.3.
+
+int PyUnicode_WriteChar(PyObject *unicode, Py_ssize_t index, Py_UCS4 character)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   Write a *character* to the string *unicode* at the zero-based
+   *index*. Return "0" on success, "-1" on error with an exception
+   set.
+
+   This function checks that *unicode* is a Unicode object, that the
+   index is not out of bounds, and that the object's reference count
+   is one. See "PyUnicode_WRITE()" for a version that skips these
+   checks, making them your responsibility.
+
+   The string must not have been “used” yet. See "PyUnicode_New()" for
+   details.
+
+   Added in version 3.3.
+
+Py_UCS4 PyUnicode_ReadChar(PyObject *unicode, Py_ssize_t index)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   문자열에서 문자를 읽습니다. 이 함수는 에러를 검사하지 않는
+   "PyUnicode_READ_CHAR()"와 달리 *unicode*가 유니코드 객체이고 인덱스
+   가 범위를 벗어났는지 확인합니다.
+
+   성공 시 문자를, 에러 시 예외를 설정하고 "-1"을 반환합니다.
+
+   Added in version 3.3.
+
+PyObject *PyUnicode_Substring(PyObject *unicode, Py_ssize_t start, Py_ssize_t end)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.7 이후로.*
+
+   문자 인덱스 *start*(포함합니다)에서 문자 인덱스 *end*(제외합니다)까
+   지 *unicode*의 하위 문자열을 반환합니다. 음수 인덱스는 지원되지 않
+   습니다. 에러 시, 예외를 설정하고 "NULL"을 반환합니다.
+
+   Added in version 3.3.
+
+Py_UCS4 *PyUnicode_AsUCS4(PyObject *unicode, Py_UCS4 *buffer, Py_ssize_t buflen, int copy_null)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   *copy_null*이 설정되면, 널 문자를 포함하여 문자열 *unicode*를 UCS4
+   버퍼에 복사합니다. 에러 시 "NULL"을 반환하고 예외를 설정합니다 (특
+   히, *buflen*이 *unicode*의 길이보다 작으면 "SystemError"). 성공하면
+   *buffer*가 반환됩니다.
+
+   Added in version 3.3.
+
+Py_UCS4 *PyUnicode_AsUCS4Copy(PyObject *unicode)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   문자열 *unicode*를 "PyMem_Malloc()"을 사용하여 할당된 새 UCS4 버퍼
+   에 복사합니다. 이것이 실패하면, "NULL"이 반환되고 "MemoryError"가
+   설정됩니다. 반환된 버퍼에는 항상 추가 널 코드 포인트가 있습니다.
+
+   Added in version 3.3.
+
+
+로케일 인코딩
+-------------
+
+현재 로케일 인코딩을 사용하여 운영 체제에서 온 텍스트를 디코딩 할 수
+있습니다.
+
+PyObject *PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t length, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.7 이후로.*
+
+   안드로이드와 VxWorks의 UTF-8이나 다른 플랫폼의 현재 로케일 인코딩의
+   문자열을 디코딩합니다. 지원되는 에러 처리기는 ""strict""와
+   ""surrogateescape""(**PEP 383**)입니다. 디코더는 *errors*가 "NULL"
+   이면 ""strict"" 에러 처리기를 사용합니다. *str*은 널 문자로 끝나야
+   하지만 널 문자를 포함할 수 없습니다.
+
+   *파일시스템 인코딩과 에러 처리기*로 문자열을 디코딩하려면
+   "PyUnicode_DecodeFSDefaultAndSize()"를 사용하십시오.
+
+   이 함수는 파이썬 UTF-8 모드를 무시합니다.
+
+   더 보기: "Py_DecodeLocale()" 함수.
+
+   Added in version 3.3.
+
+   버전 3.7에서 변경: 이 함수는 이제 안드로이드를 제외하고
+   "surrogateescape" 에러 처리기에 현재 로케일 인코딩도 사용합니다. 이
+   전에는, "Py_DecodeLocale()"이 "surrogateescape"에 사용되었고, 현재
+   로케일 인코딩은 "strict"에 사용되었습니다.
+
+PyObject *PyUnicode_DecodeLocale(const char *str, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.7 이후로.*
+
+   "PyUnicode_DecodeLocaleAndSize()"와 유사하지만, "strlen()"을 사용하
+   여 문자열 길이를 계산합니다.
+
+   Added in version 3.3.
+
+PyObject *PyUnicode_EncodeLocale(PyObject *unicode, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.7 이후로.*
+
+   유니코드 객체를 안드로이드와 VxWorks에서 UTF-8로 인코딩하거나, 다른
+   플랫폼에서 현재 로케일 인코딩으로 인코딩합니다. 지원되는 에러 처리
+   기는 ""strict""와 ""surrogateescape""(**PEP 383**)입니다. 인코더는
+   *errors*가 "NULL"이면 ""strict"" 에러 처리기를 사용합니다. "bytes"
+   객체를 반환합니다. *unicode*는 내장된 널 문자를 포함할 수 없습니다.
+
+   *파일시스템 인코딩과 에러 처리기*로 문자열을 인코딩하려면
+   "PyUnicode_EncodeFSDefault()"를 사용하십시오.
+
+   이 함수는 파이썬 UTF-8 모드를 무시합니다.
+
+   더 보기: "Py_EncodeLocale()" 함수.
+
+   Added in version 3.3.
+
+   버전 3.7에서 변경: 이 함수는 이제 안드로이드를 제외하고
+   "surrogateescape" 에러 처리기에 현재 로케일 인코딩도 사용합니다. 이
+   전에는 "Py_EncodeLocale()"이 "surrogateescape"에 사용되었고, 현재
+   로케일 인코딩은 "strict"에 사용되었습니다.
+
+
+파일 시스템 인코딩
+------------------
+
+Functions encoding to and decoding from the *filesystem encoding and
+error handler* (**PEP 383** and **PEP 529**).
+
+인자 구문 분석 중에 파일 이름을 "bytes"로 인코딩하려면, ""O&"" 변환기
+를 사용하고 "PyUnicode_FSConverter()"를 변환 함수로 전달해야 합니다:
+
+int PyUnicode_FSConverter(PyObject *obj, void *result)
+    * Part of the 안정 ABI.*
+
+   PyArg_Parse* 변환기: (직접 또는 "os.PathLike" 인터페이스를 통해 얻
+   은) "str" 객체를 "PyUnicode_EncodeFSDefault()"를 사용하여 "bytes"로
+   인코딩합니다; "bytes" 객체는 있는 그대로의 출력입니다. *result*는
+   형이 PyObject* (또는 PyBytesObject*) 인 C 변수의 주소여야 합니다.
+   성공 시, 더는 사용되지 않을 때 해제해야 하는 바이트열 객체에 대한 *
+   강한 참조*로 변수를 설정하고 0이 아닌 값("Py_CLEANUP_SUPPORTED")을
+   반환합니다. 결과에 내장된 널 바이트는 허용되지 않습니다. 실패 시,
+   예외를 설정하고 "0"을 반환합니다.
+
+   If *obj* is "NULL", the function releases a strong reference stored
+   in the variable referred by *result* and returns "1".
+
+   Added in version 3.1.
+
+   버전 3.6에서 변경: *경로류 객체*를 받아들입니다.
+
+인자 구문 분석 중에 파일 이름을 "str"로 디코딩하려면, ""O&"" 변환기를
+사용하고 "PyUnicode_FSDecoder()"를 변환 함수로 전달해야 합니다:
+
+int PyUnicode_FSDecoder(PyObject *obj, void *result)
+    * Part of the 안정 ABI.*
+
+   PyArg_Parse* 변환기: (직접 또는 "os.PathLike" 인터페이스를 통해 간
+   접적으로 얻은) "bytes" 객체를 "PyUnicode_DecodeFSDefaultAndSize()"
+   를 사용하여 "str"로 디코딩합니다; "str" 객체는 있는 그대로의 출력입
+   니다. *result*는 형이 PyObject* (또는 PyUnicodeObject*) 인 C 변수의
+   주소여야 합니다. 성공 시, 더는 사용되지 않을 때 해제해야 하는 유니
+   코드 객체에 대한 *강한 참조*로 변수를 설정하고 0이 아닌 값
+   ("Py_CLEANUP_SUPPORTED")을 반환합니다. 결과에 내장된 널 바이트는 허
+   용되지 않습니다. 실패 시, 예외를 설정하고 "0"을 반환합니다.
+
+   If *obj* is "NULL", release the strong reference to the object
+   referred to by *result* and return "1".
+
+   Added in version 3.2.
+
+   버전 3.6에서 변경: *경로류 객체*를 받아들입니다.
+
+PyObject *PyUnicode_DecodeFSDefaultAndSize(const char *str, Py_ssize_t size)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Decode a string from the *filesystem encoding and error handler*.
+
+   현재 로케일 인코딩에서 문자열을 디코딩해야 하면,
+   "PyUnicode_DecodeLocaleAndSize()"를 사용하십시오.
+
+   더 보기: "Py_DecodeLocale()" 함수.
+
+   버전 3.6에서 변경: The *filesystem error handler* is now used.
+
+PyObject *PyUnicode_DecodeFSDefault(const char *str)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *파일시스템 인코딩과 에러 처리기*로 널 종료 문자열을 디코딩합니다.
+
+   문자열 길이가 알려져 있으면, "PyUnicode_DecodeFSDefaultAndSize()"를
+   사용하십시오.
+
+   버전 3.6에서 변경: The *filesystem error handler* is now used.
+
+PyObject *PyUnicode_EncodeFSDefault(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   유니코드 객체를 *파일시스템 인코딩과 에러 처리기*로 인코딩하고,
+   "bytes"를 반환합니다. 결과 "bytes" 객체에는 널 바이트가 포함될 수
+   있음에 유의하십시오.
+
+   현재 로케일 인코딩으로 문자열을 인코딩해야 하면,
+   "PyUnicode_EncodeLocale()"을 사용하십시오.
+
+   더 보기: "Py_EncodeLocale()" 함수.
+
+   Added in version 3.2.
+
+   버전 3.6에서 변경: The *filesystem error handler* is now used.
+
+
+wchar_t 지원
+------------
+
+지원하는 플랫폼에 대한 "wchar_t" 지원:
+
+PyObject *PyUnicode_FromWideChar(const wchar_t *wstr, Py_ssize_t size)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   주어진 *size*의 "wchar_t" 버퍼 *wstr*에서 유니코드 객체를 만듭니다.
+   "-1"을 *size*로 전달하면 함수가 "wcslen()"을 사용하여 길이를 스스로
+   계산해야 함을 나타냅니다. 실패하면 "NULL"을 반환합니다.
+
+Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *wstr, Py_ssize_t size)
+    * Part of the 안정 ABI.*
+
+   유니코드 객체 내용을 "wchar_t" 버퍼 *wstr*에 복사합니다. 최대
+   *size* "wchar_t" 문자가 복사됩니다 (후행 널 종료 문자가 제외될 수
+   있습니다). 복사된 "wchar_t" 문자 수나 에러가 발생하면 "-1"을 반환합
+   니다.
+
+   When *wstr* is "NULL", instead return the *size* that would be
+   required to store all of *unicode* including a terminating null.
+
+   결과 wchar_t* 문자열은 널로 종료될 수도 있고 아닐 수도 있음에 유의
+   하십시오. 응용 프로그램에 필요하면 wchar_t* 문자열이 널로 끝나는지
+   확인하는 것은 호출자의 책임입니다. 또한, wchar_t* 문자열에는 널 문
+   자가 포함될 수 있으며, 이로 인해 대부분의 C 함수와 함께 사용될 때
+   문자열이 잘리게 됨에 유의하십시오.
+
+wchar_t *PyUnicode_AsWideCharString(PyObject *unicode, Py_ssize_t *size)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   유니코드 객체를 와이드 문자 문자열로 변환합니다. 출력 문자열은 항상
+   널 문자로 끝납니다. *size*가 "NULL"이 아니면, (후행 널 종료 문자를
+   제외한) 와이드 문자의 수를 **size*에 씁니다. 결과 "wchar_t" 문자열
+   이 널 문자를 포함할 수 있고, 이로 인해 대부분의 C 함수와 함께 사용
+   될 때 문자열이 잘리게 됨에 유의하십시오. *size*가 "NULL"이고
+   wchar_t* 문자열이 널 문자를 포함하면 "ValueError"가 발생합니다.
+
+   성공 시 "PyMem_New"에 의해 할당된 버퍼를 반환합니다 ("PyMem_Free()"
+   를 사용하여 해제하십시오). 에러 시, "NULL"을 반환하고 **size*는 정
+   의되지 않습니다. 메모리 할당이 실패하면 "MemoryError"를 발생시킵니
+   다.
+
+   Added in version 3.2.
+
+   버전 3.7에서 변경: *size*가 "NULL"이고 wchar_t* 문자열이 널 문자를
+   포함하면 "ValueError"를 발생시킵니다.
+
+
+내장 코덱
+=========
+
+파이썬은 속도를 위해 C로 작성된 내장 코덱 집합을 제공합니다. 이러한 코
+덱들은 모두 다음 함수들을 통해 직접 사용할 수 있습니다.
+
+다음 API의 대부분은 두 개의 인자 encoding과 errors를 취하며, 내장
+"str()" 문자열 객체 생성자의 것들과 같은 의미입니다.
+
+encoding을 "NULL"로 설정하면 기본 인코딩인 UTF-8이 사용됩니다. 파일 시
+스템 호출은 파일 이름 인코딩에 "PyUnicode_FSConverter()"를 사용해야 합
+니다. 이것은 내부적으로 *파일시스템 인코딩과 에러 처리기*를 사용합니다
+.
+
+에러 처리는 errors로 설정되는데, 코덱에 대해 정의된 기본 처리를 사용함
+을 의미하는 "NULL"로 설정될 수도 있습니다. 모든 내장 코덱에 대한 기본
+에러 처리는 "strict" 입니다 ("ValueError"가 발생합니다).
+
+코덱은 모두 유사한 인터페이스를 사용합니다. 단순성을 위해 다음에 나오
+는 일반 코덱과의 차이만 설명합니다.
+
+
+일반 코덱
+---------
+
+The following macro is provided:
+
+Py_UNICODE_REPLACEMENT_CHARACTER
+
+   The Unicode code point "U+FFFD" (replacement character).
+
+   This Unicode character is used as the replacement character during
+   decoding if the *errors* argument is set to "replace".
+
+다음은 일반 코덱 API입니다:
+
+PyObject *PyUnicode_Decode(const char *str, Py_ssize_t size, const char *encoding, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드 객체를
+   만듭니다. *encoding*과 *errors*는 "str()" 내장 함수의 같은 이름의
+   매개 변수와 같은 의미입니다. 사용할 코덱은 파이썬 코덱 레지스트리를
+   사용하여 조회됩니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   유니코드 객체를 인코딩하고 결과를 파이썬 bytes 객체로 반환합니다.
+   *encoding*과 *errors*는 유니코드 "encode()" 메서드의 같은 이름의 매
+   개 변수와 같은 의미입니다. 사용할 코덱은 파이썬 코덱 레지스트리를
+   사용하여 조회됩니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+
+UTF-8 코덱
+----------
+
+다음은 UTF-8 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeUTF8(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-8로 인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드
+   객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_DecodeUTF8Stateful(const char *str, Py_ssize_t size, const char *errors, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *consumed*가 "NULL"이면, "PyUnicode_DecodeUTF8()"처럼 동작합니다.
+   *consumed*가 "NULL"이 아니면, 후행 불완전한 UTF-8 바이트 시퀀스는
+   에러로 처리되지 않습니다. 이러한 바이트는 디코딩되지 않으며 디코딩
+   된 바이트 수는 *consumed*에 저장됩니다.
+
+PyObject *PyUnicode_AsUTF8String(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-8을 사용하여 유니코드 객체를 인코딩하고 결과를 파이썬 bytes 객
+   체로 반환합니다. 에러 처리는 "strict" 입니다. 코덱에서 예외가 발생
+   하면 "NULL"을 반환합니다.
+
+   The function fails if the string contains surrogate code points
+   ("U+D800" - "U+DFFF").
+
+const char *PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *size)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   유니코드 객체의 UTF-8 인코딩에 대한 포인터를 반환하고, 인코딩된 표
+   현의 크기를 (바이트 단위로) *size*에 저장합니다. *size* 인자는
+   "NULL"일 수 있습니다; 이 경우 크기가 저장되지 않습니다. 반환된 버퍼
+   에는 다른 널 코드 포인트가 있는지에 관계없이, 항상 추가 널 바이트가
+   추가됩니다 (*size*에 포함되지 않습니다).
+
+   On error, set an exception, set *size* to "-1" (if it's not NULL)
+   and return "NULL".
+
+   The function fails if the string contains surrogate code points
+   ("U+D800" - "U+DFFF").
+
+   이것은 유니코드 객체에서 문자열의 UTF-8 표현을 캐시하고, 후속 호출
+   은 같은 버퍼에 대한 포인터를 반환합니다. 호출자는 버퍼 할당 해제에
+   대한 책임이 없습니다. 유니코드 객체가 가비지 수거될 때 버퍼는 할당
+   해제되고 버퍼를 가리키는 포인터는 유효하지 않게 됩니다.
+
+   Added in version 3.3.
+
+   버전 3.7에서 변경: 반환형은 이제 "char *"가 아니라 "const char *"입
+   니다.
+
+   버전 3.10에서 변경: This function is a part of the limited API.
+
+const char *PyUnicode_AsUTF8(PyObject *unicode)
+
+   "PyUnicode_AsUTF8AndSize()"와 같지만, 크기를 저장하지 않습니다.
+
+   경고:
+
+     This function does not have any special behavior for null
+     characters embedded within *unicode*. As a result, strings
+     containing null characters will remain in the returned string,
+     which some C functions might interpret as the end of the string,
+     leading to truncation. If truncation is an issue, it is
+     recommended to use "PyUnicode_AsUTF8AndSize()" instead.
+
+   Added in version 3.3.
+
+   버전 3.7에서 변경: 반환형은 이제 "char *"가 아니라 "const char *"입
+   니다.
+
+
+UTF-32 코덱
+-----------
+
+다음은 UTF-32 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeUTF32(const char *str, Py_ssize_t size, const char *errors, int *byteorder)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-32로 인코딩된 버퍼 문자열에서 *size* 바이트를 디코딩하고 해당
+   유니코드 객체를 반환합니다. *errors*("NULL"이 아니면)는 에러 처리를
+   정의합니다. 기본값은 "strict"입니다.
+
+   *byteorder*가 "NULL"이 아니면, 디코더는 지정된 바이트 순서를 사용하
+   여 디코딩을 시작합니다:
+
+      *byteorder == -1: 리틀 엔디안
+      *byteorder == 0:  네이티브 엔디안
+      *byteorder == 1:  빅 엔디안
+
+   "*byteorder"가 0이고, 입력 데이터의 처음 4바이트가 바이트 순서 표시
+   (BOM)이면, 디코더가 이 바이트 순서로 전환되고 BOM은 결과 유니코드
+   문자열에 복사되지 않습니다. "*byteorder"가 "-1"이나 "1"이면, 모든
+   바이트 순서 표시가 출력에 복사됩니다.
+
+   완료 후, **byteorder*는 입력 데이터의 끝에서 현재 바이트 순서로 설
+   정됩니다.
+
+   *byteorder*가 "NULL"이면, 코덱은 네이티브 순서 모드로 시작합니다.
+
+   코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_DecodeUTF32Stateful(const char *str, Py_ssize_t size, const char *errors, int *byteorder, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *consumed*가 "NULL"이면, "PyUnicode_DecodeUTF32()"처럼 동작합니다.
+   *consumed*가 "NULL"이 아니면, "PyUnicode_DecodeUTF32Stateful()" 은
+   후행 불완전 UTF-32 바이트 시퀀스(가령 4로 나누어떨어지지 않는 바이
+   트 수)를 에러로 처리하지 않습니다. 이러한 바이트는 디코딩되지 않으
+   며 디코딩된 바이트 수는 *consumed*에 저장됩니다.
+
+PyObject *PyUnicode_AsUTF32String(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   네이티브 바이트 순서로 UTF-32 인코딩을 사용하여 파이썬 바이트 문자
+   열을 반환합니다. 문자열은 항상 BOM 마크로 시작합니다. 에러 처리는
+   "strict"입니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+
+UTF-16 코덱
+-----------
+
+다음은 UTF-16 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeUTF16(const char *str, Py_ssize_t size, const char *errors, int *byteorder)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-16으로 인코딩된 버퍼 문자열에서 *size* 바이트를 디코딩하고 해당
+   유니코드 객체를 반환합니다. *errors*("NULL"이 아니면)는 에러 처리를
+   정의합니다. 기본값은 "strict"입니다.
+
+   *byteorder*가 "NULL"이 아니면, 디코더는 지정된 바이트 순서를 사용하
+   여 디코딩을 시작합니다:
+
+      *byteorder == -1: 리틀 엔디안
+      *byteorder == 0:  네이티브 엔디안
+      *byteorder == 1:  빅 엔디안
+
+   "*byteorder"가 0이고, 입력 데이터의 처음 2바이트가 바이트 순서 표시
+   (BOM)이면, 디코더는 이 바이트 순서로 전환되고 BOM은 결과 유니코드
+   문자열에 복사되지 않습니다. "*byteorder"가 "-1"이나 "1"이면 모든 바
+   이트 순서 표시가 출력에 복사됩니다 ("\ufeff"나 "\ufffe" 문자가 됩니
+   다).
+
+   완료 후, "*byteorder"는 입력 데이터의 끝에서 현재 바이트 순서로 설
+   정됩니다.
+
+   *byteorder*가 "NULL"이면, 코덱은 네이티브 순서 모드로 시작합니다.
+
+   코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_DecodeUTF16Stateful(const char *str, Py_ssize_t size, const char *errors, int *byteorder, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *consumed*가 "NULL"이면, "PyUnicode_DecodeUTF16()"처럼 동작합니다.
+   *consumed*가 "NULL"이 아니면, "PyUnicode_DecodeUTF16Stateful()" 은
+   후행 불완전 UTF-16 바이트 시퀀스(가령 홀수 바이트 수나 분할 서로게
+   이트 쌍)를 에러로 처리하지 않습니다. 이러한 바이트는 디코딩되지 않
+   으며 디코딩된 바이트 수는 *consumed*에 저장됩니다.
+
+PyObject *PyUnicode_AsUTF16String(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   네이티브 바이트 순서로 UTF-16 인코딩을 사용하여 파이썬 바이트 문자
+   열을 반환합니다. 문자열은 항상 BOM 마크로 시작합니다. 에러 처리는
+   "strict"입니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+
+UTF-7 코덱
+----------
+
+다음은 UTF-7 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeUTF7(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   UTF-7로 인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드
+   객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_DecodeUTF7Stateful(const char *str, Py_ssize_t size, const char *errors, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *consumed*가 "NULL"이면, "PyUnicode_DecodeUTF7()"처럼 동작합니다.
+   *consumed*가 "NULL"이 아니면, 후행 불완전한 UTF-7 base-64 섹션은 에
+   러로 처리되지 않습니다. 이러한 바이트는 디코딩되지 않으며 디코딩된
+   바이트 수는 *consumed*에 저장됩니다.
+
+
+유니코드 이스케이프 코덱
+------------------------
+
+다음은 "유니코드 이스케이프(Unicode Escape)" 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeUnicodeEscape(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   유니코드 이스케이프 인코딩된 문자열 *str*의 *size* 바이트를 디코딩
+   하여 유니코드 객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반
+   환합니다.
+
+PyObject *PyUnicode_AsUnicodeEscapeString(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   유니코드 이스케이프를 사용하여 유니코드 객체를 인코딩하고 결과를
+   bytes 객체로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예외
+   가 발생하면 "NULL"을 반환합니다.
+
+
+원시 유니코드 이스케이프 코덱
+-----------------------------
+
+다음은 "원시 유니코드 이스케이프(Raw Unicode Escape)" 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeRawUnicodeEscape(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   원시 유니코드 이스케이프 인코딩된 문자열 *str*의 *size* 바이트를 디
+   코딩하여 유니코드 객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"
+   을 반환합니다.
+
+PyObject *PyUnicode_AsRawUnicodeEscapeString(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   원시 유니코드 이스케이프를 사용하여 유니코드 객체를 인코딩하고 결과
+   를 bytes 객체로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예
+   외가 발생하면 "NULL"을 반환합니다.
+
+
+Latin-1 코덱
+------------
+
+다음은 Latin-1 코덱 API입니다: Latin-1은 처음 256개의 유니코드 서수에
+해당하며 인코딩 중에 코덱에서 이들만 허용됩니다.
+
+PyObject *PyUnicode_DecodeLatin1(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Latin-1 인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드
+   객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_AsLatin1String(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Latin-1을 사용하여 유니코드 객체를 인코딩하고 결과를 파이썬 bytes
+   객체로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예외가 발생
+   하면 "NULL"을 반환합니다.
+
+
+ASCII 코덱
+----------
+
+다음은 ASCII 코덱 API입니다. 7비트 ASCII 데이터만 허용됩니다. 다른 모
+든 코드는 에러를 생성합니다.
+
+PyObject *PyUnicode_DecodeASCII(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   ASCII 인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드
+   객체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_AsASCIIString(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   ASCII를 사용하여 유니코드 객체를 인코딩하고 결과를 파이썬 bytes 객
+   체로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예외가 발생하
+   면 "NULL"을 반환합니다.
+
+
+문자 맵 코덱
+------------
+
+이 코덱은 다양한 코덱을 구현하는 데 사용할 수 있다는 점에서 특별합니다
+(실제로 "encodings" 패키지에 포함된 대부분의 표준 코덱을 얻기 위해 수
+행되었습니다). 코덱은 매핑을 사용하여 문자를 인코딩하고 디코딩합니다.
+제공된 매핑 객체는 "__getitem__()" 매핑 인터페이스를 지원해야 합니다;
+딕셔너리와 시퀀스가 잘 작동합니다.
+
+다음은 매핑 코덱 API입니다:
+
+PyObject *PyUnicode_DecodeCharmap(const char *str, Py_ssize_t length, PyObject *mapping, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   주어진 *mapping* 객체를 사용하여 인코딩된 문자열 *str*의 *size* 바
+   이트를 디코딩하여 유니코드 객체를 만듭니다. 코덱에서 예외가 발생하
+   면 "NULL"을 반환합니다.
+
+   *mapping*이 "NULL"이면, Latin-1 디코딩이 적용됩니다. 그렇지 않으면
+   *mapping*은 바이트 서수(0에서 255 사이의 정수)를 유니코드 문자열,
+   정수(유니코드 서수로 해석됩니다) 또는 "None"으로 매핑해야합니다. 매
+   핑되지 않은 데이터 바이트("None", "0xFFFE" 또는 "'\ufffe'"로 매핑되
+   는 것뿐만 아니라, "LookupError"를 유발하는 것)은 정의되지 않은 매핑
+   으로 처리되어 에러를 발생시킵니다.
+
+PyObject *PyUnicode_AsCharmapString(PyObject *unicode, PyObject *mapping)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   주어진 *mapping* 객체를 사용하여 유니코드 객체를 인코딩하고 결과를
+   bytes 객체로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예외
+   가 발생하면 "NULL"을 반환합니다.
+
+   *mapping* 객체는 유니코드 서수 정수를 bytes 객체, 0에서 255 사이의
+   정수 또는 "None"으로 매핑해야 합니다. "None"에 매핑되는 것뿐만 아니
+   라 매핑되지 않은 문자 서수("LookupError"를 유발하는 것)는 "정의되지
+   않은 매핑"으로 처리되어 에러가 발생합니다.
+
+다음 코덱 API는 유니코드를 유니코드로 매핑한다는 점에서 특별합니다.
+
+PyObject *PyUnicode_Translate(PyObject *unicode, PyObject *table, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   문자 매핑 테이블을 적용하여 문자열을 변환하고 결과 유니코드 객체를
+   반환합니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+   매핑 테이블은 유니코드 서수 정수를 유니코드 서수 정수나 "None"(문자
+   가 삭제되도록 합니다)에 매핑해야 합니다.
+
+   매핑 테이블은 "__getitem__()" 인터페이스 만 제공하면 됩니다; 딕셔너
+   리와 시퀀스가 잘 작동합니다. 매핑되지 않은 문자 서수("LookupError"
+   를 유발하는 것)는 건드리지 않고 그대로 복사됩니다.
+
+   *errors*는 코덱에서의 일반적인 의미입니다. 기본 에러 처리를 사용함
+   을 나타내는 "NULL"일 수 있습니다.
+
+
+윈도우 용 MBCS 코덱
+-------------------
+
+다음은 MBCS 코덱 API입니다. 현재 윈도우에서만 사용할 수 있으며 Win32
+MBCS 변환기를 사용하여 변환을 구현합니다. MBCS(또는 DBCS)는 단지 하나
+가 아니라 인코딩 클래스임에 유의하십시오. 대상 인코딩은 코덱을 실행하
+는 기계의 사용자 설정에 의해 정의됩니다.
+
+PyObject *PyUnicode_DecodeMBCS(const char *str, Py_ssize_t size, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI on Windows 버전 3.7 이후
+   로.*
+
+   MBCS 인코딩된 문자열 *str*의 *size* 바이트를 디코딩하여 유니코드 객
+   체를 만듭니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니다.
+
+PyObject *PyUnicode_DecodeMBCSStateful(const char *str, Py_ssize_t size, const char *errors, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI on Windows 버전 3.7 이후
+   로.*
+
+   *consumed*가 "NULL"이면, "PyUnicode_DecodeMBCS()"처럼 동작합니다.
+   *consumed*가 "NULL"이 아니면, "PyUnicode_DecodeMBCSStateful()" 은
+   후행 선행(lead) 바이트를 디코딩하지 않고 디코딩된 바이트 수가
+   *consumed*에 저장됩니다.
+
+PyObject *PyUnicode_DecodeCodePageStateful(int code_page, const char *str, Py_ssize_t size, const char *errors, Py_ssize_t *consumed)
+    *반환값: 새 참조.** Part of the 안정 ABI on Windows 버전 3.7 이후
+   로.*
+
+   Similar to "PyUnicode_DecodeMBCSStateful()", except uses the code
+   page specified by *code_page*.
+
+PyObject *PyUnicode_AsMBCSString(PyObject *unicode)
+    *반환값: 새 참조.** Part of the 안정 ABI on Windows 버전 3.7 이후
+   로.*
+
+   MBCS를 사용하여 유니코드 객체를 인코딩하고 결과를 파이썬 bytes 객체
+   로 반환합니다. 에러 처리는 "strict"입니다. 코덱에서 예외가 발생하면
+   "NULL"을 반환합니다.
+
+PyObject *PyUnicode_EncodeCodePage(int code_page, PyObject *unicode, const char *errors)
+    *반환값: 새 참조.** Part of the 안정 ABI on Windows 버전 3.7 이후
+   로.*
+
+   지정된 코드 페이지를 사용하여 유니코드 객체를 인코딩하고 파이썬
+   bytes 객체를 반환합니다. 코덱에서 예외가 발생하면 "NULL"을 반환합니
+   다. "CP_ACP" 코드 페이지를 사용하여 MBCS 인코더를 얻습니다.
+
+   Added in version 3.3.
+
+
+메서드와 슬롯 함수
+==================
+
+다음 API는 입력의 유니코드 객체와 문자열을 (설명에서 문자열이라고 하겠
+습니다) 처리할 수 있으며 적절하게 유니코드 객체나 정수를 반환합니다.
+
+예외가 발생하면 모두 "NULL"이나 "-1"을 반환합니다.
+
+PyObject *PyUnicode_Concat(PyObject *left, PyObject *right)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   두 문자열을 이어붙여 하나의 새로운 유니코드 문자열을 제공합니다.
+
+PyObject *PyUnicode_Split(PyObject *unicode, PyObject *sep, Py_ssize_t maxsplit)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   문자열을 분할하여 유니코드 문자열 리스트를 제공합니다. *sep*이
+   "NULL"이면, 모든 공백 부분 문자열에서 분할이 수행됩니다. 그렇지 않
+   으면, 주어진 구분자에서 분할이 일어납니다. 최대 *maxsplit* 분할이
+   수행됩니다. 음수이면, 제한이 설정되지 않습니다. 구분자는 결과 리스
+   트에 포함되지 않습니다.
+
+   에러 시, 예외를 설정하고 "NULL"을 반환합니다.
+
+   Equivalent to "str.split()".
+
+PyObject *PyUnicode_RSplit(PyObject *unicode, PyObject *sep, Py_ssize_t maxsplit)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Similar to "PyUnicode_Split()", but splitting will be done
+   beginning at the end of the string.
+
+   에러 시, 예외를 설정하고 "NULL"을 반환합니다.
+
+   Equivalent to "str.rsplit()".
+
+PyObject *PyUnicode_Splitlines(PyObject *unicode, int keepends)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   줄 바꿈에서 유니코드 문자열을 분할하여, 유니코드 문자열 리스트를 반
+   환합니다. CRLF는 하나의 줄 바꿈으로 간주합니다. *keepends*가 "0"이
+   면, 결과 문자열에 줄 바꿈 문자가 포함되지 않습니다.
+
+PyObject *PyUnicode_Partition(PyObject *unicode, PyObject *sep)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Split a Unicode string at the first occurrence of *sep*, and return
+   a 3-tuple containing the part before the separator, the separator
+   itself, and the part after the separator. If the separator is not
+   found, return a 3-tuple containing the string itself, followed by
+   two empty strings.
+
+   *sep* must not be empty.
+
+   에러 시, 예외를 설정하고 "NULL"을 반환합니다.
+
+   Equivalent to "str.partition()".
+
+PyObject *PyUnicode_RPartition(PyObject *unicode, PyObject *sep)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Similar to "PyUnicode_Partition()", but split a Unicode string at
+   the last occurrence of *sep*. If the separator is not found, return
+   a 3-tuple containing two empty strings, followed by the string
+   itself.
+
+   *sep* must not be empty.
+
+   에러 시, 예외를 설정하고 "NULL"을 반환합니다.
+
+   Equivalent to "str.rpartition()".
+
+PyObject *PyUnicode_Join(PyObject *separator, PyObject *seq)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   주어진 *separator*를 사용하여 문자열 시퀀스를 연결하고 결과 유니코
+   드 문자열을 반환합니다.
+
+Py_ssize_t PyUnicode_Tailmatch(PyObject *unicode, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction)
+    * Part of the 안정 ABI.*
+
+   *substr*이 주어진 꼬리 끝에서 (*direction* == "-1"은 접두사 일치를
+   수행함을 의미하고, *direction* == "1"은 접미사 일치를 의미합니다)
+   "unicode[start:end]"와 일치하면 "1"을 반환합니다, 그렇지 않으면 "0"
+   을 반환합니다. 에러가 발생하면 "-1"을 반환합니다.
+
+Py_ssize_t PyUnicode_Find(PyObject *unicode, PyObject *substr, Py_ssize_t start, Py_ssize_t end, int direction)
+    * Part of the 안정 ABI.*
+
+   주어진 *direction*을 사용하여 (*direction* == "1"은 정방향 검색을
+   의미하고, *direction* == "-1"은 역방향 검색을 의미합니다)
+   "unicode[start:end]"에서 *substr*의 첫 번째 위치를 반환합니다. 반환
+   값은 첫 번째 일치의 인덱스입니다; "-1" 값은 일치하는 항목이 없음을
+   나타내고, "-2"는 에러가 발생했고 예외가 설정되었음을 나타냅니다.
+
+Py_ssize_t PyUnicode_FindChar(PyObject *unicode, Py_UCS4 ch, Py_ssize_t start, Py_ssize_t end, int direction)
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   주어진 *direction*을 사용하여 (*direction* == "1"은 정방향 검색을
+   의미하고, *direction* == "-1"은 역방향 검색을 의미합니다)
+   "unicode[start:end]"에서 문자 *ch*의 첫 번째 위치를 반환합니다. 반
+   환 값은 첫 번째 일치의 인덱스입니다; "-1" 값은 일치하는 항목이 없음
+   을 나타내고, "-2"는 에러가 발생했고 예외가 설정되었음을 나타냅니다.
+
+   Added in version 3.3.
+
+   버전 3.7에서 변경: *start*와 *end*는 이제 "unicode[start:end]"처럼
+   작동하도록 조정됩니다.
+
+Py_ssize_t PyUnicode_Count(PyObject *unicode, PyObject *substr, Py_ssize_t start, Py_ssize_t end)
+    * Part of the 안정 ABI.*
+
+   "unicode[start:end]"에서 *substr*이 겹치지 않게 등장하는 횟수를 반
+   환합니다. 에러가 발생하면 "-1"을 반환합니다.
+
+PyObject *PyUnicode_Replace(PyObject *unicode, PyObject *substr, PyObject *replstr, Py_ssize_t maxcount)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *unicode*에서 *substr*의 최대 *maxcount* 등장을 *replstr*로 바꾸고
+   결과 유니코드 객체를 반환합니다. *maxcount* == "-1"은 모든 등장을
+   교체함을 의미합니다.
+
+int PyUnicode_Compare(PyObject *left, PyObject *right)
+    * Part of the 안정 ABI.*
+
+   두 문자열을 비교하고 각각 작음, 같음, 큼에 대해 "-1", "0", "1"을 반
+   환합니다.
+
+   이 함수는 실패 시 "-1"을 반환하므로, 에러를 확인하기 위해
+   "PyErr_Occurred()"를 호출해야 합니다.
+
+   더 보기: The "PyUnicode_Equal()" function.
+
+int PyUnicode_Equal(PyObject *a, PyObject *b)
+    * Part of the 안정 ABI 버전 3.14 이후로.*
+
+   Test if two strings are equal:
+
+   * Return "1" if *a* is equal to *b*.
+
+   * Return "0" if *a* is not equal to *b*.
+
+   * Set a "TypeError" exception and return "-1" if *a* or *b* is not
+     a "str" object.
+
+   The function always succeeds if *a* and *b* are "str" objects.
+
+   The function works for "str" subclasses, but does not honor custom
+   "__eq__()" method.
+
+   더 보기: The "PyUnicode_Compare()" function.
+
+   Added in version 3.14.
+
+int PyUnicode_EqualToUTF8AndSize(PyObject *unicode, const char *string, Py_ssize_t size)
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   Compare a Unicode object with a char buffer which is interpreted as
+   being UTF-8 or ASCII encoded and return true ("1") if they are
+   equal, or false ("0") otherwise. If the Unicode object contains
+   surrogate code points ("U+D800" - "U+DFFF") or the C string is not
+   valid UTF-8, false ("0") is returned.
+
+   이 함수는 예외를 발생시키지 않습니다.
+
+   Added in version 3.13.
+
+int PyUnicode_EqualToUTF8(PyObject *unicode, const char *string)
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   "PyUnicode_EqualToUTF8AndSize()"와 유사하지만, "strlen()"을 사용하
+   여 *string* 길이를 계산합니다. 유니코드 객체가 널 문자를 포함하면,
+   거짓("0")을 반환합니다.
+
+   Added in version 3.13.
+
+int PyUnicode_CompareWithASCIIString(PyObject *unicode, const char *string)
+    * Part of the 안정 ABI.*
+
+   유니코드 객체 *unicode*를 *string*과 비교하고 각각 작음, 같음, 큼에
+   대해 "-1", "0", "1"을 반환합니다. ASCII로 인코딩된 문자열만 전달하
+   는 것이 가장 좋지만, 비 ASCII 문자가 포함되면 함수는 입력 문자열을
+   ISO-8859-1로 해석합니다.
+
+   이 함수는 예외를 발생시키지 않습니다.
+
+PyObject *PyUnicode_RichCompare(PyObject *left, PyObject *right, int op)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   두 유니코드 문자열을 풍부한 비교(rich comparison) 하고 다음 중 하나
+   를 반환합니다:
+
+   * 예외가 발생하면 "NULL"
+
+   * 성공적인 비교는 "Py_True"나 "Py_False"
+
+   * 형 조합을 알 수 없으면 "Py_NotImplemented"
+
+   *op*에 가능한 값은 "Py_GT", "Py_GE", "Py_EQ", "Py_NE", "Py_LT" 및
+   "Py_LE"입니다.
+
+PyObject *PyUnicode_Format(PyObject *format, PyObject *args)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   *format*과 *args*에서 새 문자열 객체를 반환합니다; 이것은 "format %
+   args"와 유사합니다.
+
+int PyUnicode_Contains(PyObject *unicode, PyObject *substr)
+    * Part of the 안정 ABI.*
+
+   *substr*가 *unicode*에 포함되어 있는지 확인하고 그에 따라 참이나 거
+   짓을 반환합니다.
+
+   *substr*는 단일 요소 유니코드 문자열로 강제 변환해야 합니다. 에러가
+   있으면 "-1"이 반환됩니다.
+
+void PyUnicode_InternInPlace(PyObject **p_unicode)
+    * Part of the 안정 ABI.*
+
+   인자 *p_unicode를 제자리에서 인턴(intern) 합니다.  인자는 파이썬 유
+   니코드 문자열을 가리키는 포인터 변수의 주소여야 합니다. *p_unicode
+   와 같은 기존 인턴 문자열이 있으면, *p_unicode를 그것으로 설정합니다
+   (이전 문자열 객체에 대한 참조를 해제하고 인턴 된 문자열 객체에 대한
+   새로운 *강한 참조*를 만듭니다), 그렇지 않으면 *p_unicode만 홀로 두
+   고 인턴 합니다.
+
+   (설명: 참조에 대해 많은 이야기가 있지만, 이 함수를 참조 중립이라고
+   생각하십시오. 전달하는 객체의 소유권을 반드시 가져야 합니다; 호출
+   후 더는 전달된 참조를 소유하지 않지만, 결과를 새로 소유하게 됩니다
+   .)
+
+   This function never raises an exception. On error, it leaves its
+   argument unchanged without interning it.
+
+   Instances of subclasses of "str" may not be interned, that is,
+   PyUnicode_CheckExact(*p_unicode) must be true. If it is not, then
+   -- as with any other error -- the argument is left unchanged.
+
+   Note that interned strings are not “immortal”. You must keep a
+   reference to the result to benefit from interning.
+
+PyObject *PyUnicode_InternFromString(const char *str)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   "PyUnicode_FromString()"과 "PyUnicode_InternInPlace()"의 조합, 정적
+   할당된 문자열을 위한 것입니다.
+
+   인턴(intern) 된 새 유니코드 문자열 객체나, 같은 값을 가진 이전에 인
+   턴 된 문자열 객체에 대한 새 ("소유된") 참조를 반환합니다.
+
+   Python may keep a reference to the result, or make it *immortal*,
+   preventing it from being garbage-collected promptly. For interning
+   an unbounded number of different strings, such as ones coming from
+   user input, prefer calling "PyUnicode_FromString()" and
+   "PyUnicode_InternInPlace()" directly.
+
+unsigned int PyUnicode_CHECK_INTERNED(PyObject *str)
+
+   Return a non-zero value if *str* is interned, zero if not. The
+   *str* argument must be a string; this is not checked. This function
+   always succeeds.
+
+   **CPython 구현 상세:** A non-zero return value may carry additional
+   information about *how* the string is interned. The meaning of such
+   non-zero values, as well as each specific string's intern-related
+   details, may change between CPython versions.
+
+
+PyUnicodeWriter
+===============
+
+The "PyUnicodeWriter" API can be used to create a Python "str" object.
+
+Added in version 3.14.
+
+type PyUnicodeWriter
+
+   A Unicode writer instance.
+
+   The instance must be destroyed by "PyUnicodeWriter_Finish()" on
+   success, or "PyUnicodeWriter_Discard()" on error.
+
+PyUnicodeWriter *PyUnicodeWriter_Create(Py_ssize_t length)
+
+   Create a Unicode writer instance.
+
+   *length* must be greater than or equal to "0".
+
+   If *length* is greater than "0", preallocate an internal buffer of
+   *length* characters.
+
+   Set an exception and return "NULL" on error.
+
+PyObject *PyUnicodeWriter_Finish(PyUnicodeWriter *writer)
+
+   Return the final Python "str" object and destroy the writer
+   instance.
+
+   Set an exception and return "NULL" on error.
+
+   The writer instance is invalid after this call.
+
+void PyUnicodeWriter_Discard(PyUnicodeWriter *writer)
+
+   Discard the internal Unicode buffer and destroy the writer
+   instance.
+
+   If *writer* is "NULL", no operation is performed.
+
+   The writer instance is invalid after this call.
+
+int PyUnicodeWriter_WriteChar(PyUnicodeWriter *writer, Py_UCS4 ch)
+
+   Write the single Unicode character *ch* into *writer*.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_WriteUTF8(PyUnicodeWriter *writer, const char *str, Py_ssize_t size)
+
+   Decode the string *str* from UTF-8 in strict mode and write the
+   output into *writer*.
+
+   *size* is the string length in bytes. If *size* is equal to "-1",
+   call "strlen(str)" to get the string length.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+   See also "PyUnicodeWriter_DecodeUTF8Stateful()".
+
+int PyUnicodeWriter_WriteASCII(PyUnicodeWriter *writer, const char *str, Py_ssize_t size)
+
+   Write the ASCII string *str* into *writer*.
+
+   *size* is the string length in bytes. If *size* is equal to "-1",
+   call "strlen(str)" to get the string length.
+
+   *str* must only contain ASCII characters. The behavior is undefined
+   if *str* contains non-ASCII characters.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+   Added in version 3.14.
+
+int PyUnicodeWriter_WriteWideChar(PyUnicodeWriter *writer, const wchar_t *str, Py_ssize_t size)
+
+   Write the wide string *str* into *writer*.
+
+   *size* is a number of wide characters. If *size* is equal to "-1",
+   call "wcslen(str)" to get the string length.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_WriteUCS4(PyUnicodeWriter *writer, Py_UCS4 *str, Py_ssize_t size)
+
+   Writer the UCS4 string *str* into *writer*.
+
+   *size* is a number of UCS4 characters.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_WriteStr(PyUnicodeWriter *writer, PyObject *obj)
+
+   Call "PyObject_Str()" on *obj* and write the output into *writer*.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_WriteRepr(PyUnicodeWriter *writer, PyObject *obj)
+
+   Call "PyObject_Repr()" on *obj* and write the output into *writer*.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_WriteSubstring(PyUnicodeWriter *writer, PyObject *str, Py_ssize_t start, Py_ssize_t end)
+
+   Write the substring "str[start:end]" into *writer*.
+
+   *str* must be Python "str" object. *start* must be greater than or
+   equal to 0, and less than or equal to *end*. *end* must be less
+   than or equal to *str* length.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_Format(PyUnicodeWriter *writer, const char *format, ...)
+
+   Similar to "PyUnicode_FromFormat()", but write the output directly
+   into *writer*.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+int PyUnicodeWriter_DecodeUTF8Stateful(PyUnicodeWriter *writer, const char *string, Py_ssize_t length, const char *errors, Py_ssize_t *consumed)
+
+   Decode the string *str* from UTF-8 with *errors* error handler and
+   write the output into *writer*.
+
+   *size* is the string length in bytes. If *size* is equal to "-1",
+   call "strlen(str)" to get the string length.
+
+   *errors* is an error handler name, such as ""replace"". If *errors*
+   is "NULL", use the strict error handler.
+
+   If *consumed* is not "NULL", set **consumed* to the number of
+   decoded bytes on success. If *consumed* is "NULL", treat trailing
+   incomplete UTF-8 byte sequences as an error.
+
+   On success, return "0". On error, set an exception, leave the
+   writer unchanged, and return "-1".
+
+   See also "PyUnicodeWriter_WriteUTF8()".
+
+
+Deprecated API
+==============
+
+The following API is deprecated.
+
+type Py_UNICODE
+
+   This is a typedef of "wchar_t", which is a 16-bit type or 32-bit
+   type depending on the platform. Please use "wchar_t" directly
+   instead.
+
+   버전 3.3에서 변경: 이전 버전에서, 이것은 빌드 시 파이썬의 "내로우
+   (narrow)"나 "와이드(wide)" 유니코드 버전 중 어느 것을 선택했는지에
+   따라 16비트 형이나 32비트 형이었습니다.
+
+   Deprecated since version 3.13, will be removed in version 3.15.
+
+int PyUnicode_READY(PyObject *unicode)
+
+   Do nothing and return "0". This API is kept only for backward
+   compatibility, but there are no plans to remove it.
+
+   Added in version 3.3.
+
+   버전 3.10부터 폐지됨: This API does nothing since Python 3.12.
+   Previously, this needed to be called for each string created using
+   the old API ("PyUnicode_FromUnicode()" or similar).
+
+unsigned int PyUnicode_IS_READY(PyObject *unicode)
+
+   Do nothing and return "1". This API is kept only for backward
+   compatibility, but there are no plans to remove it.
+
+   Added in version 3.3.
+
+   버전 3.14부터 폐지됨: This API does nothing since Python 3.12.
+   Previously, this could be called to check if "PyUnicode_READY()" is
+   necessary.

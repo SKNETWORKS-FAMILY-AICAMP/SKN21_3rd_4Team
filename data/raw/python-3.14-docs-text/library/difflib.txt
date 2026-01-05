@@ -1,0 +1,880 @@
+"difflib" --- 델타 계산을 위한 도우미
+*************************************
+
+**소스 코드:** Lib/difflib.py
+
+======================================================================
+
+이 모듈은 시퀀스 비교를 위한 클래스와 함수를 제공합니다. 예를 들어 파
+일을 비교하는 데 사용할 수 있으며, HTML 및 문맥(context)과 통합
+(unified) diff를 비롯한 다양한 형식의 파일 차이에 관한 정보를 생성할
+수 있습니다. 디렉터리와 파일을 비교하려면, "filecmp" 모듈을 참조하십시
+오.
+
+class difflib.SequenceMatcher
+
+   이것은 시퀀스 요소가 *해시 가능*이기만 하다면, 모든 형의 시퀀스 쌍
+   을 비교할 수 있는 유연한 클래스입니다. 기본 알고리즘은 1980년대 후
+   반에 Ratcliff와 Obershelp가 '게슈탈트 패턴 매칭(gestalt pattern
+   matching)'이라는 과장된 이름으로 발표한 알고리즘까지 거슬러 올라가
+   는데, 그보다는 약간 더 공을 들였습니다. 아이디어는 "정크" 요소가 없
+   는 가장 긴 연속적으로 일치하는 서브 시퀀스를 찾는 것입니다; 이러한
+   "정크" 요소는 빈 줄이나 공백과 같은 어떤 의미에서는 흥미롭지 않은
+   요소들입니다. (정크 처리는 Ratcliff와 Obershelp 알고리즘의 확장입니
+   다.) 그런 다음 같은 아이디어를 일치하는 서브 시퀀스의 왼쪽과 오른쪽
+   에 있는 시퀀스 조각에 재귀적으로 적용합니다. 이것이 최소 편집 시퀀
+   스를 산출하지는 않지만, 사람들에게 "그럴듯해 보이는" 일치를 산출하
+   는 경향이 있습니다.
+
+   **타이밍:** 기본 Ratcliff-Obershelp 알고리즘은 최악의 상황(worst
+   case)에 세제곱 시간이고, 평균적으로(expected case) 제곱 시간입니다.
+   "SequenceMatcher"는 최악의 상황에 제곱 시간이며, 평균적인 동작은 시
+   퀀스에 공통으로 포함된 요소의 수에 따라 복잡한 방식으로 달라집니다;
+   최상의 경우(best cast)는 선형 시간입니다.
+
+   **자동 정크 휴리스틱:** "SequenceMatcher"는 특정 시퀀스 항목을 자동
+   으로 정크로 처리하는 경험적 방법을 지원합니다. 경험적 방법은 개별
+   항목이 시퀀스에 나타나는 횟수를 계산합니다. (첫 번째 항목 이후의)
+   중복된 항목이 시퀀스의 1% 이상을 차지하고 시퀀스의 길이가 최소 200
+   항목 이상이면, 이 항목은 "흔한" 것으로 표시되고 시퀀스 일치를 위해
+   정크로 처리됩니다. 이 경험적 방법은 "SequenceMatcher"를 만들 때
+   "autojunk" 인자를 "False"로 설정하여 끌 수 있습니다.
+
+   버전 3.2에서 변경: *autojunk* 매개 변수를 추가했습니다.
+
+class difflib.Differ
+
+   이것은 텍스트 줄의 시퀀스를 비교하고, 사람이 읽을 수 있는 차이 또는
+   델타를 생성하는 클래스입니다. Differ는 줄의 시퀀스를 비교하고, 유사
+   한 (거의 일치하는) 줄 내의 문자 시퀀스를 비교하는데
+   "SequenceMatcher"를 사용합니다.
+
+   "Differ" 델타의 각 줄은 2자 코드로 시작합니다:
+
+   +------------+---------------------------------------------+
+   | 코드       | 뜻                                          |
+   |============|=============================================|
+   | "'- '"     | 시퀀스 1에만 있는 줄                        |
+   +------------+---------------------------------------------+
+   | "'+ '"     | 시퀀스 2에만 있는 줄                        |
+   +------------+---------------------------------------------+
+   | "'  '"     | 두 시퀀스에 공통인 줄                       |
+   +------------+---------------------------------------------+
+   | "'? '"     | 두 입력 시퀀스에 없는 줄                    |
+   +------------+---------------------------------------------+
+
+   '"?"'로 시작하는 줄은, 시선을 줄 내의 차이로 유도하려고 시도하며,
+   두 입력 시퀀스 어디에도 나타나지 않습니다. 이 줄은 시퀀스에 스페이
+   스, 탭 또는 줄 넘김과 같은 공백 문자가 포함되면 혼동을 줄 수 있습니
+   다.
+
+class difflib.HtmlDiff
+
+   이 클래스는 HTML 표를 (또는 표를 포함하는 완전한 HTML 파일을) 만드
+   는 데 사용할 수 있습니다. 이 HTML은 줄 간과 줄 내의 변경을 강조하면
+   서, 텍스트를 나란히 줄 단위로 비교하여 보여줍니다. 표는 전체 또는
+   문맥 차이 모드로 생성될 수 있습니다.
+
+   이 클래스의 생성자는 다음과 같습니다:
+
+   __init__(tabsize=8, wrapcolumn=None, linejunk=None, charjunk=IS_CHARACTER_JUNK)
+
+      "HtmlDiff"의 인스턴스를 초기화합니다.
+
+      *tabsize*는 탭 간격을 지정하는 선택적 키워드 인자이며 기본값은
+      "8"입니다.
+
+      *wrapcolumn*는 줄이 자동 줄 넘김 되는 열 번호를 지정하는 선택적
+      키워드로, 줄을 자동 줄 넘김 하지 않는 "None"이 기본값입니다.
+
+      *linejunk* 와 *charjunk*는 "ndiff()"("HtmlDiff"가 나란히 배치된
+      HTML 차이를 만드는 데 사용됩니다)로 전달되는 선택적 키워드 인자
+      입니다. 인자 기본값과 설명은 "ndiff()" 설명서를 참조하십시오.
+
+   다음과 같은 메서드가 공개됩니다:
+
+   make_file(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5, *, charset='utf-8')
+
+      *fromlines* 와 *tolines*(문자열의 리스트)를 비교하고, 줄 간 및
+      줄 내부의 변경을 강조하면서, 줄 단위로 차이를 보여주는 표를 포함
+      하는 완전한 HTML 파일을 문자열로 반환합니다.
+
+      *fromdesc* 와 *todesc*는 from/to 파일 열 헤더 문자열을 지정하는
+      선택적 키워드 인자입니다 (기본값은 모두 빈 문자열입니다).
+
+      *context* 와 *numlines*는 모두 선택적 키워드 인자입니다. 문맥 차
+      이를 표시하려면 *context*를 "True"로 설정하십시오, 그렇지 않으면
+      기본값은 전체 파일을 표시하는 "False"입니다. *numlines*의 기본값
+      은 "5"입니다. *context*가 "True" 일 때, *numlines*는 차이 하이라
+      이트를 둘러싸는 문맥 줄의 수를 제어합니다. *context*가 "False"면
+      *numlines*는 "next" 하이퍼 링크를 사용할 때 차이 하이라이트 앞에
+      표시되는 줄 수를 제어합니다 (0으로 설정하면 "next" 하이퍼 링크가
+      다음 차이 하이라이트를 아무런 선행 문맥 줄 없이 브라우저의 맨 위
+      에 놓도록 합니다).
+
+      참고:
+
+        *fromdesc*와 *todesc*는 이스케이프 되지 않은 HTML로 해석되며
+        신뢰할 수 없는 소스로부터 입력을 받는 동안 적절히 이스케이프
+        되어야 합니다.
+
+      버전 3.5에서 변경: *charset* 키워드 전용 인자가 추가되었습니다.
+      HTML 문서의 기본 문자 집합이 "'ISO-8859-1'"에서 "'utf-8'"로 변경
+      되었습니다.
+
+   make_table(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5)
+
+      *fromlines* 와 *tolines*(문자열의 리스트)를 비교하고, 줄 간 및
+      줄 내부의 변경을 강조하면서, 줄 단위로 차이를 보여주는 완전한
+      HTML 표를 문자열로 반환합니다.
+
+      이 메서드의 인자는 "make_file()" 메서드의 인자와 같습니다.
+
+difflib.context_diff(a, b, fromfile='', tofile='', fromfiledate='', tofiledate='', n=3, lineterm='\n')
+
+   *a*와 *b*(문자열의 리스트)를 비교합니다; 델타(델타 줄을 생성하는 *
+   제너레이터*)를 문맥 diff 형식으로 반환합니다.
+
+   문맥 diff는 단지 변경된 줄과 몇 줄의 문맥만을 더해서 표시하는 간결
+   한 방법입니다. 변경 사항은 이전/이후 스타일로 표시됩니다. 문맥 줄의
+   수는 *n*에 의해 설정되며 기본값은 3입니다.
+
+   기본적으로, diff 제어 줄("***"나 "---"가 포함된 것)은 끝에 줄 넘김
+   을 붙여 만들어집니다. 이것은 "io.IOBase.readlines()"로 만들어진 입
+   력이 "io.IOBase.writelines()"와 함께 사용하기에 적합한 diff를 생성
+   하도록 하는 데 유용합니다. 왜냐하면, 입력과 출력 모두 끝에 줄 넘김
+   이 있기 때문입니다.
+
+   끝에 줄 넘김이 없는 입력이면, *lineterm* 인자를 """"로 설정해서 출
+   력에 일관되게 줄 넘김이 포함되지 않게 하십시오.
+
+   문맥 diff 형식에는 일반적으로 파일명과 수정 시간에 대한 헤더가 있습
+   니다. 이들 중 일부 또는 전부는 *fromfile*, *tofile*, *fromfiledate*
+   및 *tofiledate*에 문자열을 사용하여 지정될 수 있습니다. 수정 시간은
+   일반적으로 ISO 8601 형식으로 표현됩니다. 지정하지 않으면, 문자열들
+   의 기본값은 빈 문자열입니다.
+
+   >>> import sys
+   >>> from difflib import *
+   >>> s1 = ['bacon\n', 'eggs\n', 'ham\n', 'guido\n']
+   >>> s2 = ['python\n', 'eggy\n', 'hamster\n', 'guido\n']
+   >>> sys.stdout.writelines(context_diff(s1, s2, fromfile='before.py',
+   ...                        tofile='after.py'))
+   *** before.py
+   --- after.py
+   ***************
+   *** 1,4 ****
+   ! bacon
+   ! eggs
+   ! ham
+     guido
+   --- 1,4 ----
+   ! python
+   ! eggy
+   ! hamster
+     guido
+
+   더욱 자세한 예제는 difflib의 명령 줄 인터페이스를 참조하십시오.
+
+difflib.get_close_matches(word, possibilities, n=3, cutoff=0.6)
+
+   최상의 "충분히 좋은" 일치의 리스트를 반환합니다. *word*는 근접 일치
+   가 목표로 하는 시퀀스(일반적으로 문자열)며, *possibilities*는
+   *word*와 일치시킬 시퀀스의 리스트입니다 (일반적으로 문자열의 리스트
+   ).
+
+   선택적 인자 *n*(기본값 "3")은 반환할 근접 일치의 최대 개수입니다;
+   *n*는 "0"보다 커야 합니다.
+
+   선택적 인자 *cutoff*(기본값 "0.6")는 [0, 1] 범위의 float입니다.
+   *word*와의 유사성 점수가 이 값보다 적은 possibilities는 무시됩니다.
+
+   possibilities 중에서 가장 좋은 (최대 *n* 개의) 일치가 리스트로 반환
+   되는데, 유사성 점수로 정렬되어 있고 가장 유사한 것이 먼저 나옵니다.
+
+   >>> get_close_matches('appel', ['ape', 'apple', 'peach', 'puppy'])
+   ['apple', 'ape']
+   >>> import keyword
+   >>> get_close_matches('wheel', keyword.kwlist)
+   ['while']
+   >>> get_close_matches('pineapple', keyword.kwlist)
+   []
+   >>> get_close_matches('accept', keyword.kwlist)
+   ['except']
+
+difflib.ndiff(a, b, linejunk=None, charjunk=IS_CHARACTER_JUNK)
+
+   *a*와 *b*(문자열의 리스트)를 비교합니다; "Differ"-스타일 델타(델타
+   줄을 생성하는 *제너레이터*)를 반환합니다.
+
+   선택적 키워드 매개 변수 *linejunk* 와 *charjunk*는 필터링 함수(또는
+   "None")입니다:
+
+   *linejunk*: A function that accepts a single string argument, and
+   returns true if the string is junk, or false if not. The default is
+   "None". There is also a module-level function "IS_LINE_JUNK()",
+   which filters out lines without visible characters, except for at
+   most one hash character ("'#'") -- however the underlying
+   "SequenceMatcher" class does a dynamic analysis of which lines are
+   so frequent as to constitute noise, and this usually works better
+   than using this function.
+
+   *charjunk*: 문자(길이 1의 문자열)를 받아들이고, 문자가 정크면 참을
+   반환하고, 그렇지 않으면 거짓을 반환하는 함수입니다. 기본값은 모듈
+   수준의 함수 "IS_CHARACTER_JUNK()"인데, 공백 문자(스페이스나 탭; 줄
+   넘김 문자를 포함하는 것은 좋은 생각이 아닙니다)를 걸러냅니다.
+
+   >>> diff = ndiff('one\ntwo\nthree\n'.splitlines(keepends=True),
+   ...              'ore\ntree\nemu\n'.splitlines(keepends=True))
+   >>> print(''.join(diff), end="")
+   - one
+   ?  ^
+   + ore
+   ?  ^
+   - two
+   - three
+   ?  -
+   + tree
+   + emu
+
+difflib.restore(sequence, which)
+
+   델타를 만든 두 시퀀스 중 하나를 반환합니다.
+
+   "Differ.compare()" 나 "ndiff()"로 만들어진 *sequence*가 주어지면,
+   파일 1이나 2(매개 변수 *which*)에서 원래 제공되었던 줄을 추출하고,
+   줄 접두어를 제거합니다.
+
+   예:
+
+   >>> diff = ndiff('one\ntwo\nthree\n'.splitlines(keepends=True),
+   ...              'ore\ntree\nemu\n'.splitlines(keepends=True))
+   >>> diff = list(diff) # materialize the generated delta into a list
+   >>> print(''.join(restore(diff, 1)), end="")
+   one
+   two
+   three
+   >>> print(''.join(restore(diff, 2)), end="")
+   ore
+   tree
+   emu
+
+difflib.unified_diff(a, b, fromfile='', tofile='', fromfiledate='', tofiledate='', n=3, lineterm='\n')
+
+   *a*와 *b*(문자열의 리스트)를 비교합니다; 델타(델타 줄을 생성하는 *
+   제너레이터*)를 통합 diff 형식으로 반환합니다.
+
+   통합(unified) diff는 단지 변경된 줄과 몇 줄의 문맥만을 더해서 표시
+   하는 간결한 방법입니다. 변경 사항은 (별도의 이전/이후 블록 대신) 인
+   라인 스타일로 표시됩니다. 문맥 줄의 수는 *n*에 의해 설정되며 기본값
+   은 3입니다.
+
+   기본적으로, diff 제어 줄("---", "+++" 또는 "@@"가 포함된 것)은 끝에
+   줄 넘김을 붙여 만들어집니다. 이것은 "io.IOBase.readlines()"로 만들
+   어진 입력이 "io.IOBase.writelines()"와 함께 사용하기에 적합한 diff
+   를 생성하도록 하는 데 유용합니다. 왜냐하면, 입력과 출력 모두 끝에
+   줄 넘김이 있기 때문입니다.
+
+   끝에 줄 넘김이 없는 입력이면, *lineterm* 인자를 """"로 설정해서 출
+   력에 일관되게 줄 넘김이 포함되지 않게 하십시오.
+
+   통합(unified) diff 형식에는 일반적으로 파일명과 수정 시간에 대한 헤
+   더가 있습니다. 이들 중 일부 또는 전부는 *fromfile*, *tofile*,
+   *fromfiledate* 및 *tofiledate*에 문자열을 사용하여 지정될 수 있습니
+   다. 수정 시간은 일반적으로 ISO 8601 형식으로 표현됩니다. 지정하지
+   않으면, 문자열들의 기본값은 빈 문자열입니다.
+
+   >>> s1 = ['bacon\n', 'eggs\n', 'ham\n', 'guido\n']
+   >>> s2 = ['python\n', 'eggy\n', 'hamster\n', 'guido\n']
+   >>> sys.stdout.writelines(unified_diff(s1, s2, fromfile='before.py', tofile='after.py'))
+   --- before.py
+   +++ after.py
+   @@ -1,4 +1,4 @@
+   -bacon
+   -eggs
+   -ham
+   +python
+   +eggy
+   +hamster
+    guido
+
+   더욱 자세한 예제는 difflib의 명령 줄 인터페이스를 참조하십시오.
+
+difflib.diff_bytes(dfunc, a, b, fromfile=b'', tofile=b'', fromfiledate=b'', tofiledate=b'', n=3, lineterm=b'\n')
+
+   *a*와 *b*(바이트열 객체의 리스트)를 *dfunc*를 사용하여 비교합니다;
+   *dfunc*가 반환하는 형식으로 델타 줄(역시 바이트열)의 시퀀스를 산출
+   합니다. *dfunc*는 콜러블이어야하며, 보통 "unified_diff()" 나
+   "context_diff()"입니다.
+
+   알 수 없거나 일관성 없는 인코딩의 데이터를 비교할 수 있게 합니다.
+   *n*를 제외한 모든 입력은 바이트열 객체여야 합니다, str이 아닙니다.
+   모든 입력(*n* 제외)을 str로 무손실 변환하고, "dfunc(a, b, fromfile,
+   tofile, fromfiledate, tofiledate, n, lineterm)"를 호출하는 방식으로
+   작동합니다. *dfunc*의 출력은 다시 바이트로 변환되므로, 여러분이 얻
+   는 델타 줄은 *a*와 *b* 처럼 알 수 없고/일관성 없는 인코딩을 갖습니
+   다.
+
+   Added in version 3.5.
+
+difflib.IS_LINE_JUNK(line)
+
+   무시할 수 있는 줄이면 "True"를 반환합니다. *line*이 빈 줄이거나 하
+   나의 "'#'"를 포함하면, 줄 *line*은 무시할 수 있습니다, 그렇지 않으
+   면 무시할 수 없습니다. 이전 버전의 "ndiff()"에서 매개 변수
+   *linejunk*의 기본값으로 사용되었습니다.
+
+difflib.IS_CHARACTER_JUNK(ch)
+
+   무시할 수 있는 문자면 "True"를 반환합니다. *ch*가 스페이스나 탭이면
+   문자 *ch*는 무시할 수 있습니다, 그렇지 않으면 무시할 수 없습니다.
+   "ndiff()"에서 매개 변수 *charjunk*의 기본값으로 사용됩니다.
+
+더 보기:
+
+  Pattern Matching: The Gestalt Approach
+     Discussion of a similar algorithm by John W. Ratcliff and D. E.
+     Metzener. This was published in Dr. Dobb's Journal in July, 1988.
+
+
+SequenceMatcher 객체
+====================
+
+"SequenceMatcher" 클래스는 다음과 같은 생성자를 갖습니다:
+
+class difflib.SequenceMatcher(isjunk=None, a='', b='', autojunk=True)
+
+   선택 인자 *isjunk*는 "None"(기본값)이거나, 시퀀스 요소를 받아서 요
+   소가 "정크" 이고, 무시되어야 하는 경우에만 참을 반환하는 하나의 인
+   자 함수여야 합니다. *isjunk*에 "None"을 전달하는 것은, "lambda x:
+   False"를 전달하는 것과 같습니다; 즉, 아무 요소도 무시하지 않습니다.
+   예를 들어,:
+
+      lambda x: x in " \t"
+
+   줄을 문자의 시퀀스로 비교하고, 스페이스와 탭을 무시하고 싶으면, 위
+   와 같은 것을 전달하면 됩니다.
+
+   선택적 인자 *a* 와 *b*는 비교할 시퀀스입니다; 둘 다 빈 문자열이 기
+   본값입니다. 두 시퀀스의 요소는 모두 *해시 가능*해야 합니다.
+
+   선택적 인자 *autojunk*는 자동 정크 휴리스틱을 비활성화하는 데 사용
+   할 수 있습니다.
+
+   버전 3.2에서 변경: *autojunk* 매개 변수를 추가했습니다.
+
+   SequenceMatcher 객체는 세 개의 데이터 어트리뷰트를 갖습니다:
+   *bjunk*는 *isjunk*가 "True" 인 *b* 요소의 집합입니다; *bpopular*는
+   휴리스틱(비활성화하지 않았다면)에서 흔하다고 판단되는 정크가 아닌
+   요소의 집합입니다; *b2j*는 *b*의 나머지 요소를 그들이 나타난 위치의
+   리스트로 매핑하는 dict입니다. *b*가 "set_seqs()" 나 "set_seq2()"로
+   재설정 될 때마다 세 개 모두 재설정됩니다.
+
+   Added in version 3.2: *bjunk* 및 *bpopular* 어트리뷰트
+
+   "SequenceMatcher" 객체에는 다음과 같은 메서드가 있습니다:
+
+   set_seqs(a, b)
+
+      비교할 두 시퀀스를 설정합니다.
+
+   "SequenceMatcher"는 두 번째 시퀀스에 대한 자세한 정보를 계산하고 캐
+   시 하므로, 많은 시퀀스에 대해 하나의 시퀀스를 비교하려면,
+   "set_seq2()"를 사용하여 자주 사용되는 시퀀스를 한 번 설정하고,
+   "set_seq1()"를 다른 시퀀스 각각에 대해 한 번 반복적으로 호출하십시
+   오.
+
+   set_seq1(a)
+
+      비교할 첫 번째 시퀀스를 설정합니다. 비교할 두 번째 시퀀스는 변경
+      되지 않습니다.
+
+   set_seq2(b)
+
+      비교할 두 번째 시퀀스를 설정합니다. 비교할 첫 번째 시퀀스는 변경
+      되지 않습니다.
+
+   find_longest_match(alo=0, ahi=None, blo=0, bhi=None)
+
+      "a[alo:ahi]" 와 "b[blo:bhi]"에서 가장 긴 일치 블록을 찾습니다.
+
+      *isjunk*가 생략되거나 "None" 이면, "find_longest_match()"는
+      "a[i:i+k]"가 "b[j:j+k]"와 같은 "(i, j, k)"를 반환하는데, 여기서
+      "alo <= i <= i+k <= ahi" 이고 "blo <= j <= j+k <= bhi" 입니다.
+      이 조건을 만족시키는 모든 "(i', j', k')"에 대해, 추가 조건 "k >=
+      k'", "i <= i'" 와 "i == i'" 면 "j <= j'" 도 만족합니다. 즉, 모든
+      최대 일치 블록 중에서 *a*에서 가장 먼저 시작하는 블록을 반환하고
+      , *a*에서 가장 먼저 시작하는 모든 최대 일치 블록 중에서 *b*에서
+      가장 먼저 시작하는 블록을 반환합니다.
+
+      >>> s = SequenceMatcher(None, " abcd", "abcd abcd")
+      >>> s.find_longest_match(0, 5, 0, 9)
+      Match(a=0, b=4, size=5)
+
+      *isjunk*가 제공되면, 먼저 가장 긴 일치 블록이 상기와 같이 결정되
+      지만, 정크 요소가 블록에 나타나지 않아야 한다는 추가 제약이 있습
+      니다. 그런 다음 그 블록의 좌우에서 정크 요소만 일치시켜 가능한
+      한 최대로 확장합니다. 그래서 결과 블록은 흥미로운 일치와 인접하
+      게 같은 정크가 등장할 때를 제외하고는, 정크와 일치하지 않습니다.
+
+      여기에 이전과 같은 예가 있지만, 스페이스를 정크로 간주합니다. 이
+      렇게 하면 "' abcd'"가 두 번째 시퀀스의 끝에 있는 "' abcd'"와 직
+      접 일치하지 않게 됩니다. 대신 "'abcd'" 만 일치 할 수 있으며, 두
+      번째 시퀀스에서 가장 왼쪽의 "'abcd'"와 일치합니다:
+
+      >>> s = SequenceMatcher(lambda x: x==" ", " abcd", "abcd abcd")
+      >>> s.find_longest_match(0, 5, 0, 9)
+      Match(a=1, b=0, size=4)
+
+      일치하는 블록이 없으면 "(alo, blo, 0)"를 반환합니다.
+
+      이 메서드는 *네임드 튜플* "Match(a, b, size)"를 반환합니다.
+
+      버전 3.9에서 변경: 인자 기본값이 추가되었습니다.
+
+   get_matching_blocks()
+
+      중첩하지 않는 일치하는 서브 시퀀스를 기술하는 3-튜플의 리스트를
+      반환합니다. 각 3-튜플은 "(i, j, n)" 형식이며, "a[i:i+n] ==
+      b[j:j+n]"를 뜻합니다. 3-튜플은 *i*와 *j*에 대해 단조 증가합니다.
+
+      마지막 3-튜플은 더미이며, "(len(a), len(b), 0)" 값을 가집니다.
+      "n == 0" 인 유일한 3-튜플입니다. "(i, j, n)"와 "(i', j', n')"가
+      리스트에서 인접한 3-튜플이고, 두 번째가 리스트의 마지막 3-튜플이
+      아니면 "i+n < i'" 또는 "j+n < j'"입니다; 즉, 인접 3-튜플은 항상
+      인접하지 않은 같은 블록을 나타냅니다.
+
+         >>> s = SequenceMatcher(None, "abxcd", "abcd")
+         >>> s.get_matching_blocks()
+         [Match(a=0, b=0, size=2), Match(a=3, b=2, size=2), Match(a=5, b=4, size=0)]
+
+   get_opcodes()
+
+      *a*를 *b*로 변환하는 방법을 설명하는 5-튜플의 리스트를 반환합니
+      다. 각 튜플은 "(tag, i1, i2, j1, j2)" 형식입니다. 첫 번째 튜플은
+      "i1 == j1 == 0" 이고, 나머지 튜플에서는 *i1*이 이전 튜플의 *i2*
+      와 같고, 마찬가지로 *j1*은 이전 *j2*와 같습니다.
+
+      *tag* 값은 문자열이고, 이런 의미입니다:
+
+      +-----------------+-----------------------------------------------+
+      | 값              | 뜻                                            |
+      |=================|===============================================|
+      | "'replace'"     | "a[i1:i2]"를 "b[j1:j2]"로 치환해야 합니다.    |
+      +-----------------+-----------------------------------------------+
+      | "'delete'"      | "a[i1:i2]"를 삭제해야 합니다. 이때 "j1 == j2" |
+      |                 | 임을 유의하십시오.                            |
+      +-----------------+-----------------------------------------------+
+      | "'insert'"      | "b[j1:j2]"을 "a[i1:i1]"에 삽입해야 합니다. 이 |
+      |                 | 때 "i1 == i2" 임을 유의하십시오.              |
+      +-----------------+-----------------------------------------------+
+      | "'equal'"       | "a[i1:i2] == b[j1:j2]" (서브 시퀀스가 같습니  |
+      |                 | 다).                                          |
+      +-----------------+-----------------------------------------------+
+
+      예를 들면:
+
+         >>> a = "qabxcd"
+         >>> b = "abycdf"
+         >>> s = SequenceMatcher(None, a, b)
+         >>> for tag, i1, i2, j1, j2 in s.get_opcodes():
+         ...     print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(
+         ...         tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
+         delete    a[0:1] --> b[0:0]      'q' --> ''
+         equal     a[1:3] --> b[0:2]     'ab' --> 'ab'
+         replace   a[3:4] --> b[2:3]      'x' --> 'y'
+         equal     a[4:6] --> b[3:5]     'cd' --> 'cd'
+         insert    a[6:6] --> b[5:6]       '' --> 'f'
+
+   get_grouped_opcodes(n=3)
+
+      최대 *n* 줄의 문맥을 갖는 그룹의 *제너레이터*를 반환합니다.
+
+      "get_opcodes()"에서 반환된 그룹으로 출발해서, 이 메서드는 더 작
+      은 변경 클러스터로 나누고, 변경 사항이 없는 중간 범위를 제거합니
+      다.
+
+      그룹은 "get_opcodes()"와 같은 형식으로 반환됩니다.
+
+   ratio()
+
+      [0, 1]의 범위의 float로 시퀀스 유사성 척도를 돌려줍니다.
+
+      T가 두 시퀀스의 요소의 총 개수이고, M은 일치 개수일 때, 척도는
+      2.0*M / T입니다. 시퀀스가 같으면 "1.0"이고, 공통 요소가 없으면
+      "0.0"입니다.
+
+      "get_matching_blocks()" 나 "get_opcodes()"가 아직 호출되지 않았
+      으면, 계산하는 데 비용이 많이 듭니다. 이럴 때, "quick_ratio()"
+      나 "real_quick_ratio()"를 먼저 시도하여 상한값을 얻을 수 있습니
+      다.
+
+      참고:
+
+        주의: "ratio()" 호출의 결과는 인자의 순서에 따라 달라질 수 있
+        습니다. 예를 들어:
+
+           >>> SequenceMatcher(None, 'tide', 'diet').ratio()
+           0.25
+           >>> SequenceMatcher(None, 'diet', 'tide').ratio()
+           0.5
+
+   quick_ratio()
+
+      비교적 빨리 "ratio()"의 상한을 반환합니다.
+
+   real_quick_ratio()
+
+      아주 빨리 "ratio()"의 상한을 반환합니다.
+
+총 문자 수에 대한 일치 비율을 반환하는 세 가지 메서드는 서로 다른 수준
+의 근삿값 때문에 다른 결과를 줄 수 있습니다. 하지만 "quick_ratio()" 와
+"real_quick_ratio()"는 항상 최소한 "ratio()"만큼 큰 값을 줍니다:
+
+>>> s = SequenceMatcher(None, "abcd", "bcde")
+>>> s.ratio()
+0.75
+>>> s.quick_ratio()
+0.75
+>>> s.real_quick_ratio()
+1.0
+
+
+SequenceMatcher 예제
+====================
+
+이 예제에서는 공백을 "정크"로 간주하여, 두 문자열을 비교합니다:
+
+>>> s = SequenceMatcher(lambda x: x == " ",
+...                     "private Thread currentThread;",
+...                     "private volatile Thread currentThread;")
+
+"ratio()"는 [0, 1] 범위의 float를 반환하여, 시퀀스의 유사성을 측정합니
+다. 경험적으로, "ratio()" 값이 0.6 이상이면 시퀀스가 근접하게 일치함을
+뜻합니다:
+
+>>> print(round(s.ratio(), 3))
+0.866
+
+시퀀스가 일치하는 부분에만 관심이 있다면, "get_matching_blocks()"가 유
+용합니다:
+
+>>> for block in s.get_matching_blocks():
+...     print("a[%d] and b[%d] match for %d elements" % block)
+a[0] and b[0] match for 8 elements
+a[8] and b[17] match for 21 elements
+a[29] and b[38] match for 0 elements
+
+"get_matching_blocks()"에 의해 반환된 마지막 튜플은 항상 더미인
+"(len(a), len(b), 0)"이며, 이는 마지막 튜플 요소(일치하는 요소의 수)가
+"0" 인 유일한 경우입니다.
+
+첫 번째 시퀀스를 두 번째 시퀀스로 변경하는 방법을 알고 싶다면,
+"get_opcodes()"를 사용하십시오:
+
+>>> for opcode in s.get_opcodes():
+...     print("%6s a[%d:%d] b[%d:%d]" % opcode)
+ equal a[0:8] b[0:8]
+insert a[8:8] b[8:17]
+ equal a[8:29] b[17:38]
+
+더 보기:
+
+  * 이 모듈의 "get_close_matches()" 함수는 "SequenceMatcher"를 사용한
+    간단한 코드 작성을 통해 유용한 작업을 수행하는 방법을 보여줍니다.
+
+  * "SequenceMatcher"로 만들어진 작은 응용 프로그램을 위한 간단한 버전
+    관리 조리법.
+
+
+Differ 객체
+===========
+
+"Differ"가 만든 델타는 **최소** diff라고 주장하지 않음에 유의하십시오.
+반대로, 최소 diff는 종종 반 직관적인데, 가능한 모든 곳에서 일치를 취하
+기 때문입니다. 때로 우발적으로 100페이지가 떨어진 곳에서 일치시키기도
+합니다. 동기화 지점을 인접한 일치로 제한하면 가끔 더 긴 diff를 만드는
+대신 일종의 지역성을 보존합니다.
+
+"Differ" 클래스에는 다음과 같은 생성자가 있습니다:
+
+class difflib.Differ(linejunk=None, charjunk=None)
+
+   선택적 키워드 매개 변수 *linejunk* 와 *charjunk*는 필터 함수(또는
+   "None")를 위한 것입니다:
+
+   *linejunk*: 단일 문자열 인자를 받아들이고 문자열이 정크면 참을 반환
+   하는 함수입니다. 기본값은 "None"이며, 이는 어떤 줄도 정크로 간주하
+   지 않음을 의미합니다.
+
+   *charjunk*: 문자(길이 1의 문자열)를 받아들이고, 문자가 정크면 참을
+   반환하는 함수입니다. 기본값은 "None"이며, 이는 어떤 문자도 정크로
+   간주하지 않음을 의미합니다.
+
+   이러한 정크 필터링 함수는 차이점을 찾기 위한 일치 속도를 높이고 차
+   이가 나는 줄이나 문자를 무시하지 않습니다. 설명이 필요하면
+   "find_longest_match()" 메서드의 *isjunk* 매개 변수에 대한 설명을 읽
+   으십시오.
+
+   "Differ" 객체는 단일 메서드를 통해 사용됩니다 (델타가 만들어집니다
+   ):
+
+   compare(a, b)
+
+      줄의 시퀀스 두 개를 비교하고, 델타(줄의 시퀀스)를 만듭니다.
+
+      각 시퀀스는 줄 넘김으로 끝나는 개별 단일 줄 문자열을 포함해야 합
+      니다. 이러한 시퀀스는 파일류 객체의 "readlines()" 메서드로 얻을
+      수 있습니다. 생성된 델타 역시 파일류 객체의 "writelines()" 메서
+      드를 통해 그대로 인쇄될 수 있도록 줄 넘김으로 끝나는 문자열로 구
+      성됩니다.
+
+
+Differ 예제
+===========
+
+이 예제는 두 개의 텍스트를 비교합니다. 먼저 텍스트를 설정하는데, 줄 넘
+김 문자로 끝나는 개별 단일 줄 문자열의 시퀀스입니다 (이러한 시퀀스는
+파일류 객체의 "readlines()" 메서드로도 얻을 수 있습니다):
+
+>>> text1 = '''  1. Beautiful is better than ugly.
+...   2. Explicit is better than implicit.
+...   3. Simple is better than complex.
+...   4. Complex is better than complicated.
+... '''.splitlines(keepends=True)
+>>> len(text1)
+4
+>>> text1[0][-1]
+'\n'
+>>> text2 = '''  1. Beautiful is better than ugly.
+...   3.   Simple is better than complex.
+...   4. Complicated is better than complex.
+...   5. Flat is better than nested.
+... '''.splitlines(keepends=True)
+
+다음으로 Differ 객체의 인스턴스를 만듭니다:
+
+>>> d = Differ()
+
+"Differ" 객체의 인스턴스를 만들 때, 줄과 문자 "정크"를 필터링하는 함수
+를 전달할 수 있음에 유의하십시오. 자세한 내용은 "Differ()" 생성자를 참
+조하십시오.
+
+마지막으로, 두 개를 비교합니다:
+
+>>> result = list(d.compare(text1, text2))
+
+"result"는 문자열의 리스트이므로, 예쁜 인쇄를 해봅시다:
+
+>>> from pprint import pprint
+>>> pprint(result)
+['    1. Beautiful is better than ugly.\n',
+ '-   2. Explicit is better than implicit.\n',
+ '-   3. Simple is better than complex.\n',
+ '+   3.   Simple is better than complex.\n',
+ '?     ++\n',
+ '-   4. Complex is better than complicated.\n',
+ '?            ^                     ---- ^\n',
+ '+   4. Complicated is better than complex.\n',
+ '?           ++++ ^                      ^\n',
+ '+   5. Flat is better than nested.\n']
+
+여러 줄이 포함된 하나의 문자열로 만들면 이렇게 보입니다:
+
+>>> import sys
+>>> sys.stdout.writelines(result)
+    1. Beautiful is better than ugly.
+-   2. Explicit is better than implicit.
+-   3. Simple is better than complex.
++   3.   Simple is better than complex.
+?     ++
+-   4. Complex is better than complicated.
+?            ^                     ---- ^
++   4. Complicated is better than complex.
+?           ++++ ^                      ^
++   5. Flat is better than nested.
+
+
+difflib의 명령 줄 인터페이스
+============================
+
+이 예제는 difflib를 사용하여 "diff"와 유사한 유틸리티를 만드는 방법을
+보여줍니다.
+
+   """ 네 가지 형식의 diff를 제공하는 diffflib.py의 명령줄 인터페이스입니다:
+
+   * ndiff:    모든 줄을 나열하고 줄 간 변경 사항을 강조 표시합니다.
+   * context:  변경 사항의 뭉치를 이전/이후 형식으로 강조 표시합니다.
+   * unified:  변경 사항의 뭉치를 인라인 형식으로 강조 표시합니다.
+   * html:     좌우 비교를 변경 사항 강조 표시와 함께 생성합니다.
+
+   """
+
+   import sys, os, difflib, argparse
+   from datetime import datetime, timezone
+
+   def file_mtime(path):
+       t = datetime.fromtimestamp(os.stat(path).st_mtime,
+                                  timezone.utc)
+       return t.astimezone().isoformat()
+
+   def main():
+
+       parser = argparse.ArgumentParser()
+       parser.add_argument('-c', action='store_true', default=False,
+                           help='Produce a context format diff (default)')
+       parser.add_argument('-u', action='store_true', default=False,
+                           help='Produce a unified format diff')
+       parser.add_argument('-m', action='store_true', default=False,
+                           help='Produce HTML side by side diff '
+                                '(can use -c and -l in conjunction)')
+       parser.add_argument('-n', action='store_true', default=False,
+                           help='Produce a ndiff format diff')
+       parser.add_argument('-l', '--lines', type=int, default=3,
+                           help='Set number of context lines (default 3)')
+       parser.add_argument('fromfile')
+       parser.add_argument('tofile')
+       options = parser.parse_args()
+
+       n = options.lines
+       fromfile = options.fromfile
+       tofile = options.tofile
+
+       fromdate = file_mtime(fromfile)
+       todate = file_mtime(tofile)
+       with open(fromfile) as ff:
+           fromlines = ff.readlines()
+       with open(tofile) as tf:
+           tolines = tf.readlines()
+
+       if options.u:
+           diff = difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate, n=n)
+       elif options.n:
+           diff = difflib.ndiff(fromlines, tolines)
+       elif options.m:
+           diff = difflib.HtmlDiff().make_file(fromlines,tolines,fromfile,tofile,context=options.c,numlines=n)
+       else:
+           diff = difflib.context_diff(fromlines, tolines, fromfile, tofile, fromdate, todate, n=n)
+
+       sys.stdout.writelines(diff)
+
+   if __name__ == '__main__':
+       main()
+
+
+ndiff 예제
+==========
+
+d이 예제는 "difflib.ndiff()"를 사용하는 방법을 보여줍니다.
+
+   """ndiff [-q] file1 file2
+       or
+   ndiff (-r1 | -r2) < ndiff_output > file1_or_file2
+
+   사람이 읽기 쉬운 파일 차이 보고서를 표준 출력에 인쇄합니다.  줄 간 및 줄 내 차이점이 모두 표시됩니다.
+   두 번째 형식에서는, 표준 입력의 ndiff 보고서로부터
+    표준 출력으로 file1 (-r1) 이나 file2 (-r2) 를 다시 생성합니다.
+
+   첫 번째 형식에서는, -q ("quiet") 가 지정되지 않으면, 출력의 처음
+   두 줄은 다음과 같습니다
+
+   -: file1
+   +: file2
+
+   나머지 각 줄은 두 글자 코드로 시작합니다:
+
+       "- "    file1 에 고유한 줄
+       "+ "    file2 에 고유한 줄
+       "  "    두 파일에 공통된 줄
+       "? "    두 입력 파일 어디에도 없는 줄
+
+   "? " 로 시작하는 줄은 줄 내 차이로 눈을 안내하려고 시도하고,
+   두 입력 파일 어디에도 존재하지 않습니다.  이 줄들은 소스 파일에
+   탭 문자가 있을 경우 혼란스러울 수 있습니다.
+
+   첫 번째 파일은 "  " 나 "- " 로 시작하는 줄만 유지하고, 두 문자 접두사를
+   삭제해서 복구할 수 있습니다; ndiff 를 -r1 과 함께 사용하세요.
+
+   두 번째 파일도 비슷하게 복구할 수 있지만, "  " 과
+   "+ " 줄만 유지합니다; ndiff 를 -r2 와 함께 사용하세요; 또는, 유닉스에서, 두 번째 파일은
+   다음과 같이 출력을 파이핑하여 복구할 수 있습니다
+
+       sed -n '/^[+ ] /s/^..//p'
+   """
+
+   __version__ = 1, 7, 0
+
+   import difflib, sys
+
+   def fail(msg):
+       out = sys.stderr.write
+       out(msg + "\n\n")
+       out(__doc__)
+       return 0
+
+   # 파일을 열고 파일 객체를 반환합니다; 열 수 없으면
+   # 메시지를 출력하고 0을 반환합니다
+   def fopen(fname):
+       try:
+           return open(fname)
+       except IOError as detail:
+           return fail("couldn't open " + fname + ": " + str(detail))
+
+   # 두 파일을 열고 표준 출력으로 diff 를 뿌립니다; 문제가 있으면 거짓을 반환합니다
+   def fcompare(f1name, f2name):
+       f1 = fopen(f1name)
+       f2 = fopen(f2name)
+       if not f1 or not f2:
+           return 0
+
+       a = f1.readlines(); f1.close()
+       b = f2.readlines(); f2.close()
+       for line in difflib.ndiff(a, b):
+           print(line, end=' ')
+
+       return 1
+
+   # args (보통 sys.argv[1:]) 를 쪼개고 비교합니다;
+   # 문제가 있으면 & 문제가 있을 때만 거짓을 반환합니다
+
+   def main(args):
+       import getopt
+       try:
+           opts, args = getopt.getopt(args, "qr:")
+       except getopt.error as detail:
+           return fail(str(detail))
+       noisy = 1
+       qseen = rseen = 0
+       for opt, val in opts:
+           if opt == "-q":
+               qseen = 1
+               noisy = 0
+           elif opt == "-r":
+               rseen = 1
+               whichfile = val
+       if qseen and rseen:
+           return fail("can't specify both -q and -r")
+       if rseen:
+           if args:
+               return fail("no args allowed with -r option")
+           if whichfile in ("1", "2"):
+               restore(whichfile)
+               return 1
+           return fail("-r value must be 1 or 2")
+       if len(args) != 2:
+           return fail("need 2 filename args")
+       f1name, f2name = args
+       if noisy:
+           print('-:', f1name)
+           print('+:', f2name)
+       return fcompare(f1name, f2name)
+
+   # 표준 입력에서 ndiff 출력을 읽고, file1 (which=='1') 이나
+   # file2 (which=='2') 를 표준 출력에 인쇄합니다
+
+   def restore(which):
+       restored = difflib.restore(sys.stdin.readlines(), which)
+       sys.stdout.writelines(restored)
+
+   if __name__ == '__main__':
+       main(sys.argv[1:])

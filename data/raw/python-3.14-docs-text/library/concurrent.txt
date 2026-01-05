@@ -1,0 +1,9 @@
+"concurrent" 패키지
+*******************
+
+This package contains the following modules:
+
+* "concurrent.futures" -- 병렬 작업 시작하기
+
+* "concurrent.interpreters" -- Multiple interpreters in the same
+  process

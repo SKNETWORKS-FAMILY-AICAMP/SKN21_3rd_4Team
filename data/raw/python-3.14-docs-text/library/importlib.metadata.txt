@@ -1,0 +1,542 @@
+"importlib.metadata" -- 패키지 메타데이터 액세스
+************************************************
+
+Added in version 3.8.
+
+버전 3.10에서 변경: "importlib.metadata"는 더는 잠정적이지 않습니다.
+
+**Source code:** Lib/importlib/metadata/__init__.py
+
+"importlib.metadata" is a library that provides access to the metadata
+of an installed Distribution Package, such as its entry points or its
+top-level names (Import Packages, modules, if any). Built in part on
+Python's import system, this library intends to replace similar
+functionality in the entry point API and metadata API of
+"pkg_resources". Along with "importlib.resources", this package can
+eliminate the need to use the older and less efficient "pkg_resources"
+package.
+
+"importlib.metadata" operates on third-party *distribution packages*
+installed into Python's "site-packages" directory via tools such as
+pip. Specifically, it works with distributions with discoverable
+"dist-info" or "egg-info" directories, and metadata defined by the
+Core metadata specifications.
+
+중요:
+
+  These are *not* necessarily equivalent to or correspond 1:1 with the
+  top-level *import package* names that can be imported inside Python
+  code. One *distribution package* can contain multiple *import
+  packages* (and single modules), and one top-level *import package*
+  may map to multiple *distribution packages* if it is a namespace
+  package. You can use packages_distributions() to get a mapping
+  between them.
+
+By default, distribution metadata can live on the file system or in
+zip archives on "sys.path". Through an extension mechanism, the
+metadata can live almost anywhere.
+
+더 보기:
+
+  https://importlib-metadata.readthedocs.io/
+     The documentation for "importlib_metadata", which supplies a
+     backport of "importlib.metadata". This includes an API reference
+     for this module's classes and functions, as well as a migration
+     guide for existing users of "pkg_resources".
+
+
+개요
+====
+
+Let's say you wanted to get the version string for a Distribution
+Package you've installed using "pip". We start by creating a virtual
+environment and installing something into it:
+
+   $ python -m venv example
+   $ source example/bin/activate
+   (example) $ python -m pip install wheel
+
+다음을 실행하여 "wheel"에 대한 버전 문자열을 얻을 수 있습니다:
+
+   (example) $ python
+   >>> from importlib.metadata import version
+   >>> version('wheel')
+   '0.32.3'
+
+You can also get a collection of entry points selectable by properties
+of the EntryPoint (typically 'group' or 'name'), such as
+"console_scripts", "distutils.commands" and others. Each group
+contains a collection of EntryPoint objects.
+
+여러분은 배포 메타데이터를 얻을 수 있습니다:
+
+   >>> list(metadata('wheel'))
+   ['Metadata-Version', 'Name', 'Version', 'Summary', 'Home-page', 'Author', 'Author-email', 'Maintainer', 'Maintainer-email', 'License', 'Project-URL', 'Project-URL', 'Project-URL', 'Keywords', 'Platform', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Classifier', 'Requires-Python', 'Provides-Extra', 'Requires-Dist', 'Requires-Dist']
+
+또한 배포의 버전 번호를 가져오고, 구성 파일을 나열하고, 배포의 요구사
+항 리스트를 얻을 수 있습니다.
+
+exception importlib.metadata.PackageNotFoundError
+
+   Subclass of "ModuleNotFoundError" raised by several functions in
+   this module when queried for a distribution package which is not
+   installed in the current Python environment.
+
+
+기능적 API
+==========
+
+이 패키지는 공용 API를 통해 다음과 같은 기능을 제공합니다.
+
+
+진입 지점
+---------
+
+importlib.metadata.entry_points(**select_params)
+
+   Returns a "EntryPoints" instance describing entry points for the
+   current environment. Any given keyword parameters are passed to the
+   "select()" method for comparison to the attributes of the
+   individual entry point definitions.
+
+   Note: it is not currently possible to query for entry points based
+   on their "EntryPoint.dist" attribute (as different "Distribution"
+   instances do not currently compare equal, even if they have the
+   same attributes)
+
+class importlib.metadata.EntryPoints
+
+   Details of a collection of installed entry points.
+
+   Also provides a ".groups" attribute that reports all identified
+   entry point groups, and a ".names" attribute that reports all
+   identified entry point names.
+
+class importlib.metadata.EntryPoint
+
+   Details of an installed entry point.
+
+   각 "EntryPoint" 인스턴스에는 ".name", ".group" 및 ".value" 어트리뷰
+   트가 있고 값을 결정하는 ".load()" 메서드가 있습니다. ".value" 어트
+   리뷰트의 구성 요소를 가져오기 위한 ".module", ".attr" 및 ".extras"
+   어트리뷰트도 있으며, ".dist"는 진입 지점을 제공하는 배포 패키지에
+   대한 정보를 얻는데 사용됩니다.
+
+모든 진입 지점을 조회합니다:
+
+   >>> eps = entry_points()
+
+The "entry_points()" function returns a "EntryPoints" object, a
+collection of all "EntryPoint" objects with "names" and "groups"
+attributes for convenience:
+
+   >>> sorted(eps.groups)
+   ['console_scripts', 'distutils.commands', 'distutils.setup_keywords', 'egg_info.writers', 'setuptools.installation']
+
+"EntryPoints" has a "select()" method to select entry points matching
+specific properties. Select entry points in the "console_scripts"
+group:
+
+   >>> scripts = eps.select(group='console_scripts')
+
+Equivalently, since "entry_points()" passes keyword arguments through
+to select:
+
+   >>> scripts = entry_points(group='console_scripts')
+
+Pick out a specific script named "wheel" (found in the wheel project):
+
+   >>> 'wheel' in scripts.names
+   True
+   >>> wheel = scripts['wheel']
+
+Equivalently, query for that entry point during selection:
+
+   >>> (wheel,) = entry_points(group='console_scripts', name='wheel')
+   >>> (wheel,) = entry_points().select(group='console_scripts', name='wheel')
+
+Inspect the resolved entry point:
+
+   >>> wheel
+   EntryPoint(name='wheel', value='wheel.cli:main', group='console_scripts')
+   >>> wheel.module
+   'wheel.cli'
+   >>> wheel.attr
+   'main'
+   >>> wheel.extras
+   []
+   >>> main = wheel.load()
+   >>> main
+   <function main at 0x103528488>
+
+The "group" and "name" are arbitrary values defined by the package
+author and usually a client will wish to resolve all entry points for
+a particular group. Read the setuptools docs for more information on
+entry points, their definition, and usage.
+
+버전 3.12에서 변경: The "selectable" entry points were introduced in
+"importlib_metadata" 3.6 and Python 3.10. Prior to those changes,
+"entry_points" accepted no parameters and always returned a dictionary
+of entry points, keyed by group. With "importlib_metadata" 5.0 and
+Python 3.12, "entry_points" always returns an "EntryPoints" object.
+See backports.entry_points_selectable for compatibility options.
+
+버전 3.13에서 변경: "EntryPoint" objects no longer present a tuple-
+like interface ("__getitem__()").
+
+
+배포 메타데이터
+---------------
+
+importlib.metadata.metadata(distribution_name)
+
+   Return the distribution metadata corresponding to the named
+   distribution package as a "PackageMetadata" instance.
+
+   Raises "PackageNotFoundError" if the named distribution package is
+   not installed in the current Python environment.
+
+class importlib.metadata.PackageMetadata
+
+   A concrete implementation of the PackageMetadata protocol.
+
+   In addition to providing the defined protocol methods and
+   attributes, subscripting the instance is equivalent to calling the
+   "get()" method.
+
+모든 배포 패키지는 "metadata()" 함수를 사용하여 추출할 수 있는 몇 가지
+메타 데이터가 포함되어 있습니다:
+
+   >>> wheel_metadata = metadata('wheel')
+
+반환된 데이터 구조의 키는 메타데이터 키워드의 이름을 지정하고, 값은 배
+포 메타데이터에서 구문 분석하지 않은 채로 반환됩니다:
+
+   >>> wheel_metadata['Requires-Python']
+   '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*'
+
+"PackageMetadata" also presents a "json" attribute that returns all
+the metadata in a JSON-compatible form per **PEP 566**:
+
+   >>> wheel_metadata.json['requires_python']
+   '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*'
+
+The full set of available metadata is not described here. See the PyPA
+Core metadata specification for additional details.
+
+버전 3.10에서 변경: The "Description" is now included in the metadata
+when presented through the payload. Line continuation characters have
+been removed.The "json" attribute was added.
+
+
+배포 버전
+---------
+
+importlib.metadata.version(distribution_name)
+
+   Return the installed distribution package version for the named
+   distribution package.
+
+   Raises "PackageNotFoundError" if the named distribution package is
+   not installed in the current Python environment.
+
+"version()" 함수는 배포 패키지의 버전 번호를 문자열로 가져오는 가장 빠
+른 방법입니다:
+
+   >>> version('wheel')
+   '0.32.3'
+
+
+배포 파일
+---------
+
+importlib.metadata.files(distribution_name)
+
+   Return the full set of files contained within the named
+   distribution package.
+
+   Raises "PackageNotFoundError" if the named distribution package is
+   not installed in the current Python environment.
+
+   Returns "None" if the distribution is found but the installation
+   database records reporting the files associated with the
+   distribution package are missing.
+
+class importlib.metadata.PackagePath
+
+   A "pathlib.PurePath" derived object with additional "dist", "size",
+   and "hash" properties corresponding to the distribution package's
+   installation metadata for that file.
+
+The "files()" function takes a Distribution Package name and returns
+all of the files installed by this distribution. Each file is reported
+as a "PackagePath" instance. For example:
+
+   >>> util = [p for p in files('wheel') if 'util.py' in str(p)][0]
+   >>> util
+   PackagePath('wheel/util.py')
+   >>> util.size
+   859
+   >>> util.dist
+   <importlib.metadata._hooks.PathDistribution object at 0x101e0cef0>
+   >>> util.hash
+   <FileHash mode: sha256 value: bYkw5oMccfazVCoYQwKkkemoVyMAFoR34mmKBx8R1NI>
+
+일단 파일을 얻으면, 내용을 읽을 수도 있습니다:
+
+   >>> print(util.read_text())
+   import base64
+   import sys
+   ...
+   def as_bytes(s):
+       if isinstance(s, text_type):
+           return s.encode('utf-8')
+       return s
+
+You can also use the "locate()" method to get the absolute path to the
+file:
+
+   >>> util.locate()
+   PosixPath('/home/gustav/example/lib/site-packages/wheel/util.py')
+
+메타 데이터 파일 목록 파일("RECORD"나 "SOURCES.txt")이 누락된 경우,
+"files()"는 "None"을 반환합니다. 대상 배포에 메타 데이터가 있음이 알려
+지지 않았을 때, 이 조건에 대한 보호로 호출자는 "files()"에 대한 호출을
+always_iterable이나 다른 것으로 감쌀 수 있습니다.
+
+
+배포 요구 사항
+--------------
+
+importlib.metadata.requires(distribution_name)
+
+   Return the declared dependency specifiers for the named
+   distribution package.
+
+   Raises "PackageNotFoundError" if the named distribution package is
+   not installed in the current Python environment.
+
+배포 패키지의 전체 요구 사항을 얻으려면, "requires()" 함수를 사용하십
+시오:
+
+   >>> requires('wheel')
+   ["pytest (>=3.0.0) ; extra == 'test'", "pytest-cov ; extra == 'test'"]
+
+
+Mapping import to distribution packages
+---------------------------------------
+
+importlib.metadata.packages_distributions()
+
+   Return a mapping from the top level module and import package names
+   found via "sys.meta_path" to the names of the distribution packages
+   (if any) that provide the corresponding files.
+
+   To allow for namespace packages (which may have members provided by
+   multiple distribution packages), each top level import name maps to
+   a list of distribution names rather than mapping directly to a
+   single name.
+
+A convenience method to resolve the Distribution Package name (or
+names, in the case of a namespace package) that provide each
+importable top-level Python module or Import Package:
+
+   >>> packages_distributions()
+   {'importlib_metadata': ['importlib-metadata'], 'yaml': ['PyYAML'], 'jaraco': ['jaraco.classes', 'jaraco.functools'], ...}
+
+Some editable installs, do not supply top-level names, and thus this
+function is not reliable with such installs.
+
+Added in version 3.10.
+
+
+배포
+====
+
+importlib.metadata.distribution(distribution_name)
+
+   Return a "Distribution" instance describing the named distribution
+   package.
+
+   Raises "PackageNotFoundError" if the named distribution package is
+   not installed in the current Python environment.
+
+class importlib.metadata.Distribution
+
+   Details of an installed distribution package.
+
+   Note: different "Distribution" instances do not currently compare
+   equal, even if they relate to the same installed distribution and
+   accordingly have the same attributes.
+
+위에 기술된 모듈 수준 API가 가장 일반적이며 편리한 사용법이지만,
+"Distribution" 클래스에서 모든 정보를 얻을 수 있습니다. "Distribution"
+은 파이썬 배포 패키지의 메타 데이터를 나타내는 추상 객체입니다.
+"distribution()" 함수를 호출해서, 설치된 배포 패키지의 구상
+"Distribution" 서브클래스 인스턴스를 얻을 수 있습니다:
+
+   >>> from importlib.metadata import distribution
+   >>> dist = distribution('wheel')
+   >>> type(dist)
+   <class 'importlib.metadata.PathDistribution'>
+
+따라서, 버전 번호를 얻는 다른 방법은 "Distribution" 인스턴스를 사용하
+는 것입니다:
+
+   >>> dist.version
+   '0.32.3'
+
+"Distribution" 인스턴스에서 사용할 수 있는 모든 종류의 추가 메타 데이
+터가 있습니다:
+
+   >>> dist.metadata['Requires-Python']
+   '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*'
+   >>> dist.metadata['License']
+   'MIT'
+
+For editable packages, an "origin" property may present **PEP 610**
+metadata:
+
+   >>> dist.origin.url
+   'file:///path/to/wheel-0.32.3.editable-py3-none-any.whl'
+
+The full set of available metadata is not described here. See the PyPA
+Core metadata specification for additional details.
+
+Added in version 3.13: The ".origin" property was added.
+
+
+배포 발견
+=========
+
+By default, this package provides built-in support for discovery of
+metadata for file system and zip file Distribution Packages. This
+metadata finder search defaults to "sys.path", but varies slightly in
+how it interprets those values from how other import machinery does.
+In particular:
+
+* "importlib.metadata" does not honor "bytes" objects on "sys.path".
+
+* "importlib.metadata" will incidentally honor "pathlib.Path" objects
+  on "sys.path" even though such values will be ignored for imports.
+
+
+Implementing Custom Providers
+=============================
+
+"importlib.metadata" address two API surfaces, one for *consumers* and
+another for *providers*. Most users are consumers, consuming metadata
+provided by the packages. There are other use-cases, however, where
+users wish to expose metadata through some other mechanism, such as
+alongside a custom importer. Such a use case calls for a *custom
+provider*.
+
+Because Distribution Package metadata is not available through
+"sys.path" searches, or package loaders directly, the metadata for a
+distribution is found through import system finders. To find a
+distribution package's metadata, "importlib.metadata" queries the list
+of *meta path finders* on "sys.meta_path".
+
+The implementation has hooks integrated into the "PathFinder", serving
+metadata for distribution packages found on the file system.
+
+추상 클래스 "importlib.abc.MetaPathFinder"는 파이썬의 임포트 시스템에
+의해 파인더가 기대하는 인터페이스를 정의합니다. "importlib.metadata"는
+"sys.meta_path"의 파인더에서 선택적인 "find_distributions" 콜러블을 조
+회함으로써 이 프로토콜을 확장하고 이 확장된 인터페이스를 다음과 같은
+추상 메서드를 정의하는 "DistributionFinder" 추상 베이스 클래스로 제공
+합니다:
+
+   @abc.abstractmethod
+   def find_distributions(context=DistributionFinder.Context()) -> Iterable[Distribution]:
+       """Return an iterable of all Distribution instances capable of
+       loading the metadata for packages for the indicated ``context``.
+       """
+
+The "DistributionFinder.Context" object provides ".path" and ".name"
+properties indicating the path to search and name to match and may
+supply other relevant context sought by the consumer.
+
+In practice, to support finding distribution package metadata in
+locations other than the file system, subclass "Distribution" and
+implement the abstract methods. Then from a custom finder, return
+instances of this derived "Distribution" in the "find_distributions()"
+method.
+
+
+예제
+----
+
+Imagine a custom finder that loads Python modules from a database:
+
+   class DatabaseImporter(importlib.abc.MetaPathFinder):
+       def __init__(self, db):
+           self.db = db
+
+       def find_spec(self, fullname, target=None) -> ModuleSpec:
+           return self.db.spec_from_name(fullname)
+
+   sys.meta_path.append(DatabaseImporter(connect_db(...)))
+
+That importer now presumably provides importable modules from a
+database, but it provides no metadata or entry points. For this custom
+importer to provide metadata, it would also need to implement
+"DistributionFinder":
+
+   from importlib.metadata import DistributionFinder
+
+   class DatabaseImporter(DistributionFinder):
+       ...
+
+       def find_distributions(self, context=DistributionFinder.Context()):
+           query = dict(name=context.name) if context.name else {}
+           for dist_record in self.db.query_distributions(query):
+               yield DatabaseDistribution(dist_record)
+
+In this way, "query_distributions" would return records for each
+distribution served by the database matching the query. For example,
+if "requests-1.0" is in the database, "find_distributions" would yield
+a "DatabaseDistribution" for "Context(name='requests')" or
+"Context(name=None)".
+
+For the sake of simplicity, this example ignores "context.path". The
+"path" attribute defaults to "sys.path" and is the set of import paths
+to be considered in the search. A "DatabaseImporter" could potentially
+function without any concern for a search path. Assuming the importer
+does no partitioning, the "path" would be irrelevant. In order to
+illustrate the purpose of "path", the example would need to illustrate
+a more complex "DatabaseImporter" whose behavior varied depending on
+"sys.path"/"PYTHONPATH". In that case, the "find_distributions" should
+honor the "context.path" and only yield "Distribution"s pertinent to
+that path.
+
+"DatabaseDistribution", then, would look something like:
+
+   class DatabaseDistribution(importlib.metadata.Distribution):
+       def __init__(self, record):
+           self.record = record
+
+       def read_text(self, filename):
+           """
+           Read a file like "METADATA" for the current distribution.
+           """
+           if filename == "METADATA":
+               return f"""Name: {self.record.name}
+   Version: {self.record.version}
+   """
+           if filename == "entry_points.txt":
+               return "\n".join(
+                 f"""[{ep.group}]\n{ep.name}={ep.value}"""
+                 for ep in self.record.entry_points)
+
+       def locate_file(self, path):
+           raise RuntimeError("This distribution has no file system")
+
+This basic implementation should provide metadata and entry points for
+packages served by the "DatabaseImporter", assuming that the "record"
+supplies suitable ".name", ".version", and ".entry_points" attributes.
+
+The "DatabaseDistribution" may also provide other metadata files, like
+"RECORD" (required for "Distribution.files") or override the
+implementation of "Distribution.files". See the source for more
+inspiration.

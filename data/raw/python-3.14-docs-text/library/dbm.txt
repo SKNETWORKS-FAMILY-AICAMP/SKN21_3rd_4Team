@@ -1,0 +1,467 @@
+"dbm" --- 유닉스 "데이터베이스" 인터페이스
+******************************************
+
+**소스 코드:** Lib/dbm/__init__.py
+
+======================================================================
+
+"dbm"은 DBM 데이터베이스의 변형에 대한 일반 인터페이스입니다:
+
+* "dbm.sqlite3"
+
+* "dbm.gnu"
+
+* "dbm.ndbm"
+
+이러한 모듈이 설치되어 있지 않으면, "dbm.dumb" 모듈에 있는 느리지만 간
+단한 구현이 사용됩니다. 오라클 Berkeley DB에 대한 제삼자 인터페이스가
+있습니다.
+
+exception dbm.error
+
+   지원되는 각 모듈에 의해 발생할 수 있는 예외를 포함하는 튜플. 역시
+   "dbm.error"라고 이름 붙인 고유한 예외를 첫 번째 항목으로 갖고 있습
+   니다 --- "dbm.error"가 발생할 때 이것이 사용됩니다.
+
+dbm.whichdb(filename)
+
+   이 함수는 사용 가능한 몇 가지 간단한 데이터베이스 모듈 ---
+   "dbm.sqlite3", "dbm.gnu", "dbm.ndbm" 또는 "dbm.dumb" --- 중 어느 것
+   을 사용하여 주어진 파일을 열어야 하는지 추측합니다.
+
+   다음 값 중 하나를 반환합니다:
+
+   * 읽을 수 없거나 존재하지 않아 파일을 열 수 없으면 "None"
+
+   * 파일 형식을 추측할 수 없으면 빈 문자열("''")
+
+   * 필요한 모듈 이름을 포함하는 문자열, 가령 "'dbm.ndbm'"이나
+     "'dbm.gnu'"
+
+   버전 3.11에서 변경: *filename* accepts a *path-like object*.
+
+dbm.open(file, flag='r', mode=0o666)
+
+   데이터베이스를 열고 해당 데이터베이스 객체를 반환합니다.
+
+   매개변수:
+      * **file** (*path-like object*) -- 열 데이터베이스 파일. 데이터
+        베이스 파일이 이미 존재하면, "whichdb()" 함수를 사용하여 유형
+        을 판별하고 적절한 모듈이 사용됩니다; 존재하지 않으면, 위에 나
+        열된 것 중 임포트 할 수 있는 첫 번째 서브 모듈이 사용됩니다.
+
+      * **flag** (*str*) --
+
+        * "'r'" (기본값): Open existing database for reading only.
+
+        * "'w'": Open existing database for reading and writing.
+
+        * "'c'": Open database for reading and writing, creating it if
+          it doesn't exist.
+
+        * "'n'": Always create a new, empty database, open for reading
+          and writing.
+
+      * **mode** (*int*) -- The Unix file access mode of the file
+        (default: octal "0o666"), used only when the database has to
+        be created.
+
+   버전 3.11에서 변경: *file* accepts a *path-like object*.
+
+The object returned by "open()" supports the basic functionality of
+mutable *mappings*; keys and their corresponding values can be stored,
+retrieved, and deleted, and iteration, the "in" operator and methods
+"keys()", "get()", "setdefault()" and "clear()" are available. The
+"keys()" method returns a list instead of a view object. The
+"setdefault()" method requires two arguments.
+
+키와 값은 항상 "bytes"로 저장됩니다. 이는 문자열이 사용될 때 저장되기
+전에 기본 인코딩으로 묵시적으로 변환됨을 의미합니다.
+
+이 객체는 "with" 문에서도 사용되도록 지원해서, 완료될 때 자동으로 닫힙
+니다.
+
+버전 3.2에서 변경: 이제 모든 "dbm" 백엔드에서 "get()"과 "setdefault()"
+메서드를 사용할 수 있습니다.
+
+버전 3.4에서 변경: "open()"이 반환한 객체에 컨텍스트 관리 프로토콜에
+대한 기본 지원을 추가했습니다.
+
+버전 3.8에서 변경: 읽기 전용 데이터베이스에서 키를 삭제하면 "KeyError"
+대신 데이터베이스 모듈 특정 예외가 발생합니다.
+
+버전 3.13에서 변경: "clear()" methods are now available for all "dbm"
+backends.
+
+다음 예제는 일부 호스트 명과 해당 제목을 기록한 다음, 데이터베이스의
+내용을 인쇄합니다:
+
+   import dbm
+
+   # 데이터베이스를 엽니다, 필요하면 만듭니다.
+   with dbm.open('cache', 'c') as db:
+
+       # 어떤 값을 저장합니다
+       db[b'hello'] = b'there'
+       db['www.python.org'] = 'Python Website'
+       db['www.cnn.com'] = 'Cable News Network'
+
+       # 키는 이제 바이트열로 간주함에 유의하십시오.
+       assert db[b'www.python.org'] == b'Python Website'
+       # 값이 바이트열임에 주목하십시오.
+       assert db['www.cnn.com'] == b'Cable News Network'
+
+       # 종종 사용되는 dict 인터페이스의 메서드도 작동합니다.
+       print(db.get('python.org', b'not present'))
+
+       # 문자열이 아닌 키나 값을 저장하면 예외(대부분 TypeError)가
+       # 발생합니다.
+       db['www.yahoo.com'] = 4
+
+   # with 문을 떠날 때 db가 자동으로 닫힙니다.
+
+더 보기:
+
+  모듈 "shelve"
+     문자열이 아닌 데이터를 저장하는 지속성 모듈.
+
+개별 서브 모듈은 다음 섹션에서 설명합니다.
+
+
+"dbm.sqlite3" --- dbm 의 SQLite 백엔드
+======================================
+
+Added in version 3.13.
+
+**소스 코드:** Lib/dbm/sqlite3.py
+
+======================================================================
+
+This module uses the standard library "sqlite3" module to provide an
+SQLite backend for the "dbm" module. The files created by
+"dbm.sqlite3" can thus be opened by "sqlite3", or any other SQLite
+browser, including the SQLite CLI.
+
+가용성: not WASI.
+
+이 모듈은 웹어셈블리에서 작동하지 않거나 제공되지 않습니다. 자세한 내
+용은 웹어셈블리 플랫폼을 참조하세요.
+
+dbm.sqlite3.open(filename, /, flag='r', mode=0o666)
+
+   Open an SQLite database.
+
+   매개변수:
+      * **filename** (*path-like object*) -- The path to the database
+        to be opened.
+
+      * **flag** (*str*) --
+
+        * "'r'" (기본값): Open existing database for reading only.
+
+        * "'w'": Open existing database for reading and writing.
+
+        * "'c'": Open database for reading and writing, creating it if
+          it doesn't exist.
+
+        * "'n'": Always create a new, empty database, open for reading
+          and writing.
+
+      * **mode** -- 파일의 유닉스 파일 액세스 모드 (기본값: 8진수
+        "0o666"), 데이터베이스를 만들어야 할 때만 사용됩니다.
+
+   The returned database object behaves similar to a mutable
+   *mapping*, but the "keys()" method returns a list, and the
+   "setdefault()" method requires two arguments. It also supports a
+   "closing" context manager via the "with" keyword.
+
+   The following method is also provided:
+
+   sqlite3.close()
+
+      Close the SQLite database.
+
+
+"dbm.gnu" --- GNU 데이터베이스 관리자
+=====================================
+
+**소스 코드:** Lib/dbm/gnu.py
+
+======================================================================
+
+The "dbm.gnu" module provides an interface to the GDBM (GNU dbm)
+library, similar to the "dbm.ndbm" module, but with additional
+functionality like crash tolerance.
+
+참고:
+
+  The file formats created by "dbm.gnu" and "dbm.ndbm" are
+  incompatible and can not be used interchangeably.
+
+가용성: not Android, not iOS, not WASI.
+
+이 모듈은 모바일 플랫폼이나 웹어셈블리 플랫폼에서 지원되지 않습니다.
+
+exception dbm.gnu.error
+
+   I/O 에러와 같은 "dbm.gnu" 특정 에러에서 발생합니다. 잘못된 키 지정
+   과 같은 일반적인 매핑 에러에 대해서는 "KeyError"가 발생합니다.
+
+dbm.gnu.open_flags
+
+   A string of characters the *flag* parameter of "open()" supports.
+
+dbm.gnu.open(filename, flag='r', mode=0o666, /)
+
+   GDBM 데이터베이스를 열고 "gdbm" 객체를 반환합니다.
+
+   매개변수:
+      * **filename** (*path-like object*) -- 열 데이터베이스 파일.
+
+      * **flag** (*str*) --
+
+        * "'r'" (기본값): Open existing database for reading only.
+
+        * "'w'": Open existing database for reading and writing.
+
+        * "'c'": Open database for reading and writing, creating it if
+          it doesn't exist.
+
+        * "'n'": Always create a new, empty database, open for reading
+          and writing.
+
+        데이터베이스를 여는 방법을 제어하기 위해 다음과 같은 추가 문자
+        가 추가될 수 있습니다:
+
+        * "'f'": 데이터베이스를 빠른 모드로 엽니다. 데이터베이스로의
+          쓰기는 동기화되지 않습니다.
+
+        * "'s'": 동기화 모드. 데이터베이스 변경 사항이 파일에 즉시 기
+          록됩니다.
+
+        * "'u'": 데이터베이스를 잠그지 않습니다.
+
+        모든 플래그가 모든 버전의 GDBM에서 유효한 것은 아닙니다. 지원
+        되는 플래그 문자의 목록은 "open_flags" 멤버를 참조하세요.
+
+      * **mode** (*int*) -- The Unix file access mode of the file
+        (default: octal "0o666"), used only when the database has to
+        be created.
+
+   예외 발생:
+      **error** -- 유효하지 않은 *flag* 인자가 전달될 때.
+
+   버전 3.11에서 변경: *filename* accepts a *path-like object*.
+
+   "gdbm" objects behave similar to mutable *mappings*, but methods
+   "items()", "values()", "pop()", "popitem()", and "update()" are not
+   supported, the "keys()" method returns a list, and the
+   "setdefault()" method requires two arguments. It also supports a
+   "closing" context manager via the "with" keyword.
+
+   버전 3.2에서 변경: Added the "get()" and "setdefault()" methods.
+
+   버전 3.13에서 변경: Added the "clear()" method.
+
+   The following methods are also provided:
+
+   gdbm.close()
+
+      GDBM 데이터베이스를 닫습니다.
+
+   gdbm.firstkey()
+
+      이 메서드와 "nextkey()" 메서드를 사용하여 데이터베이스의 모든 키
+      를 순회할 수 있습니다. 순회는 GDBM의 내부 해시값 순이며, 키의 값
+      으로 정렬되지 않습니다. 이 메서드는 시작 키를 반환합니다.
+
+   gdbm.nextkey(key)
+
+      순회에서 *key* 뒤에 오는 키를 반환합니다. 다음 코드는 메모리에
+      모든 키를 포함하는 리스트를 만들지 않고, 데이터베이스 "db"의 모
+      든 키를 인쇄합니다:
+
+         k = db.firstkey()
+         while k is not None:
+             print(k)
+             k = db.nextkey(k)
+
+   gdbm.reorganize()
+
+      많은 삭제를 수행한 후에, GDBM 파일이 사용하는 공간을 줄이려면,
+      이 루틴이 데이터베이스를 재구성합니다. "gdbm" 객체는 이 재구성을
+      사용할 때 외에는 데이터베이스 파일의 길이를 줄이지 않습니다; 그
+      렇지 않으면, 삭제된 파일 공간이 유지되고 새 (키, 값) 쌍이 추가될
+      때 재사용됩니다.
+
+   gdbm.sync()
+
+      데이터베이스가 빠른 모드로 열렸을 때, 이 메서드를 사용하면 기록
+      되지 않은 데이터가 디스크에 기록됩니다.
+
+
+"dbm.ndbm" --- 새 데이터베이스 관리자(New Database Manager)
+===========================================================
+
+**소스 코드:** Lib/dbm/ndbm.py
+
+======================================================================
+
+"dbm.ndbm" 모듈은 NDBM (New Database Manager) 라이브러리에 대한 인터페
+이스를 제공합니다. 이 모듈은 "고전적인" NDBM 인터페이스나 GDBM (GNU
+dbm) 호환 인터페이스와 함께 사용할 수 있습니다.
+
+참고:
+
+  The file formats created by "dbm.gnu" and "dbm.ndbm" are
+  incompatible and can not be used interchangeably.
+
+경고:
+
+  The NDBM library shipped as part of macOS has an undocumented
+  limitation on the size of values, which can result in corrupted
+  database files when storing values larger than this limit. Reading
+  such corrupted files can result in a hard crash (segmentation
+  fault).
+
+가용성: not Android, not iOS, not WASI.
+
+이 모듈은 모바일 플랫폼이나 웹어셈블리 플랫폼에서 지원되지 않습니다.
+
+exception dbm.ndbm.error
+
+   I/O 에러와 같은 "dbm.ndbm" 특정 에러에서 발생합니다. 잘못된 키 지정
+   과 같은 일반적인 매핑 에러에 대해서는 "KeyError"가 발생합니다.
+
+dbm.ndbm.library
+
+   사용된 NDBM 구현 라이브러리의 이름.
+
+dbm.ndbm.open(filename, flag='r', mode=0o666, /)
+
+   NDBM 데이터베이스를 열고 "ndbm" 객체를 반환합니다.
+
+   매개변수:
+      * **filename** (*path-like object*) -- 데이터베이스 파일의
+        (".dir"이나 ".pag" 확장자가 제거된) 이름(basename)입니다.
+
+      * **flag** (*str*) --
+
+        * "'r'" (기본값): Open existing database for reading only.
+
+        * "'w'": Open existing database for reading and writing.
+
+        * "'c'": Open database for reading and writing, creating it if
+          it doesn't exist.
+
+        * "'n'": Always create a new, empty database, open for reading
+          and writing.
+
+      * **mode** (*int*) -- The Unix file access mode of the file
+        (default: octal "0o666"), used only when the database has to
+        be created.
+
+   버전 3.11에서 변경: Accepts *path-like object* for filename.
+
+   "ndbm" objects behave similar to mutable *mappings*, but methods
+   "items()", "values()", "pop()", "popitem()", and "update()" are not
+   supported, the "keys()" method returns a list, and the
+   "setdefault()" method requires two arguments. It also supports a
+   "closing" context manager via the "with" keyword.
+
+   버전 3.2에서 변경: Added the "get()" and "setdefault()" methods.
+
+   버전 3.13에서 변경: Added the "clear()" method.
+
+   The following method is also provided:
+
+   ndbm.close()
+
+      NDBM 데이터베이스를 닫습니다.
+
+
+"dbm.dumb" --- 이식성 있는 DBM 구현
+===================================
+
+**소스 코드:** Lib/dbm/dumb.py
+
+참고:
+
+  "dbm.dumb" 모듈은 더욱 강인한 모듈을 사용할 수 없을 때 "dbm" 모듈에
+  대한 최후의 대체 폴백으로 사용됩니다. "dbm.dumb" 모듈은 속도를 위해
+  작성되지 않았으며 다른 데이터베이스 모듈만큼 많이 사용되지는 않습니
+  다.
+
+======================================================================
+
+"dbm.dumb" 모듈은 완전히 파이썬으로 작성된 지속적인(persistent) "dict"
+와 유사한 인터페이스를 제공합니다. "dbm.gnu"와 같은 다른 "dbm" 백엔드
+와 달리, 외부 라이브러리가 필요하지 않습니다.
+
+"dbm.dumb" 모듈은 다음과 같은 것들을 정의합니다:
+
+exception dbm.dumb.error
+
+   I/O 에러와 같은 "dbm.dumb" 특정 에러에서 발생합니다. 잘못된 키 지정
+   과 같은 일반적인 매핑 에러에 대해서는 "KeyError"가 발생합니다.
+
+dbm.dumb.open(filename, flag='c', mode=0o666)
+
+   Open a "dbm.dumb" database.
+
+   매개변수:
+      * **filename** --
+
+        The basename of the database file (without extensions). A new
+        database creates the following files:
+
+        * "*filename*.dat"
+
+        * "*filename*.dir"
+
+      * **flag** (*str*) --
+
+        * "'r'": Open existing database for reading only.
+
+        * "'w'": Open existing database for reading and writing.
+
+        * "'c'" (기본값): Open database for reading and writing,
+          creating it if it doesn't exist.
+
+        * "'n'": Always create a new, empty database, open for reading
+          and writing.
+
+      * **mode** (*int*) -- The Unix file access mode of the file
+        (default: octal "0o666"), used only when the database has to
+        be created.
+
+   경고:
+
+     파이썬 AST 컴파일러의 스택 깊이 제한으로 인해, 충분히 큰/복잡한
+     항목이 있는 데이터베이스를 로드할 때 파이썬 인터프리터가 충돌할
+     수 있습니다.
+
+   버전 3.5에서 변경: *flag*이 "'n'" 일 때, "open()"은 항상 새 데이터
+   베이스를 만듭니다.
+
+   버전 3.8에서 변경: A database opened read-only if *flag* is "'r'".
+   A database is not created if it does not exist if *flag* is "'r'"
+   or "'w'".
+
+   버전 3.11에서 변경: *filename* accepts a *path-like object*.
+
+   The returned database object behaves similar to a mutable
+   *mapping*, but the "keys()" and "items()" methods return lists, and
+   the "setdefault()" method requires two arguments. It also supports
+   a "closing" context manager via the "with" keyword.
+
+   The following methods are also provided:
+
+   dumbdbm.close()
+
+      데이터베이스를 닫습니다.
+
+   dumbdbm.sync()
+
+      디스크 상의 디렉터리와 데이터 파일을 동기화합니다. 이 메서드는
+      "shelve.Shelf.sync()" 메서드에 의해 호출됩니다.

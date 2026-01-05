@@ -1,0 +1,22 @@
+8. 편집기와 IDE
+***************
+
+파이썬 프로그래밍 언어를 지원하는 여러 IDE가 있습니다. 많은 편집기와
+IDE는 구문 강조, 디버깅 도구 및 **PEP 8** 검사를 제공합니다.
+
+
+8.1. IDLE --- Python editor and shell
+=====================================
+
+IDLE is Python’s Integrated Development and Learning Environment and
+is generally bundled with Python installs. If you are on Linux and do
+not have IDLE installed see Installing IDLE on Linux. For more
+information see the IDLE docs.
+
+
+8.2. 다른 편집기와 IDE
+======================
+
+파이썬의 커뮤니티 위키에는 편집기와 IDE에 대해 커뮤니티가 제공한 정보
+가 있습니다. 포괄적인 목록을 보려면 Python Editors와 Integrated
+Development Environments로 이동하십시오.

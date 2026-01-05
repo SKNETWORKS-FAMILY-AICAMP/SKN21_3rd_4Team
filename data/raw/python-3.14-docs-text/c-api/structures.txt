@@ -1,0 +1,796 @@
+공통 객체 구조체
+****************
+
+파이썬의 객체 형 정의에 사용되는 많은 구조체가 있습니다. 이 섹션에서는
+이러한 구조체와 사용 방법에 관해 설명합니다.
+
+
+기본 객체 형과 매크로
+=====================
+
+모든 파이썬 객체는 궁극적으로 객체의 메모리 표현의 처음에서 적은 수의
+필드를 공유합니다. 이들은 "PyObject"와 "PyVarObject" 형으로 표시되며,
+다른 모든 파이썬 객체의 정의에서, 직접 또는 간접적으로, 사용되는 일부
+매크로의 확장을 통해 정의됩니다. 추가 매크로는 참조 횟수에서 찾을 수
+있습니다.
+
+type PyObject
+    * Part of the 제한된 API. (Only some members are part of the
+   stable ABI.)*
+
+   All object types are extensions of this type.  This is a type which
+   contains the information Python needs to treat a pointer to an
+   object as an object.  In a normal "release" build, it contains only
+   the object's reference count and a pointer to the corresponding
+   type object. Nothing is actually declared to be a "PyObject", but
+   every pointer to a Python object can be cast to a PyObject*.
+
+   The members must not be accessed directly; instead use macros such
+   as "Py_REFCNT" and "Py_TYPE".
+
+   Py_ssize_t ob_refcnt
+       * Part of the 안정 ABI.*
+
+      The object's reference count, as returned by "Py_REFCNT". Do not
+      use this field directly; instead use functions and macros such
+      as "Py_REFCNT", "Py_INCREF()" and "Py_DecRef()".
+
+      The field type may be different from "Py_ssize_t", depending on
+      build configuration and platform.
+
+   PyTypeObject *ob_type
+       * Part of the 안정 ABI.*
+
+      The object's type. Do not use this field directly; use "Py_TYPE"
+      and "Py_SET_TYPE()" instead.
+
+type PyVarObject
+    * Part of the 제한된 API. (Only some members are part of the
+   stable ABI.)*
+
+   An extension of "PyObject" that adds the "ob_size" field. This is
+   intended for objects that have some notion of *length*.
+
+   As with "PyObject", the members must not be accessed directly;
+   instead use macros such as "Py_SIZE", "Py_REFCNT" and "Py_TYPE".
+
+   Py_ssize_t ob_size
+       * Part of the 안정 ABI.*
+
+      A size field, whose contents should be considered an object's
+      internal implementation detail.
+
+      Do not use this field directly; use "Py_SIZE" instead.
+
+      Object creation functions such as "PyObject_NewVar()" will
+      generally set this field to the requested size (number of
+      items). After creation, arbitrary values can be stored in
+      "ob_size" using "Py_SET_SIZE".
+
+      To get an object's publicly exposed length, as returned by the
+      Python function "len()", use "PyObject_Length()" instead.
+
+PyObject_HEAD
+
+   길이가 변하지 않는 객체를 나타내는 새로운 형을 선언할 때 사용되는
+   매크로입니다. PyObject_HEAD 매크로는 다음과 같이 확장됩니다:
+
+      PyObject ob_base;
+
+   위의 "PyObject" 설명서를 참조하십시오.
+
+PyObject_VAR_HEAD
+
+   인스턴스마다 길이가 다른 객체를 나타내는 새로운 형을 선언할 때 사용
+   되는 매크로입니다. PyObject_VAR_HEAD 매크로는 다음과 같이 확장됩니
+   다:
+
+      PyVarObject ob_base;
+
+   위의 "PyVarObject" 설명서를 참조하십시오.
+
+PyTypeObject PyBaseObject_Type
+    * Part of the 안정 ABI.*
+
+   The base class of all other objects, the same as "object" in
+   Python.
+
+int Py_Is(PyObject *x, PyObject *y)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   Test if the *x* object is the *y* object, the same as "x is y" in
+   Python.
+
+   Added in version 3.10.
+
+int Py_IsNone(PyObject *x)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   Test if an object is the "None" singleton, the same as "x is None"
+   in Python.
+
+   Added in version 3.10.
+
+int Py_IsTrue(PyObject *x)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   Test if an object is the "True" singleton, the same as "x is True"
+   in Python.
+
+   Added in version 3.10.
+
+int Py_IsFalse(PyObject *x)
+    * Part of the 안정 ABI 버전 3.10 이후로.*
+
+   Test if an object is the "False" singleton, the same as "x is
+   False" in Python.
+
+   Added in version 3.10.
+
+PyTypeObject *Py_TYPE(PyObject *o)
+    *반환값: 빌린 참조.** Part of the 안정 ABI 버전 3.14 이후로.*
+
+   Get the type of the Python object *o*.
+
+   The returned reference is *borrowed* from *o*. Do not release it
+   with "Py_DECREF()" or similar.
+
+   버전 3.11에서 변경: "Py_TYPE()" is changed to an inline static
+   function. The parameter type is no longer const PyObject*.
+
+int Py_IS_TYPE(PyObject *o, PyTypeObject *type)
+
+   객체 *o*의 형이 *type*이면 0이 아닌 값을 반환합니다. 그렇지 않으면
+   0을 반환합니다. "Py_TYPE(o) == type"과 동등합니다.
+
+   Added in version 3.9.
+
+void Py_SET_TYPE(PyObject *o, PyTypeObject *type)
+
+   Set the type of object *o* to *type*, without any checking or
+   reference counting.
+
+   This is a very low-level operation. Consider instead setting the
+   Python attribute "__class__" using "PyObject_SetAttrString()" or
+   similar.
+
+   Note that assigning an incompatible type can lead to undefined
+   behavior.
+
+   If *type* is a heap type, the caller must create a new reference to
+   it. Similarly, if the old type of *o* is a heap type, the caller
+   must release a reference to that type.
+
+   Added in version 3.9.
+
+Py_ssize_t Py_SIZE(PyVarObject *o)
+
+   Get the "ob_size" field of *o*.
+
+   버전 3.11에서 변경: "Py_SIZE()" is changed to an inline static
+   function. The parameter type is no longer const PyVarObject*.
+
+void Py_SET_SIZE(PyVarObject *o, Py_ssize_t size)
+
+   Set the "ob_size" field of *o* to *size*.
+
+   Added in version 3.9.
+
+PyObject_HEAD_INIT(type)
+
+   이것은 새로운 "PyObject" 형의 초기화 값으로 확장되는 매크로입니다.
+   이 매크로는 다음으로 확장됩니다:
+
+      _PyObject_EXTRA_INIT
+      1, type,
+
+PyVarObject_HEAD_INIT(type, size)
+
+   이것은 "ob_size" 필드를 포함하여, 새로운 "PyVarObject" 형의 초기화
+   값으로 확장되는 매크로입니다. 이 매크로는 다음으로 확장됩니다:
+
+      _PyObject_EXTRA_INIT
+      1, type, size,
+
+
+함수와 메서드 구현
+==================
+
+type PyCFunction
+    * Part of the 안정 ABI.*
+
+   대부분 파이썬 콜러블을 C로 구현하는 데 사용되는 함수 형. 이 형의 함
+   수는 두 개의 PyObject* 매개 변수를 취하고 하나의 값을 반환합니다.
+   반환 값이 *NULL*이면, 예외가 설정되어 있어야 합니다. "NULL"이 아니
+   면, 반환 값은 파이썬에 노출된 함수의 반환 값으로 해석됩니다. 함수는
+   새로운 참조를 반환해야 합니다.
+
+   함수 서명은 다음과 같습니다:
+
+      PyObject *PyCFunction(PyObject *self,
+                            PyObject *args);
+
+type PyCFunctionWithKeywords
+    * Part of the 안정 ABI.*
+
+   서명이 METH_VARARGS | METH_KEYWORDS 인 파이썬 콜러블을 C로 구현하는
+   데 사용되는 함수 형. 함수 서명은 다음과 같습니다:
+
+      PyObject *PyCFunctionWithKeywords(PyObject *self,
+                                        PyObject *args,
+                                        PyObject *kwargs);
+
+type PyCFunctionFast
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   서명이 "METH_FASTCALL" 인 파이썬 콜러블을 C로 구현하는 데 사용되는
+   함수 형. 함수 서명은 다음과 같습니다:
+
+      PyObject *PyCFunctionFast(PyObject *self,
+                                PyObject *const *args,
+                                Py_ssize_t nargs);
+
+type PyCFunctionFastWithKeywords
+    * Part of the 안정 ABI 버전 3.13 이후로.*
+
+   서명이 METH_FASTCALL | METH_KEYWORDS 인 파이썬 콜러블을 C로 구현하
+   는 데 사용되는 함수 형. 함수 서명은 다음과 같습니다:
+
+      PyObject *PyCFunctionFastWithKeywords(PyObject *self,
+                                            PyObject *const *args,
+                                            Py_ssize_t nargs,
+                                            PyObject *kwnames);
+
+type PyCMethod
+
+   서명이 METH_METHOD | METH_FASTCALL | METH_KEYWORDS 인 파이썬 콜러블
+   을 C로 구현하는 데 사용되는 함수 형. 함수 서명은 다음과 같습니다:
+
+      PyObject *PyCMethod(PyObject *self,
+                          PyTypeObject *defining_class,
+                          PyObject *const *args,
+                          Py_ssize_t nargs,
+                          PyObject *kwnames)
+
+   Added in version 3.9.
+
+type PyMethodDef
+    * Part of the 안정 ABI (including all members).*
+
+   확장형의 메서드를 기술하는 데 사용되는 구조체. 이 구조체에는 네 개
+   의 필드가 있습니다:
+
+   const char *ml_name
+
+      메서드의 이름.
+
+   PyCFunction ml_meth
+
+      C 구현에 대한 포인터.
+
+   int ml_flags
+
+      호출 구성 방법을 나타내는 플래그 비트.
+
+   const char *ml_doc
+
+      독스트링의 내용을 가리킵니다.
+
+"ml_meth"는 C 함수 포인터입니다. 함수는 형이 다를 수 있지만, 항상
+PyObject*를 반환합니다. 함수가 "PyCFunction"이 아니면, 컴파일러는 메서
+드 테이블에서 캐스트를 요구합니다. "PyCFunction"이 첫 번째 매개 변수를
+PyObject*로 정의하더라도, 일반적으로 메서드 구현은 *self* 객체의 특정
+C 형을 사용합니다.
+
+"ml_flags" 필드는 다음 플래그를 포함 할 수 있는 비트 필드입니다. 개별
+플래그는 호출 규칙이나 바인딩 규칙을 나타냅니다.
+
+다음과 같은 호출 규칙이 있습니다:
+
+METH_VARARGS
+    * Part of the 안정 ABI.*
+
+   이는 메서드가 "PyCFunction" 형인 일반적인 호출 규칙입니다. 함수는
+   두 개의 PyObject* 값을 기대합니다. 첫 번째는 메서드의 *self* 객체입
+   니다; 모듈 함수의 경우, 모듈 객체입니다. 두 번째 매개 변수(종종
+   *args*라고 합니다)는 모든 인자를 나타내는 튜플 객체입니다. 이 매개
+   변수는 일반적으로 "PyArg_ParseTuple()"이나 "PyArg_UnpackTuple()"을
+   사용하여 처리됩니다.
+
+METH_KEYWORDS
+
+   Can only be used in certain combinations with other flags:
+   METH_VARARGS | METH_KEYWORDS, METH_FASTCALL | METH_KEYWORDS and
+   METH_METHOD | METH_FASTCALL | METH_KEYWORDS.
+
+METH_VARARGS | METH_KEYWORDS
+   이러한 플래그가 있는 메서드는 "PyCFunctionWithKeywords" 형이어야 합
+   니다. 이 함수는 세 개의 매개 변수를 기대합니다: *self*, *args*,
+   *kwargs*. 여기서 *kwargs*는 모든 키워드 인자의 딕셔너리이거나 키워
+   드 인자가 없으면 "NULL"일 수 있습니다. 매개 변수는 일반적으로
+   "PyArg_ParseTupleAndKeywords()"를 사용하여 처리됩니다.
+
+METH_FASTCALL
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   위치 인자만 지원하는 빠른 호출 규칙. 메서드의 형은
+   "PyCFunctionFast" 입니다. 첫 번째 매개 변수는 *self*이고, 두 번째
+   매개 변수는 인자를 나타내는 PyObject* 값의 C 배열이며, 세 번째 매개
+   변수는 인자 수(배열의 길이)입니다.
+
+   Added in version 3.7.
+
+   버전 3.10에서 변경: "METH_FASTCALL"은 이제 안정 API의 일부입니다.
+
+METH_FASTCALL | METH_KEYWORDS
+   "PyCFunctionFastWithKeywords" 형의 메서드를 사용하여, 키워드 인자도
+   지원하는 "METH_FASTCALL"의 확장. 키워드 인자는 벡터콜(vectorcall)
+   프로토콜과 같은 방식으로 전달됩니다: 추가의 네 번째 PyObject* 매개
+   변수가 있는데, 키워드 인자의 이름(문자열임이 보장됩니다)을 나타내는
+   튜플이거나 키워드가 없으면 "NULL"일 수 있습니다. 키워드 인자의 값은
+   위치 인자 다음에 *args* 배열에 저장됩니다.
+
+   Added in version 3.7.
+
+METH_METHOD
+    * Part of the 안정 ABI 버전 3.7 이후로.*
+
+   Can only be used in the combination with other flags: METH_METHOD |
+   METH_FASTCALL | METH_KEYWORDS.
+
+METH_METHOD | METH_FASTCALL | METH_KEYWORDS
+   *정의하는 클래스(defining class)*, 즉, 문제의 메서드를 포함하는 클
+   래스를 지원하는 METH_FASTCALL | METH_KEYWORDS의 확장. 정의하는 클래
+   스는 "Py_TYPE(self)"의 슈퍼 클래스일 수 있습니다.
+
+   메서드는 "PyCMethod" 형이어야 하는데, "self" 뒤에 "defining_class"
+   인자가 추가된 "METH_FASTCALL | METH_KEYWORDS"와 같습니다.
+
+   Added in version 3.9.
+
+METH_NOARGS
+    * Part of the 안정 ABI.*
+
+   매개 변수가 없는 메서드는 "METH_NOARGS" 플래그로 나열되어 있으면,
+   인자가 주어졌는지 확인할 필요가 없습니다. "PyCFunction" 형이어야 합
+   니다. 첫 번째 매개 변수의 이름은 일반적으로 *self*이며 모듈이나 객
+   체 인스턴스에 대한 참조를 보유합니다. 모든 경우에 두 번째 매개 변수
+   는 "NULL"입니다.
+
+   The function must have 2 parameters. Since the second parameter is
+   unused, "Py_UNUSED" can be used to prevent a compiler warning.
+
+METH_O
+    * Part of the 안정 ABI.*
+
+   ""O"" 인자로 "PyArg_ParseTuple()"을 호출하는 대신, 단일 객체 인자가
+   있는 메서드는 "METH_O" 플래그로 나열 할 수 있습니다. "PyCFunction"
+   형이고, *self* 매개 변수와 단일 인자를 나타내는 PyObject* 매개 변수
+   를 갖습니다.
+
+이 두 상수는 호출 규칙을 나타내는 데 사용되지 않고 클래스의 메서드와
+함께 사용할 때 바인딩을 나타냅니다. 모듈에 정의된 함수에는 사용할 수
+없습니다. 이러한 플래그 중 최대 하나를 주어진 메서드에 대해 설정할 수
+있습니다.
+
+METH_CLASS
+    * Part of the 안정 ABI.*
+
+   메서드로 형의 인스턴스가 아닌 형 객체가 첫 번째 매개 변수로 전달됩
+   니다. "classmethod()" 내장 함수를 사용할 때 만들어지는 것과 유사한
+   *클래스 메서드(class methods)*를 만드는 데 사용됩니다.
+
+METH_STATIC
+    * Part of the 안정 ABI.*
+
+   메서드로 형의 인스턴스가 아닌 "NULL"이 첫 번째 매개 변수로 전달됩니
+   다. "staticmethod()" 내장 함수를 사용할 때 만들어지는 것과 유사한 *
+   정적 메서드(static methods)*를 만드는 데 사용됩니다.
+
+하나의 다른 상수는 같은 메서드 이름을 가진 다른 정의 대신 메서드가 로
+드되는지를 제어합니다.
+
+METH_COEXIST
+    * Part of the 안정 ABI.*
+
+   기존 정의 대신 메서드가 로드됩니다. *METH_COEXIST*가 없으면, 기본값
+   은 반복되는 정의를 건너뛰는 것입니다. 슬롯 래퍼가 메서드 테이블 전
+   에 로드되므로, 예를 들어 *sq_contains* 슬롯의 존재는
+   "__contains__()"라는 래핑 된 메서드를 생성하고 같은 이름의 해당
+   PyCFunction을 로드하지 않습니다. 플래그가 정의되면, PyCFunction이
+   래퍼 객체 자리에 로드되고 슬롯과 공존합니다. 이는 PyCFunction에 대
+   한 호출이 래퍼 객체 호출보다 최적화되어 있기 때문에 유용합니다.
+
+PyTypeObject PyCMethod_Type
+
+   The type object corresponding to Python C method objects. This is
+   available as "types.BuiltinMethodType" in the Python layer.
+
+int PyCMethod_Check(PyObject *op)
+
+   Return true if *op* is an instance of the "PyCMethod_Type" type or
+   a subtype of it. This function always succeeds.
+
+int PyCMethod_CheckExact(PyObject *op)
+
+   This is the same as "PyCMethod_Check()", but does not account for
+   subtypes.
+
+PyObject *PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.9 이후로.*
+
+   Turn *ml* into a Python *callable* object. The caller must ensure
+   that *ml* outlives the *callable*. Typically, *ml* is defined as a
+   static variable.
+
+   The *self* parameter will be passed as the *self* argument to the C
+   function in "ml->ml_meth" when invoked. *self* can be "NULL".
+
+   The *callable* object's "__module__" attribute can be set from the
+   given *module* argument. *module* should be a Python string, which
+   will be used as name of the module the function is defined in. If
+   unavailable, it can be set to "None" or "NULL".
+
+   더 보기: "function.__module__"
+
+   The *cls* parameter will be passed as the *defining_class* argument
+   to the C function. Must be set if "METH_METHOD" is set on
+   "ml->ml_flags".
+
+   Added in version 3.9.
+
+PyTypeObject PyCFunction_Type
+    * Part of the 안정 ABI.*
+
+   The type object corresponding to Python C function objects. This is
+   available as "types.BuiltinFunctionType" in the Python layer.
+
+int PyCFunction_Check(PyObject *op)
+
+   Return true if *op* is an instance of the "PyCFunction_Type" type
+   or a subtype of it. This function always succeeds.
+
+int PyCFunction_CheckExact(PyObject *op)
+
+   This is the same as "PyCFunction_Check()", but does not account for
+   subtypes.
+
+PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
+    *반환값: 새 참조.** Part of the 안정 ABI.*
+
+   Equivalent to "PyCMethod_New(ml, self, module, NULL)".
+
+PyObject *PyCFunction_New(PyMethodDef *ml, PyObject *self)
+    *반환값: 새 참조.** Part of the 안정 ABI 버전 3.4 이후로.*
+
+   Equivalent to "PyCMethod_New(ml, self, NULL, NULL)".
+
+int PyCFunction_GetFlags(PyObject *func)
+    * Part of the 안정 ABI.*
+
+   Get the function's flags on *func* as they were passed to
+   "ml_flags".
+
+   If *func* is not a C function object, this fails with an exception.
+   *func* must not be "NULL".
+
+   This function returns the function's flags on success, and "-1"
+   with an exception set on failure.
+
+int PyCFunction_GET_FLAGS(PyObject *func)
+
+   This is the same as "PyCFunction_GetFlags()", but without error or
+   type checking.
+
+PyCFunction PyCFunction_GetFunction(PyObject *func)
+    * Part of the 안정 ABI.*
+
+   Get the function pointer on *func* as it was passed to "ml_meth".
+
+   If *func* is not a C function object, this fails with an exception.
+   *func* must not be "NULL".
+
+   This function returns the function pointer on success, and "NULL"
+   with an exception set on failure.
+
+int PyCFunction_GET_FUNCTION(PyObject *func)
+
+   This is the same as "PyCFunction_GetFunction()", but without error
+   or type checking.
+
+PyObject *PyCFunction_GetSelf(PyObject *func)
+    * Part of the 안정 ABI.*
+
+   Get the "self" object on *func*. This is the object that would be
+   passed to the first argument of a "PyCFunction". For C function
+   objects created through a "PyMethodDef" on a "PyModuleDef", this is
+   the resulting module object.
+
+   If *func* is not a C function object, this fails with an exception.
+   *func* must not be "NULL".
+
+   This function returns a *borrowed reference* to the "self" object
+   on success, and "NULL" with an exception set on failure.
+
+PyObject *PyCFunction_GET_SELF(PyObject *func)
+
+   This is the same as "PyCFunction_GetSelf()", but without error or
+   type checking.
+
+
+확장형의 어트리뷰트 액세스
+==========================
+
+type PyMemberDef
+    * Part of the 안정 ABI (including all members).*
+
+   C 구조체 멤버에 해당하는 형의 어트리뷰트를 기술하는 구조체. 클래스
+   를 정의할 때, 이 구조체들의 NULL-종료 배열을 "tp_members" 슬롯에 넣
+   습니다.
+
+   필드는 순서대로 다음과 같습니다:
+
+   const char *name
+
+      Name of the member. A NULL value marks the end of a
+      "PyMemberDef[]" array.
+
+      The string should be static, no copy is made of it.
+
+   int type
+
+      The type of the member in the C struct. See Member types for the
+      possible values.
+
+   Py_ssize_t offset
+
+      멤버가 형의 객체 구조체에 위치하는 바이트 단위의 오프셋.
+
+   int flags
+
+      Zero or more of the Member flags, combined using bitwise OR.
+
+   const char *doc
+
+      The docstring, or NULL. The string should be static, no copy is
+      made of it. Typically, it is defined using "PyDoc_STR".
+
+   By default (when "flags" is "0"), members allow both read and write
+   access. Use the "Py_READONLY" flag for read-only access. Certain
+   types, like "Py_T_STRING", imply "Py_READONLY". Only
+   "Py_T_OBJECT_EX" (and legacy "T_OBJECT") members can be deleted.
+
+   For heap-allocated types (created using "PyType_FromSpec()" or
+   similar), "PyMemberDef" may contain a definition for the special
+   member ""__vectorcalloffset__"", corresponding to
+   "tp_vectorcall_offset" in type objects. This member must be defined
+   with "Py_T_PYSSIZET", and either "Py_READONLY" or "Py_READONLY |
+   Py_RELATIVE_OFFSET". For example:
+
+      static PyMemberDef spam_type_members[] = {
+          {"__vectorcalloffset__", Py_T_PYSSIZET,
+           offsetof(Spam_object, vectorcall), Py_READONLY},
+          {NULL}  /* Sentinel */
+      };
+
+   (You may need to "#include <stddef.h>" for "offsetof()".)
+
+   The legacy offsets "tp_dictoffset" and "tp_weaklistoffset" can be
+   defined similarly using ""__dictoffset__"" and
+   ""__weaklistoffset__"" members, but extensions are strongly
+   encouraged to use "Py_TPFLAGS_MANAGED_DICT" and
+   "Py_TPFLAGS_MANAGED_WEAKREF" instead.
+
+   버전 3.12에서 변경: "PyMemberDef" is always available. Previously,
+   it required including ""structmember.h"".
+
+   버전 3.14에서 변경: "Py_RELATIVE_OFFSET" is now allowed for
+   ""__vectorcalloffset__"", ""__dictoffset__"" and
+   ""__weaklistoffset__"".
+
+PyObject *PyMember_GetOne(const char *obj_addr, struct PyMemberDef *m)
+    * Part of the 안정 ABI.*
+
+   Get an attribute belonging to the object at address *obj_addr*.
+   The attribute is described by "PyMemberDef" *m*.  Returns "NULL" on
+   error.
+
+   버전 3.12에서 변경: "PyMember_GetOne" is always available.
+   Previously, it required including ""structmember.h"".
+
+int PyMember_SetOne(char *obj_addr, struct PyMemberDef *m, PyObject *o)
+    * Part of the 안정 ABI.*
+
+   Set an attribute belonging to the object at address *obj_addr* to
+   object *o*. The attribute to set is described by "PyMemberDef" *m*.
+   Returns "0" if successful and a negative value on failure.
+
+   버전 3.12에서 변경: "PyMember_SetOne" is always available.
+   Previously, it required including ""structmember.h"".
+
+
+Member flags
+------------
+
+The following flags can be used with "PyMemberDef.flags":
+
+Py_READONLY
+    * Part of the 안정 ABI 버전 3.12 이후로.*
+
+   Not writable.
+
+Py_AUDIT_READ
+    * Part of the 안정 ABI 버전 3.12 이후로.*
+
+   Emit an "object.__getattr__" audit event before reading.
+
+Py_RELATIVE_OFFSET
+    * Part of the 안정 ABI 버전 3.12 이후로.*
+
+   Indicates that the "offset" of this "PyMemberDef" entry indicates
+   an offset from the subclass-specific data, rather than from
+   "PyObject".
+
+   Can only be used as part of the "Py_tp_members" "slot" when
+   creating a class using negative "basicsize". It is mandatory in
+   that case. When setting "tp_members" from the slot during class
+   creation, Python clears the flag and sets "PyMemberDef.offset" to
+   the offset from the "PyObject" struct.
+
+버전 3.10에서 변경: The "RESTRICTED", "READ_RESTRICTED" and
+"WRITE_RESTRICTED" macros available with "#include "structmember.h""
+are deprecated. "READ_RESTRICTED" and "RESTRICTED" are equivalent to
+"Py_AUDIT_READ"; "WRITE_RESTRICTED" does nothing.
+
+버전 3.12에서 변경: The "READONLY" macro was renamed to "Py_READONLY".
+The "PY_AUDIT_READ" macro was renamed with the "Py_" prefix. The new
+names are now always available. Previously, these required "#include
+"structmember.h"". The header is still available and it provides the
+old names.
+
+
+Member types
+------------
+
+"PyMemberDef.type" can be one of the following macros corresponding to
+various C types. When the member is accessed in Python, it will be
+converted to the equivalent Python type. When it is set from Python,
+it will be converted back to the C type. If that is not possible, an
+exception such as "TypeError" or "ValueError" is raised.
+
+Unless marked (D), attributes defined this way cannot be deleted using
+e.g. "del" or "delattr()".
+
++----------------------------------+-------------------------------+------------------------+
+| 매크로 이름                      | C 형                          | Python type            |
+|==================================|===============================|========================|
+| Py_T_BYTE  * Part of the 안정    | char                          | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_SHORT  * Part of the 안정   | short                         | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_INT  * Part of the 안정 ABI | int                           | "int"                  |
+| 버전 3.12 이후로.*               |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_LONG  * Part of the 안정    | long                          | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_LONGLONG  * Part of the 안  | long long                     | "int"                  |
+| 정 ABI 버전 3.12 이후로.*        |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_UBYTE  * Part of the 안정   | unsigned char                 | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_UINT  * Part of the 안정    | unsigned int                  | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_USHORT  * Part of the 안정  | unsigned short                | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_ULONG  * Part of the 안정   | unsigned long                 | "int"                  |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_ULONGLONG  * Part of the 안 | unsigned long long            | "int"                  |
+| 정 ABI 버전 3.12 이후로.*        |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_PYSSIZET  * Part of the 안  | Py_ssize_t                    | "int"                  |
+| 정 ABI 버전 3.12 이후로.*        |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_FLOAT  * Part of the 안정   | float                         | "float"                |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_DOUBLE  * Part of the 안정  | double                        | "float"                |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_BOOL  * Part of the 안정    | char (written as 0 or 1)      | "bool"                 |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_STRING  * Part of the 안정  | const char* (*)               | "str" (RO)             |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_STRING_INPLACE  * Part of   | const char[] (*)              | "str" (RO)             |
+| the 안정 ABI 버전 3.12 이후로.*  |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_CHAR  * Part of the 안정    | char (0-127)                  | "str" (**)             |
+| ABI 버전 3.12 이후로.*           |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+| Py_T_OBJECT_EX  * Part of the 안 | PyObject*                     | "object" (D)           |
+| 정 ABI 버전 3.12 이후로.*        |                               |                        |
++----------------------------------+-------------------------------+------------------------+
+
+   (*): Zero-terminated, UTF8-encoded C string. With "Py_T_STRING" the
+   C representation is a pointer; with "Py_T_STRING_INPLACE" the
+   string is stored directly in the structure.
+
+   (**): String of length 1. Only ASCII is accepted.
+
+   (RO): Implies "Py_READONLY".
+
+   (D): Can be deleted, in which case the pointer is set to "NULL".
+   Reading a "NULL" pointer raises "AttributeError".
+
+Added in version 3.12: In previous versions, the macros were only
+available with "#include "structmember.h"" and were named without the
+"Py_" prefix (e.g. as "T_INT"). The header is still available and
+contains the old names, along with the following deprecated types:
+
+T_OBJECT
+
+   Like "Py_T_OBJECT_EX", but "NULL" is converted to "None". This
+   results in surprising behavior in Python: deleting the attribute
+   effectively sets it to "None".
+
+T_NONE
+
+   Always "None". Must be used with "Py_READONLY".
+
+
+Defining Getters and Setters
+----------------------------
+
+type PyGetSetDef
+    * Part of the 안정 ABI (including all members).*
+
+   형에 대한 프로퍼티 같은 액세스를 정의하는 구조체.
+   "PyTypeObject.tp_getset" 슬롯에 대한 설명도 참조하십시오.
+
+   const char *name
+
+      어트리뷰트 이름
+
+   getter get
+
+      어트리뷰트를 얻는 C 함수.
+
+   setter set
+
+      어트리뷰트를 설정하거나 삭제하는 선택적 C 함수. "NULL"이면, 어트
+      리뷰트는 읽기 전용입니다.
+
+   const char *doc
+
+      선택적 독스트링
+
+   void *closure
+
+      선택적 사용자 데이터 포인터, getter와 setter에 추가 데이터를 제
+      공합니다.
+
+typedef PyObject *(*getter)(PyObject*, void*)
+    * Part of the 안정 ABI.*
+
+   "get" 함수는 하나의 PyObject* 매개 변수(인스턴스)와 사용자 데이터
+   포인터(연관된 "closure")를 받아들입니다:
+
+   성공하면 새 참조를 반환하고, 실패하면 설정된 예외와 함께 "NULL"을
+   반환해야 합니다.
+
+typedef int (*setter)(PyObject*, PyObject*, void*)
+    * Part of the 안정 ABI.*
+
+   "set" 함수는 두 개의 PyObject* 매개 변수(인스턴스와 설정할 값)와 사
+   용자 데이터 포인터(연관된 "closure")를 받아들입니다:
+
+   어트리뷰트를 삭제해야 하는 경우 두 번째 매개 변수는 "NULL"입니다.
+   성공하면 "0"을, 실패하면 설정된 예외와 함께 "-1"을 반환해야 합니다.

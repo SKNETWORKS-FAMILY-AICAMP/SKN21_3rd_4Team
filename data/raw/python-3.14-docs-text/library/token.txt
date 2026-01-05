@@ -1,0 +1,322 @@
+"token" --- 파이썬 구문 분석 트리에 사용되는 상수
+*************************************************
+
+**소스 코드:** Lib/token.py
+
+======================================================================
+
+이 모듈은 구문 분석 트리의 말단 노드의 숫자 값을 나타내는 상수를 제공
+합니다 (터미널 토큰). 언어 문법의 문맥에서 이름의 정의는 파이썬 배포판
+의 "Grammar/Tokens" 파일을 참조하십시오. 이름이 매핑되는 특정 숫자 값
+은 파이썬 버전 간에 변경될 수 있습니다.
+
+이 모듈은 숫자 코드에서 이름으로의 매핑과 몇몇 함수도 제공합니다. 이
+함수는 파이썬 C 헤더 파일의 정의를 반영합니다.
+
+Note that a token's value may depend on tokenizer options. For
+example, a ""+"" token may be reported as either "PLUS" or "OP", or a
+""match"" token may be either "NAME" or "SOFT_KEYWORD".
+
+token.tok_name
+
+   이 모듈에 정의된 상수의 숫자 값을 다시 이름 문자열로 매핑하여 사람
+   이 읽을 수 있는 구문 분석 트리 표현을 생성할 수 있도록 하는 딕셔너
+   리.
+
+token.ISTERMINAL(x)
+
+   터미널 토큰값이면 "True"를 반환합니다.
+
+token.ISNONTERMINAL(x)
+
+   비 터미널 토큰값이면 "True"를 반환합니다.
+
+token.ISEOF(x)
+
+   *x*가 입력의 마지막을 나타내는 표시면 "True"를 반환합니다.
+
+토큰 상수는 다음과 같습니다:
+
+token.NAME
+
+   Token value that indicates an identifier. Note that keywords are
+   also initially tokenized as "NAME" tokens.
+
+token.NUMBER
+
+   Token value that indicates a numeric literal
+
+token.STRING
+
+   Token value that indicates a string or byte literal, excluding
+   formatted string literals. The token string is not interpreted: it
+   includes the surrounding quotation marks and the prefix (if given);
+   backslashes are included literally, without processing escape
+   sequences.
+
+token.OP
+
+   A generic token value that indicates an operator or delimiter.
+
+   **CPython 구현 상세:** This value is only reported by the
+   "tokenize" module. Internally, the tokenizer uses exact token types
+   instead.
+
+token.COMMENT
+
+   주석을 나타내는 데 사용되는 토큰값. 구문 분석기는 "COMMENT" 토큰을
+   무시합니다.
+
+token.NEWLINE
+
+   Token value that indicates the end of a logical line.
+
+token.NL
+
+   비종결 줄넘김을 나타내는데 사용되는 토큰값. "NL" 토큰은 코드의 논리
+   적 줄이 여러 물리적 줄로 이어질 때 생성됩니다. 구문 분석기는 "NL"
+   토큰을 무시합니다.
+
+token.INDENT
+
+   Token value used at the beginning of a logical line to indicate the
+   start of an indented block.
+
+token.DEDENT
+
+   Token value used at the beginning of a logical line to indicate the
+   end of an indented block.
+
+token.FSTRING_START
+
+   Token value used to indicate the beginning of an f-string literal.
+
+   **CPython 구현 상세:** The token string includes the prefix and the
+   opening quote(s), but none of the contents of the literal.
+
+token.FSTRING_MIDDLE
+
+   Token value used for literal text inside an f-string literal,
+   including format specifications.
+
+   **CPython 구현 상세:** Replacement fields (that is, the non-literal
+   parts of f-strings) use the same tokens as other expressions, and
+   are delimited by "LBRACE", "RBRACE", "EXCLAMATION" and "COLON"
+   tokens.
+
+token.FSTRING_END
+
+   f-string의 끝을 나타내는 데 사용되는 토큰값.
+
+   **CPython 구현 상세:** The token string contains the closing
+   quote(s).
+
+token.TSTRING_START
+
+   Token value used to indicate the beginning of a template string
+   literal.
+
+   **CPython 구현 상세:** The token string includes the prefix and the
+   opening quote(s), but none of the contents of the literal.
+
+   Added in version 3.14.
+
+token.TSTRING_MIDDLE
+
+   Token value used for literal text inside a template string literal
+   including format specifications.
+
+   **CPython 구현 상세:** Replacement fields (that is, the non-literal
+   parts of t-strings) use the same tokens as other expressions, and
+   are delimited by "LBRACE", "RBRACE", "EXCLAMATION" and "COLON"
+   tokens.
+
+   Added in version 3.14.
+
+token.TSTRING_END
+
+   Token value used to indicate the end of a template string literal.
+
+   **CPython 구현 상세:** The token string contains the closing
+   quote(s).
+
+   Added in version 3.14.
+
+token.ENDMARKER
+
+   Token value that indicates the end of input. Used in top-level
+   grammar rules.
+
+token.ENCODING
+
+   소스 바이트열을 텍스트로 디코딩하는 데 사용되는 인코딩을 나타내는
+   토큰값. "tokenize.tokenize()"에 의해 반환되는 첫 번째 토큰은 항상
+   "ENCODING" 토큰입니다.
+
+   이 토큰 유형은 C 토크나이저가 사용하지 않지만 "tokenize" 모듈에 필
+   요합니다.
+
+The following token types are not produced by the "tokenize" module,
+and are defined for special uses in the tokenizer or parser:
+
+token.TYPE_IGNORE
+
+   "type: ignore" 주석이 인식되었음을 나타내는 토큰값. 이러한 토큰은
+   "PyCF_TYPE_COMMENTS" 플래그가 있는 경우에만 일반 "COMMENT" 토큰 대
+   신 생성됩니다.
+
+token.TYPE_COMMENT
+
+   형 주석이 인식되었음을 나타내는 토큰값. 이러한 토큰은
+   "PyCF_TYPE_COMMENTS" 플래그가 있는 경우에만 일반 "COMMENT" 토큰 대
+   신 생성됩니다.
+
+token.SOFT_KEYWORD
+
+   Token value indicating a soft keyword.
+
+   The tokenizer never produces this value. To check for a soft
+   keyword, pass a "NAME" token's string to "keyword.issoftkeyword()".
+
+token.ERRORTOKEN
+
+   잘못된 입력을 나타내는 데 사용되는 토큰값.
+
+   The "tokenize" module generally indicates errors by raising
+   exceptions instead of emitting this token. It can also emit tokens
+   such as "OP" or "NAME" with strings that are later rejected by the
+   parser.
+
+The remaining tokens represent specific operators and delimiters. (The
+"tokenize" module reports these as "OP"; see "exact_type" in the
+"tokenize" documentation for details.)
+
++----------------------------------------------------+----------------------------------------------------+
+| 토큰                                               | 값                                                 |
+|====================================================|====================================================|
+| token.LPAR                                         | ""(""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.RPAR                                         | "")""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.LSQB                                         | ""[""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.RSQB                                         | ""]""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.COLON                                        | "":""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.COMMA                                        | "",""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.SEMI                                         | "";""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.PLUS                                         | ""+""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.MINUS                                        | ""-""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.STAR                                         | ""*""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.SLASH                                        | ""/""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.VBAR                                         | ""|""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.AMPER                                        | ""&""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.LESS                                         | ""<""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.GREATER                                      | "">""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.EQUAL                                        | ""=""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.DOT                                          | "".""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.PERCENT                                      | ""%""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.LBRACE                                       | ""{""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.RBRACE                                       | ""}""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.EQEQUAL                                      | ""==""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.NOTEQUAL                                     | ""!=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.LESSEQUAL                                    | ""<=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.GREATEREQUAL                                 | "">=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.TILDE                                        | ""~""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.CIRCUMFLEX                                   | ""^""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.LEFTSHIFT                                    | ""<<""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.RIGHTSHIFT                                   | "">>""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.DOUBLESTAR                                   | ""**""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.PLUSEQUAL                                    | ""+=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.MINEQUAL                                     | ""-=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.STAREQUAL                                    | ""*=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.SLASHEQUAL                                   | ""/=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.PERCENTEQUAL                                 | ""%=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.AMPEREQUAL                                   | ""&=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.VBAREQUAL                                    | ""|=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.CIRCUMFLEXEQUAL                              | ""^=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.LEFTSHIFTEQUAL                               | ""<<=""                                            |
++----------------------------------------------------+----------------------------------------------------+
+| token.RIGHTSHIFTEQUAL                              | "">>=""                                            |
++----------------------------------------------------+----------------------------------------------------+
+| token.DOUBLESTAREQUAL                              | ""**=""                                            |
++----------------------------------------------------+----------------------------------------------------+
+| token.DOUBLESLASH                                  | ""//""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.DOUBLESLASHEQUAL                             | ""//=""                                            |
++----------------------------------------------------+----------------------------------------------------+
+| token.AT                                           | ""@""                                              |
++----------------------------------------------------+----------------------------------------------------+
+| token.ATEQUAL                                      | ""@=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.RARROW                                       | ""->""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.ELLIPSIS                                     | ""...""                                            |
++----------------------------------------------------+----------------------------------------------------+
+| token.COLONEQUAL                                   | "":=""                                             |
++----------------------------------------------------+----------------------------------------------------+
+| token.EXCLAMATION                                  | ""!""                                              |
++----------------------------------------------------+----------------------------------------------------+
+
+다음과 같은 토큰이 아닌 상수가 제공됩니다:
+
+token.N_TOKENS
+
+   The number of token types defined in this module.
+
+token.EXACT_TOKEN_TYPES
+
+   A dictionary mapping the string representation of a token to its
+   numeric code.
+
+   Added in version 3.8.
+
+버전 3.5에서 변경: "AWAIT" 와 "ASYNC" 토큰이 추가되었습니다.
+
+버전 3.7에서 변경: "COMMENT", "NL" 및 "ENCODING" 토큰이 추가되었습니다
+.
+
+버전 3.7에서 변경: "AWAIT" 와 "ASYNC" 토큰이 제거되었습니다. "async"와
+"await"는 이제 "NAME" 토큰으로 토큰화됩니다.
+
+버전 3.8에서 변경: "TYPE_COMMENT", "TYPE_IGNORE", "COLONEQUAL"이 추가
+되었습니다. "AWAIT"와 "ASYNC" 토큰을 다시 추가했습니다
+("feature_version"을 6 이하로 설정하여 "ast.parse()"로 구형 파이썬 버
+전의 구문 분석을 지원하는 데 필요합니다).
+
+버전 3.12에서 변경: "EXCLAMATION"을 추가했습니다.
+
+버전 3.13에서 변경: "AWAIT" 와 "ASYNC" 토큰을 다시 제거했습니다.

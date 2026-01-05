@@ -1,0 +1,334 @@
+"symtable" --- 컴파일러 심볼 테이블 액세스
+******************************************
+
+**소스 코드:** Lib/symtable.py
+
+======================================================================
+
+심볼 테이블은 바이트 코드가 생성되기 바로 전에 AST에서 컴파일러에 의해
+생성됩니다. 심볼 테이블은 코드에서 모든 식별자의 스코프를 계산합니다.
+"symtable"은 이러한 테이블을 검사하는 인터페이스를 제공합니다.
+
+
+심볼 테이블 생성하기
+====================
+
+symtable.symtable(code, filename, compile_type)
+
+   파이썬 소스 *code*에 대한 최상위 "SymbolTable"을 반환합니다.
+   *filename*은 코드가 들어있는 파일의 이름입니다. *compile_type*은
+   "compile()"에 대한 *mode* 인자와 같습니다.
+
+
+심볼 테이블 검사하기
+====================
+
+class symtable.SymbolTableType
+
+   An enumeration indicating the type of a "SymbolTable" object.
+
+   MODULE = "module"
+
+      Used for the symbol table of a module.
+
+   FUNCTION = "function"
+
+      Used for the symbol table of a function.
+
+   CLASS = "class"
+
+      Used for the symbol table of a class.
+
+   The following members refer to different flavors of annotation
+   scopes.
+
+   ANNOTATION = "annotation"
+
+      Used for annotations if "from __future__ import annotations" is
+      active.
+
+   TYPE_ALIAS = "type alias"
+
+      Used for the symbol table of "type" constructions.
+
+   TYPE_PARAMETERS = "type parameters"
+
+      Used for the symbol table of generic functions or generic
+      classes.
+
+   TYPE_VARIABLE = "type variable"
+
+      Used for the symbol table of the bound, the constraint tuple or
+      the default value of a single type variable in the formal sense,
+      i.e., a TypeVar, a TypeVarTuple or a ParamSpec object (the
+      latter two do not support a bound or a constraint tuple).
+
+   Added in version 3.13.
+
+class symtable.SymbolTable
+
+   블록에 대한 이름 공간 테이블. 생성자는 공개되지 않습니다.
+
+   get_type()
+
+      심볼 테이블의 형을 돌려줍니다. 가능한 값은 "SymbolTableType" 열
+      거형의 멤버들입니다.
+
+      버전 3.12에서 변경: Added "'annotation'",  "'TypeVar bound'",
+      "'type alias'", and "'type parameter'" as possible return
+      values.
+
+      버전 3.13에서 변경: Return values are members of the
+      "SymbolTableType" enumeration.The exact values of the returned
+      string may change in the future, and thus, it is recommended to
+      use "SymbolTableType" members instead of hard-coded strings.
+
+   get_id()
+
+      테이블의 식별자를 돌려줍니다.
+
+   get_name()
+
+      Return the table's name.  This is the name of the class if the
+      table is for a class, the name of the function if the table is
+      for a function, or "'top'" if the table is global ("get_type()"
+      returns "'module'"). For type parameter scopes (which are used
+      for generic classes, functions, and type aliases), it is the
+      name of the underlying class, function, or type alias. For type
+      alias scopes, it is the name of the type alias. For "TypeVar"
+      bound scopes, it is the name of the "TypeVar".
+
+   get_lineno()
+
+      이 테이블이 나타내는 블록의 첫 번째 줄 번호를 반환합니다.
+
+   is_optimized()
+
+      이 테이블의 지역(locals)을 최적화할 수 있으면 "True"를 반환합니
+      다.
+
+   is_nested()
+
+      블록이 중첩된 클래스나 함수면 "True"를 반환합니다.
+
+   has_children()
+
+      블록에 중첩된 이름 공간이 있으면 "True"를 반환합니다. 이것들은
+      "get_children()"으로 얻을 수 있습니다.
+
+   get_identifiers()
+
+      Return a view object containing the names of symbols in the
+      table. See the documentation of view objects.
+
+   lookup(name)
+
+      테이블에서 *name*을 찾아서 "Symbol" 인스턴스를 반환합니다.
+
+   get_symbols()
+
+      테이블에 있는 이름에 대한 "Symbol" 인스턴스 리스트를 반환합니다.
+
+   get_children()
+
+      중첩된 심볼 테이블의 리스트를 반환합니다.
+
+class symtable.Function
+
+   함수나 메서드의 이름 공간. 이 클래스는 "SymbolTable"을 상속합니다.
+
+   get_parameters()
+
+      이 함수의 매개 변수 이름을 포함하는 튜플을 반환합니다.
+
+   get_locals()
+
+      이 함수의 지역 이름을 포함하는 튜플을 반환합니다.
+
+   get_globals()
+
+      이 함수의 전역 이름을 포함하는 튜플을 반환합니다.
+
+   get_nonlocals()
+
+      이 함수에서 명시적으로 선언된 nonlocal 이름을 포함하는 튜플을 반
+      환합니다.
+
+   get_frees()
+
+      이 함수의 *자유 (클로저) 변수* 이름을 포함하는 튜플을 반환합니다
+      .
+
+class symtable.Class
+
+   클래스의 이름 공간. 이 클래스는 "SymbolTable"을 상속합니다.
+
+   get_methods()
+
+      클래스에서 선언된 메서드 같은 함수의 이름을 포함하는 튜플을 반환
+      합니다.
+
+      Here, the term 'method' designates *any* function defined in the
+      class body via "def" or "async def".
+
+      Functions defined in a deeper scope (e.g., in an inner class)
+      are not picked up by "get_methods()".
+
+      예를 들면:
+
+         >>> import symtable
+         >>> st = symtable.symtable('''
+         ... def outer(): pass
+         ...
+         ... class A:
+         ...    def f():
+         ...        def w(): pass
+         ...
+         ...    def g(self): pass
+         ...
+         ...    @classmethod
+         ...    async def h(cls): pass
+         ...
+         ...    global outer
+         ...    def outer(self): pass
+         ... ''', 'test', 'exec')
+         >>> class_A = st.get_children()[2]
+         >>> class_A.get_methods()
+         ('f', 'g', 'h')
+
+      Although "A().f()" raises "TypeError" at runtime, "A.f" is still
+      considered as a method-like function.
+
+      Deprecated since version 3.14, will be removed in version 3.16.
+
+class symtable.Symbol
+
+   소스의 식별자에 해당하는 "SymbolTable"의 항목. 생성자는 공개되지 않
+   습니다.
+
+   get_name()
+
+      심볼의 이름을 돌려줍니다.
+
+   is_referenced()
+
+      심볼이 블록에서 사용되면 "True"를 반환합니다.
+
+   is_imported()
+
+      심볼이 import 문에서 만들어지면 "True"를 반환합니다.
+
+   is_parameter()
+
+      심볼이 매개 변수면 "True"를 반환합니다.
+
+   is_type_parameter()
+
+      Return "True" if the symbol is a type parameter.
+
+      Added in version 3.14.
+
+   is_global()
+
+      심볼이 전역이면 "True"를 반환합니다.
+
+   is_nonlocal()
+
+      심볼이 nonlocal이면 "True"를 반환합니다.
+
+   is_declared_global()
+
+      심볼이 global 문으로 전역으로 선언되면 "True"를 반환합니다.
+
+   is_local()
+
+      심볼이 블록의 지역이면 "True"를 반환합니다.
+
+   is_annotated()
+
+      심볼이 어노테이트 되었으면 "True"를 반환합니다.
+
+      Added in version 3.6.
+
+   is_free()
+
+      심볼이 블록에서 참조되지만 대입되지 않으면 "True"를 반환합니다.
+
+   is_free_class()
+
+      Return *True* if a class-scoped symbol is free from the
+      perspective of a method.
+
+      Consider the following example:
+
+         def f():
+             x = 1  # function-scoped
+             class C:
+                 x = 2  # class-scoped
+                 def method(self):
+                     return x
+
+      In this example, the class-scoped symbol "x" is considered to be
+      free from the perspective of "C.method", thereby allowing the
+      latter to return *1* at runtime and not *2*.
+
+      Added in version 3.14.
+
+   is_assigned()
+
+      심볼이 블록에 대입되면 "True"를 반환합니다.
+
+   is_comp_iter()
+
+      Return "True" if the symbol is a comprehension iteration
+      variable.
+
+      Added in version 3.14.
+
+   is_comp_cell()
+
+      Return "True" if the symbol is a cell in an inlined
+      comprehension.
+
+      Added in version 3.14.
+
+   is_namespace()
+
+      이름 연결(name binding)이 새로운 이름 공간을 도입하면 "True"를
+      반환합니다.
+
+      이름이 함수나 클래스 문의 대상으로 사용되면 참입니다.
+
+      예를 들면:
+
+         >>> table = symtable.symtable("def some_func(): pass", "string", "exec")
+         >>> table.lookup("some_func").is_namespace()
+         True
+
+      하나의 이름을 여러 객체에 연결할 수 있음에 유의하십시오. 결과가
+      "True" 이면, 이름은 새 이름 공간을 도입하지 않는 int 나 list와
+      같은 다른 객체에도 연결되어있을 수 있습니다.
+
+   get_namespaces()
+
+      이 이름에 연결된 이름 공간의 리스트를 돌려줍니다.
+
+   get_namespace()
+
+      이 이름에 연결된 이름 공간을 돌려줍니다. 이 이름에 연결된 이름
+      공간이 둘 이상이거나 없으면, "ValueError"가 발생합니다.
+
+
+Command-Line Usage
+==================
+
+Added in version 3.13.
+
+The "symtable" module can be executed as a script from the command
+line.
+
+   python -m symtable [infile...]
+
+Symbol tables are generated for the specified Python source files and
+dumped to stdout. If no input file is specified, the content is read
+from stdin.

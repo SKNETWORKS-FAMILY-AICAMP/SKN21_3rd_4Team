@@ -1,0 +1,58 @@
+셀 객체
+*******
+
+"Cell" objects are used to implement variables referenced by multiple
+scopes. For each such variable, a cell object is created to store the
+value; the local variables of each stack frame that references the
+value contain a reference to the cells from outer scopes which also
+use that variable.  When the value is accessed, the value contained in
+the cell is used instead of the cell object itself.  This de-
+referencing of the cell object requires support from the generated
+byte-code; these are not automatically de-referenced when accessed.
+Cell objects are not likely to be useful elsewhere.
+
+type PyCellObject
+
+   셀 객체에 사용되는 C 구조체.
+
+PyTypeObject PyCell_Type
+
+   셀 객체에 해당하는 형 객체.
+
+int PyCell_Check(PyObject *ob)
+
+   *ob*가 셀 객체면 참을 반환합니다; *ob*는 "NULL"이 아니어야 합니다.
+   이 함수는 항상 성공합니다.
+
+PyObject *PyCell_New(PyObject *ob)
+    *반환값: 새 참조.*
+
+   *ob* 값을 포함하는 새 셀 객체를 만들고 반환합니다. 매개 변수는
+   "NULL" 일 수 있습니다.
+
+PyObject *PyCell_Get(PyObject *cell)
+    *반환값: 새 참조.*
+
+   셀 *cell*의 내용을 반환합니다. *cell*은 "NULL"일 수 있습니다.
+   *cell*이 셀 객체가 아니면, "NULL"을 반환하고 예외를 설정합니다.
+
+PyObject *PyCell_GET(PyObject *cell)
+    *반환값: 빌린 참조.*
+
+   셀 *cell*의 내용을 반환하지만, *cell*이 "NULL"이 아닌지와 셀 객체인
+   지를 확인하지 않습니다.
+
+int PyCell_Set(PyObject *cell, PyObject *value)
+
+   셀 객체 *cell*의 내용을 *value*로 설정합니다. 이렇게 하면 셀의 현재
+   내용에 대한 참조를 해제합니다. *value*는 "NULL" 일 수 있습니다.
+   *cell*는 "NULL"이 아니어야 합니다.
+
+   성공하면, "0"을 반환합니다. *cell*이 셀 객체가 아니면, 예외를 설정
+   하고 "-1"을 반환합니다.
+
+void PyCell_SET(PyObject *cell, PyObject *value)
+
+   셀 객체 *cell*의 값을 *value*로 설정합니다. 참조 횟수는 조정되지 않
+   고, 안전을 위한 검사가 이루어지지 않습니다; *cell*은 "NULL"이 아니
+   어야 하고 셀 객체여야 합니다.

@@ -1,0 +1,54 @@
+Removed Modules
+***************
+
+The modules described in this chapter have been removed from the
+Python standard library.  They are documented here to help people find
+replacements.
+
+* "aifc" --- AIFF와 AIFC 파일 읽고 쓰기
+
+* "asynchat" --- 비동기 소켓 명령/응답 처리기
+
+* "asyncore" --- 비동기 소켓 처리기
+
+* "audioop" --- 원시 오디오 데이터 조작
+
+* "cgi" --- 공통 게이트웨이 인터페이스 지원
+
+* "cgitb" --- CGI 스크립트를 위한 트레이스백 관리자
+
+* "chunk" --- IFF 청크된 데이터 읽기
+
+* "crypt" --- 유닉스 비밀번호 확인 함수
+
+* "distutils" --- 파이썬 모듈 빌드와 설치
+
+* "imghdr" --- 이미지 유형 판단
+
+* "imp" --- 임포트 내부 액세스
+
+* "mailcap" --- Mailcap 파일 처리
+
+* "msilib" --- 마이크로소프트 설치 파일 읽고 쓰기
+
+* "nis" --- Sun의 NIS(옐로 페이지)에 대한 인터페이스
+
+* "nntplib" --- NNTP 프로토콜 클라이언트
+
+* "ossaudiodev" --- OSS 호환 오디오 장치 액세스
+
+* "pipes" --- 셸 파이프라인에 대한 인터페이스
+
+* "smtpd" --- SMTP 서버
+
+* "sndhdr" --- 음향 파일 유형 판단
+
+* "spwd" --- 섀도 암호 데이터베이스
+
+* "sunau" --- Sun AU 파일 읽고 쓰기
+
+* "telnetlib" --- 텔넷 클라이언트
+
+* "uu" --- uuencode 파일 인코딩과 디코딩
+
+* "xdrlib" --- XDR 데이터 인코딩과 디코딩

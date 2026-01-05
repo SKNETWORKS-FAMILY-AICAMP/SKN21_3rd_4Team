@@ -1,0 +1,275 @@
+인터넷 프로토콜과 지원
+**********************
+
+이 장에서 설명하는 모듈은 인터넷 프로토콜을 구현하고 관련 기술을 지원
+합니다. 모두 파이썬으로 구현됩니다. 대부분 모듈은 시스템 의존적인 모듈
+"socket"을 요구하는데, 현재 대부분의 대중적인 플랫폼에서 지원됩니다.
+다음은 개요입니다:
+
+* "webbrowser" --- 편리한 웹 브라우저 제어기
+
+  * Command-line interface
+
+  * Browser controller objects
+
+* "wsgiref" --- WSGI 유틸리티와 참조 구현
+
+  * "wsgiref.util" -- WSGI 환경 유틸리티
+
+  * "wsgiref.headers" -- WSGI 응답 헤더 도구
+
+  * "wsgiref.simple_server" -- 간단한 WSGI HTTP 서버
+
+  * "wsgiref.validate" --- WSGI 적합성 검사기
+
+  * "wsgiref.handlers" -- 서버/게이트웨이 베이스 클래스
+
+  * "wsgiref.types" --- 정적 형 검사기를 위한 WSGI 형
+
+  * 예제
+
+* "urllib" --- URL 처리 모듈
+
+* "urllib.request" --- URL을 열기 위한 확장 가능한 라이브러리
+
+  * Request 객체
+
+  * OpenerDirector 객체
+
+  * BaseHandler 객체
+
+  * HTTPRedirectHandler 객체
+
+  * HTTPCookieProcessor 객체
+
+  * ProxyHandler 객체
+
+  * HTTPPasswordMgr 객체
+
+  * HTTPPasswordMgrWithPriorAuth 객체
+
+  * AbstractBasicAuthHandler 객체
+
+  * HTTPBasicAuthHandler 객체
+
+  * ProxyBasicAuthHandler 객체
+
+  * AbstractDigestAuthHandler 객체
+
+  * HTTPDigestAuthHandler 객체
+
+  * ProxyDigestAuthHandler 객체
+
+  * HTTPHandler 객체
+
+  * HTTPSHandler 객체
+
+  * FileHandler 객체
+
+  * DataHandler 객체
+
+  * FTPHandler 객체
+
+  * CacheFTPHandler 객체
+
+  * UnknownHandler 객체
+
+  * HTTPErrorProcessor 객체
+
+  * 예
+
+  * 레거시 인터페이스
+
+  * "urllib.request" 제약 사항
+
+* "urllib.response" --- urllib가 사용하는 응답 클래스
+
+* "urllib.parse" --- URL을 구성 요소로 구문 분석
+
+  * URL 구문 분석
+
+  * URL 구문 분석 보안
+
+  * ASCII로 인코딩된 바이트열 구문 분석
+
+  * 구조화된 구문 분석 결과
+
+  * URL 인용
+
+* "urllib.error" --- urllib.request에 의해 발생하는 예외 클래스
+
+* "urllib.robotparser" --- robots.txt 구문 분석기
+
+* "http" --- HTTP 모듈
+
+  * HTTP 상태 코드
+
+  * HTTP 상태 범주
+
+  * HTTP 메서드
+
+* "http.client" --- HTTP 프로토콜 클라이언트
+
+  * HTTPConnection 객체
+
+  * HTTPResponse 객체
+
+  * 예
+
+  * HTTPMessage 객체
+
+* "ftplib" --- FTP 프로토콜 클라이언트
+
+  * 레퍼런스
+
+    * FTP 객체
+
+    * FTP_TLS 객체
+
+    * 모듈 변수
+
+* "poplib" --- POP3 프로토콜 클라이언트
+
+  * POP3 객체
+
+  * POP3 예제
+
+* "imaplib" --- IMAP4 프로토콜 클라이언트
+
+  * IMAP4 객체
+
+  * IMAP4 예
+
+* "smtplib" --- SMTP 프로토콜 클라이언트
+
+  * SMTP 객체
+
+  * SMTP 예
+
+* "uuid" --- UUID objects according to **RFC 9562**
+
+  * 명령줄 사용법
+
+  * 예제
+
+  * 명령줄 예제
+
+* "socketserver" --- 네트워크 서버를 위한 프레임워크
+
+  * 서버 생성 노트
+
+  * 서버 객체
+
+  * 요청 처리기 객체
+
+  * 예
+
+    * "socketserver.TCPServer" 예
+
+    * "socketserver.UDPServer" 예
+
+    * 비동기 믹스인
+
+* "http.server" --- HTTP 서버
+
+  * Command-line interface
+
+  * Security considerations
+
+* "http.cookies" --- HTTP 상태 관리
+
+  * 쿠키 객체
+
+  * Morsel 객체
+
+  * 예제
+
+* "http.cookiejar" --- HTTP 클라이언트를 위한 쿠키 처리
+
+  * CookieJar와 FileCookieJar 객체
+
+  * FileCookieJar 서브 클래스와 웹 브라우저와의 협력
+
+  * CookiePolicy 객체
+
+  * DefaultCookiePolicy 객체
+
+  * Cookie 객체
+
+  * 예
+
+* "xmlrpc" --- XMLRPC 서버와 클라이언트 모듈
+
+* "xmlrpc.client" --- XML-RPC 클라이언트 액세스
+
+  * ServerProxy 객체
+
+  * DateTime 객체
+
+  * Binary 객체
+
+  * Fault 객체
+
+  * ProtocolError 객체
+
+  * MultiCall 객체
+
+  * 편의 함수
+
+  * 클라이언트 사용 예
+
+  * 클라이언트와 서버 사용 예
+
+* "xmlrpc.server" --- 기본 XML-RPC 서버
+
+  * SimpleXMLRPCServer 객체
+
+    * SimpleXMLRPCServer 예제
+
+  * CGIXMLRPCRequestHandler
+
+  * XMLRPC 서버 문서화
+
+  * DocXMLRPCServer 객체
+
+  * DocCGIXMLRPCRequestHandler
+
+* "ipaddress" --- IPv4/IPv6 조작 라이브러리
+
+  * 편의 팩토리 함수
+
+  * IP 주소
+
+    * 주소 객체
+
+    * 문자열과 정수로의 변환
+
+    * 연산자
+
+      * 비교 연산자
+
+      * 산술 연산자
+
+  * IP 네트워크 정의
+
+    * 접두사, 네트 마스크 및 호스트 마스크
+
+    * 네트워크 객체
+
+    * 연산자
+
+      * 논리 연산자
+
+      * 이터레이션
+
+      * 주소 컨테이너로서의 네트워크
+
+  * 인터페이스 객체
+
+    * 연산자
+
+      * 논리 연산자
+
+  * 다른 모듈 수준 함수
+
+  * 맞춤 예외

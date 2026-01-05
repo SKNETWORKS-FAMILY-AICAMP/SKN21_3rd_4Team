@@ -1,0 +1,838 @@
+"shutil" --- 고수준 파일 연산
+*****************************
+
+**소스 코드:** Lib/shutil.py
+
+======================================================================
+
+"shutil" 모듈은 파일과 파일 모음에 대한 여러 가지 고수준 연산을 제공합
+니다. 특히, 파일 복사와 삭제를 지원하는 함수가 제공됩니다. 개별 파일에
+대한 연산에 대해서는, "os" 모듈도 참조하십시오.
+
+경고:
+
+  더 고수준의 파일 복사 함수("shutil.copy()", "shutil.copy2()")조차도
+  모든 파일 메타 데이터를 복사할 수는 없습니다.POSIX 플랫폼에서, 이는
+  ACL뿐만 아니라 파일 소유자와 그룹이 유실됨을 의미합니다. Mac OS에서
+  는, 리소스 포크(resource fork)와 기타 메타 데이터가 사용되지 않습니
+  다. 이는 리소스가 손실되고 파일 유형과 작성자 코드가 올바르지 않음을
+  의미합니다. 윈도우에서는, 파일 소유자, ACL 및 대체 데이터 스트림
+  (alternate data streams)이 복사되지 않습니다.
+
+
+디렉터리와 파일 연산
+====================
+
+shutil.copyfileobj(fsrc, fdst[, length])
+
+   *파일류 객체* *fsrc*의 내용을 파일류 객체 *fdst*에 복사합니다. 주어
+   지면, 정수 *length*는 버퍼 크기입니다. 특히, 음의 *length* 값은 청
+   크 단위로 소스 데이터를 반복하지 않고 데이터를 복사하는 것을 의미합
+   니다; 기본적으로 제어되지 않은 메모리 소비를 피하고자 데이터를 청크
+   로 읽습니다. *fsrc* 객체의 현재 파일 위치가 0이 아니면, 현재 파일
+   위치에서 파일 끝까지의 내용만 복사됨에 유의하십시오.
+
+   "copyfileobj()" will *not* guarantee that the destination stream
+   has been flushed on completion of the copy. If you want to read
+   from the destination at the completion of the copy operation (for
+   example, reading the contents of a temporary file that has been
+   copied from a HTTP stream), you must ensure that you have called
+   "flush()" or "close()" on the file-like object before attempting to
+   read the destination file.
+
+shutil.copyfile(src, dst, *, follow_symlinks=True)
+
+   가능한 가장 효율적인 방법으로 이름이 *src* 인 파일의 내용을 (메타
+   데이터 없이) 이름이 *dst* 인 파일에 복사하고 *dst*를 반환합니다.
+   *src*와 *dst*는 *경로류 객체*나 문자열로 지정된 경로 이름입니다.
+
+   *dst*는 완전한 대상 파일 이름이어야 합니다; 대상 디렉터리 경로를 허
+   용하는 복사는 "copy()"를 참조하십시오. *src*와 *dst*가 같은 파일을
+   지정하면, "SameFileError"가 발생합니다.
+
+   대상 위치는 쓰기 가능해야 합니다; 그렇지 않으면, "OSError" 예외가
+   발생합니다. *dst*가 이미 존재하면, 교체됩니다. 문자나 블록 장치 및
+   파이프와 같은 특수 파일은 이 함수로 복사할 수 없습니다.
+
+   *follow_symlinks*가 거짓이고 *src*가 심볼릭 링크이면, *src*가 가리
+   키는 파일을 복사하는 대신 새 심볼릭 링크가 만들어집니다.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copyfile"을 발생시킵니다.
+
+   버전 3.3에서 변경: 예전에는 "OSError" 대신 "IOError"를 발생시켰습니
+   다. *follow_symlinks* 인자가 추가되었습니다. 이제 *dst*를 반환합니
+   다.
+
+   버전 3.4에서 변경: "Error" 대신 "SameFileError"를 발생시킵니다. 후
+   자는 전자의 서브 클래스라서, 이 변경은 이전 버전과 호환됩니다.
+
+   버전 3.8에서 변경: 파일을 더 효율적으로 복사하기 위해 플랫폼별 빠른
+   복사(fast-copy) 시스템 호출을 내부적으로 사용할 수 있습니다. 플랫폼
+   의존적 효율적인 복사 연산 섹션을 참조하십시오.
+
+exception shutil.SpecialFileError
+
+   This exception is raised when "copyfile()" or "copytree()" attempt
+   to copy a named pipe.
+
+   Added in version 2.7.
+
+exception shutil.SameFileError
+
+   이 예외는 "copyfile()"의 소스와 대상이 같은 파일일 때 발생합니다.
+
+   Added in version 3.4.
+
+shutil.copymode(src, dst, *, follow_symlinks=True)
+
+   *src*에서 *dst*로 권한 비트를 복사합니다. 파일 내용, 소유자 및 그룹
+   은 영향을 받지 않습니다. *src*와 *dst*는 *경로류 객체*나 문자열로
+   지정된 경로 이름입니다. *follow_symlinks*가 거짓이고 *src*와 *dst*
+   가 모두 심볼릭 링크이면, "copymode()"는 (가리키는 파일이 아니라)
+   *dst* 자체의 모드를 수정하려고 시도합니다. 이 기능이 모든 플랫폼에
+   서 사용 가능한 것은 아닙니다; 자세한 내용은 "copystat()"을 참조하십
+   시오. "copymode()"가 로컬 플랫폼에서 심볼릭 링크를 수정할 수 없고,
+   그렇게 하도록 요청받으면, 아무것도 하지 않고 반환합니다.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copymode"를 발생시킵니다.
+
+   버전 3.3에서 변경: *follow_symlinks* 인자가 추가되었습니다.
+
+shutil.copystat(src, dst, *, follow_symlinks=True)
+
+   권한 비트, 마지막 액세스 시간, 마지막 수정 시간 및 플래그를 *src*에
+   서 *dst*로 복사합니다. 리눅스에서 "copystat()"은 가능하면 "확장 어
+   트리뷰트(extended attributes)"도 복사합니다. 파일 내용, 소유자 및
+   그룹은 영향을 받지 않습니다. *src*와 *dst*는 *경로류 객체*나 문자열
+   로 지정된 경로 이름입니다.
+
+   *follow_symlinks*가 거짓이고 *src*와 *dst*가 모두 심볼릭 링크를 참
+   조하면, "copystat()"은 심볼릭 링크가 참조하는 파일이 아닌 심볼릭 링
+   크 자체에 대해 작동합니다 - *src* 심볼릭 링크에서 정보를 읽고,
+   *dst* 심볼릭 링크로 정보를 씁니다.
+
+   참고:
+
+     모든 플랫폼이 심볼릭 링크를 검사하고 수정할 수 있는 기능을 제공하
+     지는 않습니다. 파이썬 자체는 어떤 기능이 로컬에서 사용 가능한지
+     알려줄 수 있습니다.
+
+     * "os.chmod in os.supports_follow_symlinks"가 "True"이면,
+       "copystat()"은 심볼릭 링크의 권한 비트를 수정할 수 있습니다.
+
+     * "os.utime in os.supports_follow_symlinks"가 "True"이면,
+       "copystat()"은 심볼릭 링크의 마지막 액세스와 수정 시간을 수정할
+       수 있습니다.
+
+     * "os.chflags in os.supports_follow_symlinks"가 "True"이면,
+       "copystat()"은 심볼릭 링크의 플래그를 수정할 수 있습니다.
+       ("os.chflags"가 모든 플랫폼에서 사용 가능한 것은 아닙니다.)
+
+     이 기능 중 일부나 전부를 사용할 수 없는 플랫폼에서, 심볼릭 링크를
+     수정하라는 요청을 하면, "copystat()"은 가능한 모든 것들을 복사합
+     니다. "copystat()"은 절대 실패를 반환하지 않습니다.자세한 내용은
+     "os.supports_follow_symlinks"를 참조하십시오.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copystat"을 발생시킵니다.
+
+   버전 3.3에서 변경: *follow_symlinks* 인자와 리눅스 확장 어트리뷰트
+   지원을 추가했습니다.
+
+shutil.copy(src, dst, *, follow_symlinks=True)
+
+   파일 *src*를 파일이나 디렉터리 *dst*에 복사합니다. *src*와 *dst*는
+   *경로류 객체*나 문자열이어야 합니다. *dst*가 디렉터리를 지정하면,
+   파일은 *src*의 기본 파일명을 사용하여 *dst*로 복사됩니다. *dst*가
+   이미 존재하는 파일을 지정하면 대체됩니다. 새로 만든 파일의 경로를
+   반환합니다.
+
+   *follow_symlinks*가 거짓이고, *src*가 심볼릭 링크이면, *dst*는 심볼
+   릭 링크로 만들어집니다. *follow_symlinks*가 참이고 *src*가 심볼릭
+   링크이면, *dst*는 *src*가 참조하는 파일의 사본이 됩니다.
+
+   "copy()"는 파일 데이터와 파일의 권한 모드("os.chmod()"를 참조하십시
+   오)를 복사합니다. 파일의 생성과 수정 시간과 같은 다른 메타 데이터는
+   유지되지 않습니다. 원본의 모든 파일 메타 데이터를 유지하려면 대신
+   "copy2()"를 사용하십시오.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copyfile"을 발생시킵니다.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copymode"를 발생시킵니다.
+
+   버전 3.3에서 변경: *follow_symlinks* 인자가 추가되었습니다. 이제 새
+   로 만든 파일의 경로를 반환합니다.
+
+   버전 3.8에서 변경: 파일을 더 효율적으로 복사하기 위해 플랫폼별 빠른
+   복사(fast-copy) 시스템 호출을 내부적으로 사용할 수 있습니다. 플랫폼
+   의존적 효율적인 복사 연산 섹션을 참조하십시오.
+
+shutil.copy2(src, dst, *, follow_symlinks=True)
+
+   "copy2()"가 파일 메타 데이터 보존도 시도한다는 점을 제외하고는
+   "copy()"와 동일합니다.
+
+   *follow_symlinks*가 거짓이고, *src*가 심볼릭 링크이면, "copy2()"는
+   *src* 심볼릭 링크의 모든 메타 데이터를 새로 만들어진 *dst* 심볼릭
+   링크로 복사하려고 시도합니다. 그러나, 이 기능이 모든 플랫폼에서 사
+   용 가능한 것은 아닙니다. 이 기능의 일부나 전부를 사용할 수 없는 플
+   랫폼에서, "copy2()"는 가능한 모든 메타 데이터를 보존합니다;
+   "copy2()"는 파일 메타 데이터를 보존할 수 없다는 이유로 예외를 발생
+   시키지 않습니다.
+
+   "copy2()"는 "copystat()"을 사용하여 파일 메타 데이터를 복사합니다.
+   심볼릭 링크 메타 데이터 수정을 위한 플랫폼 지원에 대한 자세한 정보
+   는 "copystat()"을 참조하십시오.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copyfile"을 발생시킵니다.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copystat"을 발생시킵니다.
+
+   버전 3.3에서 변경: *follow_symlinks* 인자를 추가하고, 확장 파일 시
+   스템 어트리뷰트도 복사하려고 합니다 (현재 리눅스만 해당합니다). 이
+   제 새로 만든 파일의 경로를 반환합니다.
+
+   버전 3.8에서 변경: 파일을 더 효율적으로 복사하기 위해 플랫폼별 빠른
+   복사(fast-copy) 시스템 호출을 내부적으로 사용할 수 있습니다. 플랫폼
+   의존적 효율적인 복사 연산 섹션을 참조하십시오.
+
+shutil.ignore_patterns(*patterns)
+
+   이 팩토리 함수는 "copytree()"의 *ignore* 인자를 위한 콜러블 함수로
+   사용할 수 있는 함수를 만드는데, 제공된 glob 스타일 *patterns* 중 하
+   나와 일치하는 파일과 디렉터리를 무시하도록 합니다. 아래 예를 참조하
+   십시오.
+
+shutil.copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2, ignore_dangling_symlinks=False, dirs_exist_ok=False)
+
+   *src*를 루트로 하는 전체 디렉터리 트리를 *dst*라는 디렉터리에 재귀
+   적으로 복사하고 대상 디렉터리를 반환합니다. *dst*를 포함해야 하는
+   모든 중간 디렉터리도 기본적으로 생성됩니다.
+
+   디렉터리의 권한과 시간은 "copystat()"으로 복사되고, 개별 파일은
+   "copy2()"를 사용하여 복사됩니다.
+
+   *symlinks*가 참이면, 소스 트리의 심볼릭 링크가 새 트리에서 심볼릭
+   링크로 표시되고 플랫폼이 허용하는 한 원래 링크의 메타 데이터가 복사
+   됩니다; 거짓이거나 생략되면, 링크된 파일의 내용과 메타 데이터가 새
+   트리에 복사됩니다.
+
+   *symlinks*가 거짓이면, 심볼릭 링크가 가리키는 파일이 존재하지 않으
+   면, 복사 과정 종료 시 발생하는 "Error" 예외의 에러 리스트에 예외가
+   추가됩니다. 이 예외를 침묵시키려면 선택적
+   *ignore_dangling_symlinks* 플래그를 참으로 설정할 수 있습니다. 이
+   옵션은 "os.symlink()"를 지원하지 않는 플랫폼에는 영향을 미치지 않음
+   에 주목하십시오.
+
+   *ignore*가 주어지면, "copytree()"가 방문하는 디렉터리와
+   "os.listdir()"가 반환한 이 디렉터리 내용의 리스트를 인자로 수신하는
+   콜러블 이어야 합니다. "copytree()"는 재귀적으로 호출되기 때문에, 복
+   사되는 디렉터리마다 *ignore* 콜러블이 한 번 호출됩니다. 콜러블은 현
+   재 디렉터리에 상대적인 디렉터리와 파일 이름의 시퀀스를 반환해야 합
+   니다 (즉, 두 번째 인자에 있는 항목의 부분집합); 이 이름들은 복사 과
+   정에서 무시됩니다. "ignore_patterns()"를 사용하여 glob 스타일 패턴
+   을 기반으로 이름을 무시하는 콜러블을 만들 수 있습니다.
+
+   예외가 발생하면, 이유 리스트와 함께 "Error"가 발생합니다.
+
+   *copy_function*이 제공되면, 각 파일을 복사하는 데 사용되는 콜러블
+   이어야 합니다. 소스 경로와 대상 경로를 인자로 호출됩니다. 기본적으
+   로, "copy2()"가 사용되지만, 같은 서명을 지원하는 ("copy()"와 같은)
+   모든 함수를 사용할 수 있습니다.
+
+   If *dirs_exist_ok* is false (the default) and *dst* already exists,
+   a "FileExistsError" is raised. If *dirs_exist_ok* is true, the
+   copying operation will continue if it encounters existing
+   directories, and files within the *dst* tree will be overwritten by
+   corresponding files from the *src* tree.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.copytree"를 발생시킵니다.
+
+   버전 3.2에서 변경: 사용자 정의 복사 함수를 제공할 수 있도록
+   *copy_function* 인자를 추가했습니다. *symlinks*가 거짓일 때 연결이
+   끊긴(dangling) 심볼릭 링크 에러를 침묵시키도록
+   *ignore_dangling_symlinks* 인자를 추가했습니다.
+
+   버전 3.3에서 변경: *symlinks*가 거짓일 때 메타 데이터를 복사합니다.
+   이제 *dst*를 반환합니다.
+
+   버전 3.8에서 변경: 파일을 더 효율적으로 복사하기 위해 플랫폼별 빠른
+   복사(fast-copy) 시스템 호출을 내부적으로 사용할 수 있습니다. 플랫폼
+   의존적 효율적인 복사 연산 섹션을 참조하십시오.
+
+   버전 3.8에서 변경: *dirs_exist_ok* 매개 변수를 추가했습니다.
+
+shutil.rmtree(path, ignore_errors=False, onerror=None, *, onexc=None, dir_fd=None)
+
+   전체 디렉터리 트리를 삭제합니다; *path*는 디렉터리를 가리켜야 합니
+   다 (하지만 디렉터리에 대한 심볼릭 링크는 아닙니다). *ignore_errors*
+   가 참이면, 삭제 실패로 인한 에러는 무시됩니다; 거짓이거나 생략되면,
+   이러한 에러는 *onexc*나 *onerror*로 지정된 처리기를 호출하여 처리하
+   거나, 모두 생략하면 예외는 호출자에게 전파됩니다.
+
+   This function can support paths relative to directory descriptors.
+
+   참고:
+
+     필요한 fd 기반 함수를 지원하는 플랫폼에서는 기본적으로 "rmtree()"
+     의 심볼릭 링크 공격 방지 버전이 사용됩니다. 다른 플랫폼에서는,
+     "rmtree()" 구현이 심볼릭 링크 공격에 취약합니다: 적절한 타이밍과
+     상황에 따라, 공격자는 파일 시스템에서 심볼릭 링크를 조작하여 다른
+     방법으로는 액세스할 수 없는 파일을 삭제할 수 있습니다. 응용 프로
+     그램은 "rmtree.avoids_symlink_attacks" 함수 어트리뷰트를 사용하여
+     어떤 버전이 사용되는지 판별할 수 있습니다.
+
+   *onexc*가 제공되면, 세 가지 매개 변수를 받아들이는 콜러블 이어야 합
+   니다: *function*, *path* 및 *excinfo*.
+
+   첫 번째 매개 변수 *function*은 예외를 발생시킨 함수입니다; 플랫폼과
+   구현에 따라 다릅니다. 두 번째 매개 변수 *path*는 *function*에 전달
+   된 경로 이름입니다. 세 번째 매개 변수 *excinfo*는 발생한 예외입니다
+   . *onexc*에 의해 발생한 예외는 포착되지 않습니다.
+
+   The deprecated *onerror* is similar to *onexc*, except that the
+   third parameter it receives is the tuple returned from
+   "sys.exc_info()".
+
+   더 보기:
+
+     rmtree 예 for an example of handling the removal of a directory
+     tree that contains read-only files.
+
+   인자 "path", "dir_fd"로 감사 이벤트 "shutil.rmtree"를 발생시킵니다.
+
+   버전 3.3에서 변경: 플랫폼이 fd 기반 함수를 지원하면 자동으로 사용되
+   는 심볼릭 링크 공격 방지 버전을 추가했습니다.
+
+   버전 3.8에서 변경: 윈도우에서, 정션(junction)을 제거하기 전에 더는
+   디렉터리 정션의 내용을 삭제하지 않습니다.
+
+   버전 3.11에서 변경: *dir_fd* 매개 변수를 추가했습니다.
+
+   버전 3.12에서 변경: Added the *onexc* parameter, deprecated
+   *onerror*.
+
+   버전 3.13에서 변경: "rmtree()" now ignores "FileNotFoundError"
+   exceptions for all but the top-level path. Exceptions other than
+   "OSError" and subclasses of "OSError" are now always propagated to
+   the caller.
+
+   rmtree.avoids_symlink_attacks
+
+      현재 플랫폼과 구현이 "rmtree()"의 심볼릭 링크 공격 방지 버전을
+      제공하는지를 나타냅니다. 현재 이것은 fd 기반 디렉터리 액세스 함
+      수를 지원하는 플랫폼에서만 참입니다.
+
+      Added in version 3.3.
+
+shutil.move(src, dst, copy_function=copy2)
+
+   파일이나 디렉터리(*src*)를 다른 위치로 재귀적으로 옮기고 대상을 반
+   환합니다.
+
+   대상이 기존 디렉터리이거나 디렉터리를 가리키는 심볼릭 링크면, *src*
+   가 해당 디렉터리 내로 이동됩니다. 해당 디렉터리 내의 대상 경로는 이
+   미 존재해서는 안 됩니다.
+
+   *dst*가 이미 존재하지만, 디렉터리가 아니면, "os.rename()" 의미에 따
+   라 덮어쓸 수 있습니다.
+
+   대상이 현재 파일 시스템에 있으면, "os.rename()"이 사용됩니다. 그렇
+   지 않으면, *copy_function*을 사용하여 *src*를 대상으로 복사한 다음
+   제거합니다. 심볼릭 링크의 경우, *src*의 대상을 가리키는 새 심볼릭
+   링크가 대상으로 만들어지고 *src*가 제거됩니다.
+
+   *copy_function*이 제공되면, *src*와 대상 두 개의 인자를 취하는 콜러
+   블 이어야 하며, "os.rename()"을 사용할 수 없을 때 *src*를 대상으로
+   복사하는 데 사용됩니다. 소스가 디렉터리이면, "copytree()"가 호출되
+   고 *copy_function*을 전달합니다. 기본 *copy_function*은 "copy2()"입
+   니다. *copy_function*으로 "copy()"를 사용하면 메타 데이터를 복사하
+   지 않는 비용을 지불하는 대신 메타 데이터도 복사할 때 실패하는 이동
+   이 성공할 수 있습니다.
+
+   인자 "src", "dst"로 감사 이벤트 "shutil.move"를 발생시킵니다.
+
+   버전 3.3에서 변경: 외부 파일 시스템에 대한 명시적 심볼릭 링크 처리
+   를 추가하여, GNU **mv**의 동작에 맞게 조정했습니다. 이제 *dst*를 반
+   환합니다.
+
+   버전 3.5에서 변경: *copy_function* 키워드 인자를 추가했습니다.
+
+   버전 3.8에서 변경: 파일을 더 효율적으로 복사하기 위해 플랫폼별 빠른
+   복사(fast-copy) 시스템 호출을 내부적으로 사용할 수 있습니다. 플랫폼
+   의존적 효율적인 복사 연산 섹션을 참조하십시오.
+
+   버전 3.9에서 변경: *src*와 *dst* 모두에 대해 *경로류 객체*를 받아들
+   입니다.
+
+shutil.disk_usage(path)
+
+   지정된 경로(path)에 대한 디스크 사용량 통계를 *total*, *used* 및
+   *free* 어트리뷰트를 갖는 *네임드 튜플*로 반환합니다. 이들은 바이트
+   단위의 총, 사용된, 여유 공간의 양입니다. *path*는 파일이나 디렉터리
+   일 수 있습니다.
+
+   참고:
+
+     On Unix filesystems, *path* must point to a path within a
+     **mounted** filesystem partition. On those platforms, CPython
+     doesn't attempt to retrieve disk usage information from non-
+     mounted filesystems.
+
+   Added in version 3.3.
+
+   버전 3.8에서 변경: 윈도우에서, *path*는 이제 파일이나 디렉터리일 수
+   있습니다.
+
+   가용성: Unix, Windows.
+
+shutil.chown(path, user=None, group=None, *, dir_fd=None, follow_symlinks=True)
+
+   주어진 *path*의 소유자 *user* 및/또는 *group*을 변경합니다.
+
+   *user*는 시스템 사용자 이름이나 uid 일 수 있습니다; *group*도 마찬
+   가지입니다. 최소한 하나의 인자가 필요합니다.
+
+   하부 함수인 "os.chown()"도 참조하십시오.
+
+   인자 "path", "user", "group"으로 감사 이벤트 "shutil.chown"을 발생
+   시킵니다.
+
+   가용성: Unix.
+
+   Added in version 3.3.
+
+   버전 3.13에서 변경: *dir_fd* 와 *follow_symlinks* 매개 변수가 추가
+   되었습니다.
+
+shutil.which(cmd, mode=os.F_OK | os.X_OK, path=None)
+
+   주어진 *cmd*가 호출되면 실행될 실행 파일의 경로를 반환합니다. 아무
+   런 *cmd*도 호출되지 않을 것이라면, "None"을 반환합니다.
+
+   *mode*는 "os.access()"에 전달되는 권한 마스크입니다, 기본적으로 파
+   일이 존재하고 실행 가능한지를 판단합니다.
+
+   *path* is a ""PATH" string" specifying the directories to look in,
+   delimited by "os.pathsep". When no *path* is specified, the "PATH"
+   environment variable is read from "os.environ", falling back to
+   "os.defpath" if it is not set.
+
+   If *cmd* contains a directory component, "which()" only checks the
+   specified path directly and does not search the directories listed
+   in *path* or in the system's "PATH" environment variable.
+
+   On Windows, the current directory is prepended to the *path* if
+   *mode* does not include "os.X_OK". When the *mode* does include
+   "os.X_OK", the Windows API "NeedCurrentDirectoryForExePathW" will
+   be consulted to determine if the current directory should be
+   prepended to *path*. To avoid consulting the current working
+   directory for executables: set the environment variable
+   "NoDefaultCurrentDirectoryInExePath".
+
+   또한 윈도우에서, "PATHEXT" 환경 변수는 확장자가 포함되지 않은 명령
+   을 해석하는 데 사용됩니다. 예를 들어, "shutil.which("python")"을 호
+   출하면, "which()"는 "PATHEXT"를 검색하여 *path* 디렉터리에서
+   "python.exe"를 찾아야 한다는 것을 알 수 있습니다. 예를 들어, 윈도우
+   에서:
+
+      >>> shutil.which("python")
+      'C:\\Python33\\python.EXE'
+
+   This is also applied when *cmd* is a path that contains a directory
+   component:
+
+      >>> shutil.which("C:\\Python33\\python")
+      'C:\\Python33\\python.EXE'
+
+   Added in version 3.3.
+
+   버전 3.8에서 변경: 이제 "bytes" 형을 받아들입니다. *cmd* 형이
+   "bytes"이면 결과 형도 "bytes"입니다.
+
+   버전 3.12에서 변경: On Windows, the current directory is no longer
+   prepended to the search path if *mode* includes "os.X_OK" and
+   WinAPI "NeedCurrentDirectoryForExePathW(cmd)" is false, else the
+   current directory is prepended even if it is already in the search
+   path; "PATHEXT" is used now even when *cmd* includes a directory
+   component or ends with an extension that is in "PATHEXT"; and
+   filenames that have no extension can now be found.
+
+exception shutil.Error
+
+   이 예외는 다중 파일 연산 중에 발생한 예외를 수집합니다.
+   "copytree()"의 경우, 예외 인자는 3-튜플(*srcname*, *dstname*,
+   *exception*)의 리스트입니다.
+
+
+플랫폼 의존적 효율적인 복사 연산
+--------------------------------
+
+파이썬 3.8부터, 파일 복사를 수반하는 모든 함수("copyfile()", "copy()",
+"copy2()", "copytree()" 및 "move()")는 파일을 더 효율적으로 복사하기
+위해 플랫폼별 "빠른 복사(fast-copy)" 시스템 호출을 사용할 수 있습니다
+(bpo-33671을 참조하십시오). "빠른 복사"는 복사 연산이 커널 내에서 발생
+하여, ""outfd.write(infd.read())""와 같이 파이썬에서 사용자 공간 버퍼
+사용을 피함을 의미합니다.
+
+macOS에서는 fcopyfile이 (메타 데이터가 아닌) 파일 내용을 복사하는 데
+사용됩니다.
+
+On Linux "os.copy_file_range()" or "os.sendfile()" is used.
+
+On Solaris "os.sendfile()" is used.
+
+윈도우에서는 "shutil.copyfile()"이 더 큰 기본 버퍼 크기(64 KiB 대신 1
+MiB)를 사용하고 "shutil.copyfileobj()"의 "memoryview()" 기반 변형이 사
+용됩니다.
+
+빠른 복사 연산이 실패하고 대상 파일에 아무런 데이터도 기록되지 않았으
+면 shutil은 내부적으로 덜 효율적인 "copyfileobj()" 함수를 사용하여 조
+용히 폴 백 됩니다.
+
+버전 3.8에서 변경.
+
+버전 3.14에서 변경: Solaris now uses "os.sendfile()".
+
+버전 3.14에서 변경: Copy-on-write or server-side copy may be used
+internally via "os.copy_file_range()" on supported Linux filesystems.
+
+
+copytree 예
+-----------
+
+"ignore_patterns()" 도우미를 사용하는 예:
+
+   from shutil import copytree, ignore_patterns
+
+   copytree(source, destination, ignore=ignore_patterns('*.pyc', 'tmp*'))
+
+이것은 ".pyc" 파일과 이름이 "tmp"로 시작하는 파일이나 디렉터리를 제외
+한 모든 것을 복사합니다.
+
+로깅 호출을 추가하기 위해 *ignore* 인자를 사용하는 또 다른 예:
+
+   from shutil import copytree
+   import logging
+
+   def _logpath(path, names):
+       logging.info('Working in %s', path)
+       return []   # 아무것도 무시되지 않습니다
+
+   copytree(source, destination, ignore=_logpath)
+
+
+rmtree 예
+---------
+
+이 예는 윈도우에서 일부 파일에 읽기 전용 비트가 설정된 디렉터리 트리를
+삭제하는 방법을 보여줍니다. onexc 콜백을 사용하여 읽기 전용 비트를 지
+우고 삭제를 다시 시도합니다. 후속 실패는 전파됩니다.
+
+   import os, stat
+   import shutil
+
+   def remove_readonly(func, path, _):
+       "읽기 전용 비트를 지우고 삭제를 다시 시도합니다"
+       os.chmod(path, stat.S_IWRITE)
+       func(path)
+
+   shutil.rmtree(directory, onexc=remove_readonly)
+
+
+아카이브 연산
+=============
+
+Added in version 3.2.
+
+버전 3.5에서 변경: *xztar* 형식에 대한 지원이 추가되었습니다.
+
+압축 및 아카이브 된 파일을 만들고 읽는 고수준 유틸리티도 제공됩니다.
+이들은 "zipfile"과 "tarfile" 모듈에 의존합니다.
+
+shutil.make_archive(base_name, format[, root_dir[, base_dir[, verbose[, dry_run[, owner[, group[, logger]]]]]]])
+
+   아카이브 파일(가령 zip이나 tar)을 만들고 이름을 반환합니다.
+
+   *base_name*은 만들 파일의 이름인데, 경로를 포함하고 형식별 확장자는
+   제외합니다.
+
+   *format* is the archive format: one of "zip" (if the "zlib" module
+   is available), "tar", "gztar" (if the "zlib" module is available),
+   "bztar" (if the "bz2" module is available), "xztar" (if the "lzma"
+   module is available), or "zstdtar" (if the "compression.zstd"
+   module is available).
+
+   *root_dir*은 아카이브의 루트 디렉터리가 될 디렉터리입니다, 아카이브
+   의 모든 경로는 이것에 상대적입니다; 예를 들어, 보통 아카이브를 만들
+   기 전에 *root_dir*로 chdir 합니다.
+
+   *base_dir*은 아카이브를 시작할 디렉터리입니다; 즉, *base_dir*은 아
+   카이브에 있는 모든 파일과 디렉터리의 공통 접두사가 됩니다.
+   *base_dir*은 *root_dir*에 상대적으로 제공되어야 합니다. *base_dir*
+   과 *root_dir*을 함께 사용하는 방법은 base_dir을 사용한 아카이브 예
+   를 참조하십시오.
+
+   *root_dir*과 *base_dir*은 모두 현재 디렉터리가 기본값입니다.
+
+   *dry_run*이 참이면, 아카이브가 만들어지지 않지만, 실행될 연산이
+   *logger*에 로그 됩니다.
+
+   tar 아카이브를 만들 때 *owner와 *group*이 사용됩니다. 기본적으로,
+   현재 소유자와 그룹을 사용합니다.
+
+   *logger*는 **PEP 282**와 호환되는 객체여야 합니다, 일반적으로
+   "logging.Logger"의 인스턴스.
+
+   *verbose* 인자는 사용되지 않으며 폐지되었습니다.
+
+   인자 "base_name", "format", "root_dir", "base_dir"로 감사 이벤트
+   "shutil.make_archive"를 발생시킵니다.
+
+   참고:
+
+     This function is not thread-safe when custom archivers registered
+     with "register_archive_format()" do not support the *root_dir*
+     argument.  In this case it temporarily changes the current
+     working directory of the process to *root_dir* to perform
+     archiving.
+
+   버전 3.8에서 변경: "format="tar""로 만들어진 아카이브에 기존 GNU 형
+   식 대신 최신 pax (POSIX.1-2001) 형식이 사용됩니다.
+
+   버전 3.10.6에서 변경: This function is now made thread-safe during
+   creation of standard ".zip" and tar archives.
+
+shutil.get_archive_formats()
+
+   아카이브에 지원되는 형식의 리스트를 반환합니다. 반환된 시퀀스의 각
+   요소는 튜플 "(name, description)"입니다.
+
+   기본적으로 "shutil"은 다음 형식을 제공합니다:
+
+   * *zip*: ZIP 파일 ("zlib" 모듈을 사용할 수 있으면).
+
+   * *tar*: 압축되지 않은 tar 파일. 새 아카이브에 POSIX.1-2001 pax 형
+     식을 사용합니다.
+
+   * *gztar*: gzip 된 tar 파일 ("zlib" 모듈을 사용할 수 있으면).
+
+   * *bztar*: bzip2 된 tar 파일 ("bz2" 모듈을 사용할 수 있으면).
+
+   * *xztar*: xz 된 tar 파일 ("lzma" 모듈을 사용할 수 있으면).
+
+   * *zstdtar*: Zstandard compressed tar-file (if the
+     "compression.zstd" module is available).
+
+   "register_archive_format()"을 사용하여, 새 형식을 등록하거나 기존
+   형식에 대해 여러분 자신의 아카이버를 제공할 수 있습니다.
+
+shutil.register_archive_format(name, function[, extra_args[, description]])
+
+   *name* 형식을 위한 아카이버를 등록합니다.
+
+   *function*은 아카이브를 만드는 데 사용되는 콜러블입니다. 콜러블은
+   만들 파일의 *base_name*과 그 뒤에 아카이브를 시작할 *base_dir*(기본
+   값은 "os.curdir")를 받습니다. 추가 인자는 키워드 인자로 전달됩니다:
+   *owner*, *group*, *dry_run* 및 *logger* ("make_archive()"로 전달됩
+   니다).
+
+   If *function* has the custom attribute "function.supports_root_dir"
+   set to "True", the *root_dir* argument is passed as a keyword
+   argument. Otherwise the current working directory of the process is
+   temporarily changed to *root_dir* before calling *function*. In
+   this case "make_archive()" is not thread-safe.
+
+   주어지면, *extra_args*는 아카이버 콜러블이 사용될 때 추가 키워드 인
+   자로 사용되는 "(name, value)" 쌍의 시퀀스입니다.
+
+   *description*은 아카이버 목록을 반환하는 "get_archive_formats()"에
+   서 사용됩니다. 기본값은 빈 문자열입니다.
+
+   버전 3.12에서 변경: *root_dir* 인자를 지원하는 함수들에 대한 지원이
+   추가되었습니다.
+
+shutil.unregister_archive_format(name)
+
+   지원되는 형식 리스트에서 *name* 아카이브 형식을 제거합니다.
+
+shutil.unpack_archive(filename[, extract_dir[, format[, filter]]])
+
+   아카이브를 풉니다. *filename*은 아카이브의 전체 경로입니다.
+
+   *extract_dir*은 아카이브가 풀리는 대상 디렉터리의 이름입니다. 제공
+   되지 않으면, 현재 작업 디렉터리가 사용됩니다.
+
+   *format* is the archive format: one of "zip", "tar", "gztar",
+   "bztar", "xztar", or "zstdtar".  Or any other format registered
+   with "register_unpack_format()".  If not provided,
+   "unpack_archive()" will use the archive file name extension and see
+   if an unpacker was registered for that extension.  In case none is
+   found, a "ValueError" is raised.
+
+   The keyword-only *filter* argument is passed to the underlying
+   unpacking function. For zip files, *filter* is not accepted. For
+   tar files, it is recommended to use "'data'" (default since Python
+   3.14), unless using features specific to tar and UNIX-like
+   filesystems. (See Extraction filters for details.)
+
+   인자 "filename", "extract_dir", "format"으로 감사 이벤트
+   "shutil.unpack_archive"를 발생시킵니다.
+
+   경고:
+
+     Never extract archives from untrusted sources without prior
+     inspection. It is possible that files are created outside of the
+     path specified in the *extract_dir* argument, e.g. members that
+     have absolute filenames starting with "/" or filenames with two
+     dots "..".Since Python 3.14, the defaults for both built-in
+     formats (zip and tar files) will prevent the most dangerous of
+     such security issues, but will not prevent *all* unintended
+     behavior. Read the Hints for further verification section for
+     tar-specific details.
+
+   버전 3.7에서 변경: *filename*과 *extract_dir*에 대해 *경로류 객체*
+   를 받아들입니다.
+
+   버전 3.12에서 변경: *filter* 인자를 추가했습니다.
+
+shutil.register_unpack_format(name, extensions, function[, extra_args[, description]])
+
+   아카이브 해제기를 등록합니다. *name*은 형식의 이름이고 *extensions*
+   는 형식에 해당하는 확장자의 리스트입니다, 가령 Zip 파일의 경우
+   ".zip".
+
+   *function*은 아카이브를 푸는 데 사용되는 콜러블입니다. 콜러블은 다
+   음을 받습니다:
+
+   * 아카이브의 경로, 위치 인자로;
+
+   * 아카이브를 추출해야 하는 디렉터리, 위치 인자로;
+
+   * possibly a *filter* keyword argument, if it was given to
+     "unpack_archive()";
+
+   * additional keyword arguments, specified by *extra_args* as a
+     sequence of "(name, value)" tuples.
+
+   *description*은 형식을 설명하기 위해 제공될 수 있으며,
+   "get_unpack_formats()" 함수에 의해 반환됩니다.
+
+shutil.unregister_unpack_format(name)
+
+   아카이브 해제 형식을 등록 취소합니다. *name*은 형식의 이름입니다.
+
+shutil.get_unpack_formats()
+
+   아카이브 해제를 위해 등록된 모든 형식의 리스트를 반환합니다. 반환된
+   시퀀스의 각 요소는 튜플 "(name, extensions, description)"입니다.
+
+   기본적으로 "shutil"은 다음 형식을 제공합니다:
+
+   * *zip*: ZIP 파일 (압축된 파일의 해제는 해당 모듈을 사용할 수 있을
+     때만 작동합니다).
+
+   * *tar*: 압축되지 않은 tar 파일.
+
+   * *gztar*: gzip 된 tar 파일 ("zlib" 모듈을 사용할 수 있으면).
+
+   * *bztar*: bzip2 된 tar 파일 ("bz2" 모듈을 사용할 수 있으면).
+
+   * *xztar*: xz 된 tar 파일 ("lzma" 모듈을 사용할 수 있으면).
+
+   * *zstdtar*: Zstandard compressed tar-file (if the
+     "compression.zstd" module is available).
+
+   "register_unpack_format()"을 사용하여, 새 형식을 등록하거나 기존 형
+   식에 대한 여러분 자신의 아카이브 해제기를 제공할 수 있습니다.
+
+
+아카이브 예
+-----------
+
+이 예에서는, 사용자의 ".ssh" 디렉터리에 있는 모든 파일을 포함하는 gzip
+된 tar 파일 아카이브를 만듭니다:
+
+   >>> from shutil import make_archive
+   >>> import os
+   >>> archive_name = os.path.expanduser(os.path.join('~', 'myarchive'))
+   >>> root_dir = os.path.expanduser(os.path.join('~', '.ssh'))
+   >>> make_archive(archive_name, 'gztar', root_dir)
+   '/Users/tarek/myarchive.tar.gz'
+
+결과 아카이브에는 다음이 포함됩니다:
+
+   $ tar -tzvf /Users/tarek/myarchive.tar.gz
+   drwx------ tarek/staff       0 2010-02-01 16:23:40 ./
+   -rw-r--r-- tarek/staff     609 2008-06-09 13:26:54 ./authorized_keys
+   -rwxr-xr-x tarek/staff      65 2008-06-09 13:26:54 ./config
+   -rwx------ tarek/staff     668 2008-06-09 13:26:54 ./id_dsa
+   -rwxr-xr-x tarek/staff     609 2008-06-09 13:26:54 ./id_dsa.pub
+   -rw------- tarek/staff    1675 2008-06-09 13:26:54 ./id_rsa
+   -rw-r--r-- tarek/staff     397 2008-06-09 13:26:54 ./id_rsa.pub
+   -rw-r--r-- tarek/staff   37192 2010-02-06 18:23:10 ./known_hosts
+
+
+*base_dir*을 사용한 아카이브 예
+-------------------------------
+
+이 예에서는, 위의 예와 유사하게, "make_archive()"를 사용하는 방법을 보
+여 주지만, 이번에는 *base_dir*을 사용합니다. 이제 다음 디렉터리 구조가
+있습니다:
+
+   $ tree tmp
+   tmp
+   └── root
+       └── structure
+           ├── content
+               └── please_add.txt
+           └── do_not_add.txt
+
+최종 아카이브에는, "please_add.txt"가 포함되어야 하지만,
+"do_not_add.txt"는 포함되지 않아야 합니다. 따라서 다음을 사용합니다:
+
+   >>> from shutil import make_archive
+   >>> import os
+   >>> archive_name = os.path.expanduser(os.path.join('~', 'myarchive'))
+   >>> make_archive(
+   ...     archive_name,
+   ...     'tar',
+   ...     root_dir='tmp/root',
+   ...     base_dir='structure/content',
+   ... )
+   '/Users/tarek/myarchive.tar'
+
+결과 아카이브에 파일을 나열하면 다음과 같습니다:
+
+   $ python -m tarfile -l /Users/tarek/myarchive.tar
+   structure/content/
+   structure/content/please_add.txt
+
+
+출력 터미널의 크기 조회하기
+===========================
+
+shutil.get_terminal_size(fallback=(columns, lines))
+
+   터미널 창의 크기를 가져옵니다.
+
+   두 차원 각각에 대해, 환경 변수 "COLUMNS"와 "LINES"가 각각 확인됩니
+   다. 변수가 정의되고 값이 양의 정수이면 사용됩니다.
+
+   "COLUMNS"나 "LINES"가 정의되지 않으면 (이것이 일반적입니다),
+   "os.get_terminal_size()"를 호출하여 "sys.__stdout__"에 연결된 터미
+   널을 조회합니다.
+
+   시스템이 조회를 지원하지 않거나, 터미널에 연결되어 있지 않기 때문에
+   터미널 크기를 성공적으로 조회할 수 없으면, "fallback" 매개 변수에
+   제공된 값이 사용됩니다. "fallback"의 기본값은 많은 터미널 에뮬레이
+   터에서 사용하는 기본 크기인 "(80, 24)"입니다.
+
+   반환된 값은 "os.terminal_size" 형의 네임드 튜플입니다.
+
+   참조: The Single UNIX Specification, Version 2, Other Environment
+   Variables.
+
+   Added in version 3.3.
+
+   버전 3.11에서 변경: The "fallback" values are also used if
+   "os.get_terminal_size()" returns zeroes.

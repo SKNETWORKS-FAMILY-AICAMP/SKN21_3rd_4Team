@@ -1,0 +1,165 @@
+"marshal" --- 내부 파이썬 객체 직렬화
+*************************************
+
+======================================================================
+
+이 모듈은 바이너리 형식으로 파이썬 값을 읽고 쓸 수 있는 함수를 포함합
+니다. 형식은 파이썬에만 국한되지만, 기계 아키텍처 문제에는 독립적입니
+다 (예를 들어, 파이썬 값을 PC의 파일에 기록하고 파일을 맥으로 보낸 다
+음, 그곳에서 다시 읽을 수 있습니다). 형식의 세부 사항은 의도적으로 설
+명하지 않습니다; 파이썬 버전 간에 변경될 수 있습니다 (드물긴 하지만).
+[1]
+
+이것은 범용 "지속성" 모듈이 아닙니다. 범용 지속성과 RPC 호출을 통한 파
+이썬 객체의 전송에 대해서는, "pickle"과 "shelve" 모듈을 참조하십시오.
+"marshal" 모듈은 주로 ".pyc" 파일의 파이썬 모듈에 대한 "의사 컴파일된"
+코드 읽기와 쓰기를 지원하기 위해 존재합니다. 따라서, 파이썬 관리자는
+필요에 따라 이전 버전과 호환되지 않는 방식으로 마샬 형식을 수정할 수
+있는 권한을 갖습니다. 코드 객체의 형식은 형식의 버전이 같더라도 파이썬
+버전 간에 호환되지 않습니다. 잘못된 파이썬 버전에서 코드 객체를 역 직
+렬화하면 정의되지 않은 동작이 발생합니다. 파이썬 객체를 직렬화하고 역
+직렬화하는 데는, 대신 "pickle" 모듈을 사용하십시오 -- 성능은 비슷하고,
+버전 독립성이 보장되며, pickle은 marshal보다 훨씬 넓은 범위의 객체를
+지원합니다.
+
+경고:
+
+  "marshal" 모듈은 잘못되었거나 악의적으로 구성된 데이터에 대해 보안성
+  을 갖추려는 것이 아닙니다. 신뢰할 수 없거나 인증되지 않은 출처에서
+  받은 데이터를 역 마샬 하지 마십시오.
+
+파일을 읽고 쓰는 함수는 물론 바이트열류 객체에서 작동하는 함수도 있습
+니다.
+
+Not all Python object types are supported; in general, only objects
+whose value is independent from a particular invocation of Python can
+be written and read by this module.  The following types are
+supported:
+
+* Numeric types: "int", "bool", "float", "complex".
+
+* Strings ("str") and "bytes". *Bytes-like objects* like "bytearray"
+  are marshalled as "bytes".
+
+* Containers: "tuple", "list", "set", "frozenset", and (since
+  "version" 5), "slice". It should be understood that these are
+  supported only if the values contained therein are themselves
+  supported. Recursive containers are supported since "version" 3.
+
+* The singletons "None", "Ellipsis" and "StopIteration".
+
+* "code" objects, if *allow_code* is true. See note above about
+  version dependence.
+
+버전 3.4에서 변경:
+
+* Added format version 3, which supports marshalling recursive lists,
+  sets and dictionaries.
+
+* Added format version 4, which supports efficient representations of
+  short strings.
+
+버전 3.14에서 변경: Added format version 5, which allows marshalling
+slices.
+
+모듈은 다음 함수를 정의합니다:
+
+marshal.dump(value, file, version=version, /, *, allow_code=True)
+
+   열린 파일에 값을 기록합니다. value는 지원되는 형이어야 합니다. 파일
+   은 쓰기 가능한 *바이너리 파일* 이어야 합니다.
+
+   value가 지원되지 않는 형이면 (또는 지원되지 않는 형의 객체를 담고
+   있다면) "ValueError" 예외가 발생합니다 --- 하지만, 찌꺼기 데이터도
+   파일에 기록됩니다. "load()"로 객체를 제대로 읽을 수 없습니다. 코드
+   객체는 *allow_code*가 참일 때만 지원됩니다.
+
+   *version* 인자는 "dump"가 사용해야 하는 데이터 형식을 나타냅니다 (
+   아래를 참조하십시오).
+
+   Raises an auditing event "marshal.dumps" with arguments "value",
+   "version".
+
+   버전 3.13에서 변경: Added the *allow_code* parameter.
+
+marshal.load(file, /, *, allow_code=True)
+
+   열린 파일에서 하나의 값을 읽고 그것을 반환합니다. 유효한 값을 읽히
+   지 않으면 (예를 들어, 데이터가 다른 파이썬 버전의 호환되지 않는 마
+   샬 형식이라서) "EOFError", "ValueError" 또는 "TypeError"를 발생시킵
+   니다. 코드 객체는 *allow_code*가 참일 때만 지원됩니다. 파일은 읽을
+   수 있는 *바이너리 파일* 이어야 합니다.
+
+   Raises an auditing event "marshal.load" with no arguments.
+
+   참고:
+
+     지원하지 않는 형을 포함하는 객체가 "dump()"로 마샬 되었으면,
+     "load()"는 역 마샬이 불가능한 형을 "None"으로 치환합니다.
+
+   버전 3.10에서 변경: This call used to raise a "code.__new__" audit
+   event for each code object. Now it raises a single "marshal.load"
+   event for the entire load operation.
+
+   버전 3.13에서 변경: Added the *allow_code* parameter.
+
+marshal.dumps(value, version=version, /, *, allow_code=True)
+
+   "dump(value, file)"에 의해 파일에 기록될 바이트열 객체를 반환합니다
+   . value는 지원되는 형이어야 합니다. value가 지원되지 않는 형이면 (
+   또는 지원되지 않는 형의 객체를 담고 있다면) "ValueError" 예외를 발
+   생시킵니다. 코드 객체는 *allow_code*가 참일 때만 지원됩니다.
+
+   *version* 인자는 "dumps"가 사용해야 하는 데이터 형식을 나타냅니다 (
+   아래를 참조하십시오).
+
+   Raises an auditing event "marshal.dumps" with arguments "value",
+   "version".
+
+   버전 3.13에서 변경: Added the *allow_code* parameter.
+
+marshal.loads(bytes, /, *, allow_code=True)
+
+   *바이트열류 객체*를 값으로 변환합니다. 유효한 값이 없으면
+   "EOFError", "ValueError" 또는 "TypeError"를 발생시킵니다. 코드 객체
+   는 *allow_code*가 참일 때만 지원됩니다. 입력의 여분의 바이트는 무시
+   됩니다.
+
+   Raises an auditing event "marshal.loads" with argument "bytes".
+
+   버전 3.10에서 변경: This call used to raise a "code.__new__" audit
+   event for each code object. Now it raises a single "marshal.loads"
+   event for the entire load operation.
+
+   버전 3.13에서 변경: Added the *allow_code* parameter.
+
+또한, 다음 상수가 정의됩니다:
+
+marshal.version
+
+   Indicates the format that the module uses. Version 0 is the
+   historical first version; subsequent versions add new features.
+   Generally, a new version becomes the default when it is introduced.
+
+   +---------+-----------------+------------------------------------------------------+
+   | Version | Available since | New features                                         |
+   |=========|=================|======================================================|
+   | 1       | Python 2.4      | Sharing interned strings                             |
+   +---------+-----------------+------------------------------------------------------+
+   | 2       | Python 2.5      | Binary representation of floats                      |
+   +---------+-----------------+------------------------------------------------------+
+   | 3       | Python 3.4      | Support for object instancing and recursion          |
+   +---------+-----------------+------------------------------------------------------+
+   | 4       | Python 3.4      | Efficient representation of short strings            |
+   +---------+-----------------+------------------------------------------------------+
+   | 5       | Python 3.14     | Support for "slice" objects                          |
+   +---------+-----------------+------------------------------------------------------+
+
+-[ 각주 ]-
+
+[1] 이 모듈의 이름은 (다른 것 중에서도) Modula-3의 설계자가 사용하는
+    약간의 용어에서 유래합니다. 이들은 자급적(self-contained) 형식으로
+    데이터를 전달하는 데 "마샬링(marshalling)"이라는 용어를 사용합니다
+    . 엄밀히 말하면, "마샬"은 내부의 어떤 데이터를 외부 형식(예를 들어
+    RPC 버퍼에)으로 변환하는 것을, "역 마샬"은 그 반대 절차를 뜻합니다
+    .

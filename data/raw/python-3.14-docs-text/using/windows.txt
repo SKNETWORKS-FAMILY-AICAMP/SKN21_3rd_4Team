@@ -1,0 +1,1937 @@
+4. 윈도우에서 파이썬 사용하기
+*****************************
+
+이 문서는 Microsoft 윈도우에서 파이썬을 사용할 때 알아야 할 윈도우 특
+정 동작에 대한 개요를 제공하는 것을 목표로 합니다.
+
+Unlike most Unix systems and services, Windows does not include a
+system supported installation of Python. Instead, Python can be
+obtained from a number of distributors, including directly from the
+CPython team. Each Python distribution will have its own benefits and
+drawbacks, however, consistency with other tools you are using is
+generally a worthwhile benefit. Before committing to the process
+described here, we recommend investigating your existing tools to see
+if they can provide Python directly.
+
+To obtain Python from the CPython team, use the Python Install
+Manager. This is a standalone tool that makes Python available as
+global commands on your Windows machine, integrates with the system,
+and supports updates over time. You can download the Python Install
+Manager from python.org/downloads or through the Microsoft Store app.
+
+Once you have installed the Python Install Manager, the global
+"python" command can be used from any terminal to launch your current
+latest version of Python. This version may change over time as you add
+or remove different versions, and the "py list" command will show
+which is current.
+
+In general, we recommend that you create a virtual environment for
+each project and run "<env>\Scripts\Activate" in your terminal to use
+it. This provides isolation between projects, consistency over time,
+and ensures that additional commands added by packages are also
+available in your session. Create a virtual environment using "python
+-m venv <env path>".
+
+If the "python" or "py" commands do not seem to be working, please see
+the Troubleshooting section below. There are sometimes additional
+manual steps required to configure your PC.
+
+Apart from using the Python install manager, Python can also be
+obtained as NuGet packages. See nuget.org 패키지 below for more
+information on these packages.
+
+The embeddable distros are minimal packages of Python suitable for
+embedding into larger applications. They can be installed using the
+Python install manager. See 내장 가능한 패키지 below for more
+information on these packages.
+
+
+4.1. Python install manager
+===========================
+
+
+4.1.1. Installation
+-------------------
+
+The Python install manager can be installed from the Microsoft Store
+app or downloaded and installed from python.org/downloads. The two
+versions are identical.
+
+To install through the Store, simply click "Install". After it has
+completed, open a terminal and type "python" to get started.
+
+To install the file downloaded from python.org, either double-click
+and select "Install", or run "Add-AppxPackage <path to MSIX>" in
+Windows Powershell.
+
+After installation, the "python", "py", and "pymanager" commands
+should be available. If you have existing installations of Python, or
+you have modified your "PATH" variable, you may need to remove them or
+undo the modifications. See Troubleshooting for more help with fixing
+non-working commands.
+
+When you first install a runtime, you will likely be prompted to add a
+directory to your "PATH". This is optional, if you prefer to use the
+"py" command, but is offered for those who prefer the full range of
+aliases (such as "python3.14.exe") to be available. The directory will
+be "%LocalAppData%\Python\bin" by default, but may be customized by an
+administrator. Click Start and search for "Edit environment variables
+for your account" for the system settings page to add the path.
+
+Each Python runtime you install will have its own directory for
+scripts. These also need to be added to "PATH" if you want to use
+them.
+
+The Python install manager will be automatically updated to new
+releases. This does not affect any installs of Python runtimes.
+Uninstalling the Python install manager does not uninstall any Python
+runtimes.
+
+If you are not able to install an MSIX in your context, for example,
+you are using automated deployment software that does not support it,
+or are targeting Windows Server 2019, please see Advanced installation
+below for more information.
+
+
+4.1.2. Basic use
+----------------
+
+The recommended command for launching Python is "python", which will
+either launch the version requested by the script being launched, an
+active virtual environment, or the default installed version, which
+will be the latest stable release unless configured otherwise. If no
+version is specifically requested and no runtimes are installed at
+all, the current latest release will be installed automatically.
+
+For all scenarios involving multiple runtime versions, the recommended
+command is "py". This may be used anywhere in place of "python" or the
+older "py.exe" launcher. By default, "py" matches the behaviour of
+"python", but also allows command line options to select a specific
+version as well as subcommands to manage installations. These are
+detailed below.
+
+Because the "py" command may already be taken by the previous version,
+there is also an unambiguous "pymanager" command. Scripted installs
+that are intending to use Python install manager should consider using
+"pymanager", due to the lower chance of encountering a conflict with
+existing installs. The only difference between the two commands is
+when running without any arguments: "py" will install and launch your
+default interpreter, while "pymanager" will display help ("pymanager
+exec ..." provides equivalent behaviour to "py ...").
+
+Each of these commands also has a windowed version that avoids
+creating a console window. These are "pyw", "pythonw" and
+"pymanagerw". A "python3" command is also included that mimics the
+"python" command. It is intended to catch accidental uses of the
+typical POSIX command on Windows, but is not meant to be widely used
+or recommended.
+
+To launch your default runtime, run "python" or "py" with the
+arguments you want to be passed to the runtime (such as script files
+or the module to launch):
+
+   $> py
+   ...
+   $> python my-script.py
+   ...
+   $> py -m this
+   ...
+
+The default runtime can be overridden with the
+"PYTHON_MANAGER_DEFAULT" environment variable, or a configuration
+file. See Configuration for information about configuration settings.
+
+To launch a specific runtime, the "py" command accepts a "-V:<TAG>"
+option. This option must be specified before any others. The tag is
+part or all of the identifier for the runtime; for those from the
+CPython team, it looks like the version, potentially with the
+platform. For compatibility, the "V:" may be omitted in cases where
+the tag refers to an official release and starts with "3".
+
+   $> py -V:3.14 ...
+   $> py -V:3-arm64 ...
+
+Runtimes from other distributors may require the *company* to be
+included as well. This should be separated from the tag by a slash,
+and may be a prefix. Specifying the company is optional when it is
+"PythonCore", and specifying the tag is optional (but not the slash)
+when you want the latest release from a specific company.
+
+   $> py -V:Distributor\1.0 ...
+   $> py -V:distrib/ ...
+
+If no version is specified, but a script file is passed, the script
+will be inspected for a *shebang line*. This is a special format for
+the first line in a file that allows overriding the command. See
+Shebang lines for more information. When there is no shebang line, or
+it cannot be resolved, the script will be launched with the default
+runtime.
+
+If you are running in an active virtual environment, have not
+requested a particular version, and there is no shebang line, the
+default runtime will be that virtual environment. In this scenario,
+the "python" command was likely already overridden and none of these
+checks occurred. However, this behaviour ensures that the "py" command
+can be used interchangeably.
+
+When you launch either "python" or "py" but do not have any runtimes
+installed, and the requested version is the default, it will be
+installed automatically and then launched. Otherwise, the requested
+version will be installed if automatic installation is configured
+(most likely by setting "PYTHON_MANAGER_AUTOMATIC_INSTALL" to "true"),
+or if the "py exec" or "pymanager exec" forms of the command were
+used.
+
+
+4.1.3. Command help
+-------------------
+
+The "py help" command will display the full list of supported
+commands, along with their options. Any command may be passed the "-?"
+option to display its help, or its name passed to "py help".
+
+   $> py help
+   $> py help install
+   $> py install /?
+
+All commands support some common options, which will be shown by "py
+help". These options must be specified after any subcommand.
+Specifying "-v" or "--verbose" will increase the amount of output
+shown, and "-vv" will increase it further for debugging purposes.
+Passing "-q" or "--quiet" will reduce output, and "-qq" will reduce it
+further.
+
+The "--config=<PATH>" option allows specifying a configuration file to
+override multiple settings at once. See Configuration below for more
+information about these files.
+
+
+4.1.4. Listing runtimes
+-----------------------
+
+   $> py list [-f=|--format=<FMT>] [-1|--one] [--online|-s=|--source=<URL>] [<TAG>...]
+
+The list of installed runtimes can be seen using "py list". A filter
+may be added in the form of one or more tags (with or without company
+specifier), and each may include a "<", "<=", ">=" or ">" prefix to
+restrict to a range.
+
+A range of formats are supported, and can be passed as the "--
+format=<FMT>" or "-f <FMT>" option. Formats include "table" (a user
+friendly table view), "csv" (comma-separated table), "json" (a single
+JSON blob), "jsonl" (one JSON blob per result), "exe" (just the
+executable path), "prefix" (just the prefix path).
+
+The "--one" or "-1" option only displays a single result. If the
+default runtime is included, it will be the one. Otherwise, the "best"
+result is shown ("best" is deliberately vaguely defined, but will
+usually be the most recent version). The result shown by "py list
+--one <TAG>" will match the runtime that would be launched by "py
+-V:<TAG>".
+
+The "--only-managed" option excludes results that were not installed
+by the Python install manager. This is useful when determining which
+runtimes may be updated or uninstalled through the "py" command.
+
+The "--online" option is short for passing "--source=<URL>" with the
+default source. Passing either of these options will search the online
+index for runtimes that can be installed. The result shown by "py list
+--online --one <TAG>" will match the runtime that would be installed
+by "py install <TAG>".
+
+   $> py list --online 3.14
+
+For compatibility with the old launcher, the "--list", "--list-paths",
+"-0" and "-0p" commands (e.g. "py -0p") are retained. They do not
+allow additional options, and will produce legacy formatted output.
+
+
+4.1.5. Installing runtimes
+--------------------------
+
+   $> py install [-s=|--source=<URL>] [-f|--force] [-u|--update] [--dry-run] [<TAG>...]
+
+New runtime versions may be added using "py install". One or more tags
+may be specified, and the special tag "default" may be used to select
+the default. Ranges are not supported for installation.
+
+The "--source=<URL>" option allows overriding the online index that is
+used to obtain runtimes. This may be used with an offline index, as
+shown in Offline installs.
+
+Passing "--force" will ignore any cached files and remove any existing
+install to replace it with the specified one.
+
+Passing "--update" will replace existing installs if the new version
+is newer. Otherwise, they will be left. If no tags are provided with "
+--update", all installs managed by the Python install manager will be
+updated if newer versions are available. Updates will remove any
+modifications made to the install, including globally installed
+packages, but virtual environments will continue to work.
+
+Passing "--dry-run" will generate output and logs, but will not modify
+any installs.
+
+In addition to the above options, the "--target" option will extract
+the runtime to the specified directory instead of doing a normal
+install. This is useful for embedding runtimes into larger
+applications. Unlike a normal install, "py" will not be aware of the
+extracted runtime, and no Start menu or other shortcuts will be
+created. To launch the runtime, directly execute the main executable
+(typically "python.exe") in the target directory.
+
+   $> py install ... [-t=|--target=<PATH>] <TAG>
+
+
+4.1.6. Offline installs
+-----------------------
+
+To perform offline installs of Python, you will need to first create
+an offline index on a machine that has network access.
+
+   $> py install --download=<PATH> ... <TAG>...
+
+The "--download=<PATH>" option will download the packages for the
+listed tags and create a directory containing them and an "index.json"
+file suitable for later installation. This entire directory can be
+moved to the offline machine and used to install one or more of the
+bundled runtimes:
+
+   $> py install --source="<PATH>\index.json" <TAG>...
+
+The Python install manager can be installed by downloading its
+installer and moving it to another machine before installing.
+
+Alternatively, the ZIP files in an offline index directory can simply
+be transferred to another machine and extracted. This will not
+register the install in any way, and so it must be launched by
+directly referencing the executables in the extracted directory, but
+it is sometimes a preferable approach in cases where installing the
+Python install manager is not possible or convenient.
+
+In this way, Python runtimes can be installed and managed on a machine
+without access to the internet.
+
+
+4.1.7. Uninstalling runtimes
+----------------------------
+
+   $> py uninstall [-y|--yes] <TAG>...
+
+Runtimes may be removed using the "py uninstall" command. One or more
+tags must be specified. Ranges are not supported here.
+
+The "--yes" option bypasses the confirmation prompt before
+uninstalling.
+
+Instead of passing tags individually, the "--purge" option may be
+specified. This will remove all runtimes managed by the Python install
+manager, including cleaning up the Start menu, registry, and any
+download caches. Runtimes that were not installed by the Python
+install manager will not be impacted, and neither will manually
+created configuration files.
+
+   $> py uninstall [-y|--yes] --purge
+
+The Python install manager can be uninstalled through the Windows
+"Installed apps" settings page. This does not remove any runtimes, and
+they will still be usable, though the global "python" and "py"
+commands will be removed. Reinstalling the Python install manager will
+allow you to manage these runtimes again. To completely clean up all
+Python runtimes, run with "--purge" before uninstalling the Python
+install manager.
+
+
+4.1.8. Configuration
+--------------------
+
+Python install manager is configured with a hierarchy of configuration
+files, environment variables, command-line options, and registry
+settings. In general, configuration files have the ability to
+configure everything, including the location of other configuration
+files, while registry settings are administrator-only and will
+override configuration files. Command-line options override all other
+settings, but not every option is available.
+
+This section will describe the defaults, but be aware that modified or
+overridden installs may resolve settings differently.
+
+A global configuration file may be configured by an administrator, and
+would be read first. The user configuration file is stored at
+"%AppData%\Python\pymanager.json" (note that this location is under
+"Roaming", not "Local") and is read next, overwriting any settings
+from earlier files. An additional configuration file may be specified
+as the "PYTHON_MANAGER_CONFIG" environment variable or the "--config"
+command line option (but not both). These locations may be modified by
+administrative customization options listed later.
+
+The following settings are those that are considered likely to be
+modified in normal use. Later sections list those that are intended
+for administrative customization.
+
+-[ Standard configuration options ]-
+
++-----------------------------------+-----------------------------------+-----------------------------------+
+| Config Key                        | Environment Variable              | 설명                              |
+|===================================|===================================|===================================|
+| "default_tag"                     | PYTHON_MANAGER_DEFAULT            | The preferred default version to  |
+|                                   |                                   | launch or install. By default,    |
+|                                   |                                   | this is interpreted as the most   |
+|                                   |                                   | recent non-prerelease version     |
+|                                   |                                   | from the CPython team.            |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "default_platform"                | "PYTHON_MANAGER_DEFAULT_PLATFORM" | The preferred default platform to |
+|                                   |                                   | launch or install. This is        |
+|                                   |                                   | treated as a suffix to the        |
+|                                   |                                   | specified tag, such that "py      |
+|                                   |                                   | -V:3.14" would prefer an install  |
+|                                   |                                   | for "3.14-64" if it exists (and   |
+|                                   |                                   | "default_platform" is "-64"), but |
+|                                   |                                   | will use "3.14" if no tagged      |
+|                                   |                                   | install exists.                   |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "logs_dir"                        | "PYTHON_MANAGER_LOGS"             | The location where log files are  |
+|                                   |                                   | written. By default, "%TEMP%".    |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "automatic_install"               | "PYTHON_MANAGER_AUTOMATIC_INSTALL | True to allow automatic installs  |
+|                                   | "                                 | when using "py exec" to launch.   |
+|                                   |                                   | Other commands will not           |
+|                                   |                                   | automatically install. By         |
+|                                   |                                   | default, true.                    |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "include_unmanaged"               | "PYTHON_MANAGER_INCLUDE_UNMANAGED | True to allow listing and         |
+|                                   | "                                 | launching runtimes that were not  |
+|                                   |                                   | installed by the Python install   |
+|                                   |                                   | manager, or false to exclude      |
+|                                   |                                   | them. By default, true.           |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "shebang_can_run_anything"        | "PYTHON_MANAGER_SHEBANG_CAN_RUN_A | True to allow shebangs in ".py"   |
+|                                   | NYTHING"                          | files to launch applications      |
+|                                   |                                   | other than Python runtimes, or    |
+|                                   |                                   | false to prevent it. By default,  |
+|                                   |                                   | true.                             |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "log_level"                       | "PYMANAGER_VERBOSE",              | Set the default level of output   |
+|                                   | "PYMANAGER_DEBUG"                 | (0-50). By default, 20. Lower     |
+|                                   |                                   | values produce more output. The   |
+|                                   |                                   | environment variables are         |
+|                                   |                                   | boolean, and may produce          |
+|                                   |                                   | additional output during startup  |
+|                                   |                                   | that is later suppressed by other |
+|                                   |                                   | configuration.                    |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "confirm"                         | "PYTHON_MANAGER_CONFIRM"          | True to confirm certain actions   |
+|                                   |                                   | before taking them (such as       |
+|                                   |                                   | uninstall), or false to skip the  |
+|                                   |                                   | confirmation. By default, true.   |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "install.source"                  | "PYTHON_MANAGER_SOURCE_URL"       | Override the index feed to obtain |
+|                                   |                                   | new installs from.                |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "list.format"                     | "PYTHON_MANAGER_LIST_FORMAT"      | Specify the default format used   |
+|                                   |                                   | by the "py list" command. By      |
+|                                   |                                   | default, "table".                 |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "install_dir"                     | (none)                            | Specify the root directory that   |
+|                                   |                                   | runtimes will be installed into.  |
+|                                   |                                   | If you change this setting,       |
+|                                   |                                   | previously installed runtimes     |
+|                                   |                                   | will not be usable unless you     |
+|                                   |                                   | move them to the new location.    |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "global_dir"                      | (none)                            | Specify the directory where       |
+|                                   |                                   | global commands (such as          |
+|                                   |                                   | "python3.14.exe") are stored.     |
+|                                   |                                   | This directory should be added to |
+|                                   |                                   | your "PATH" to make the commands  |
+|                                   |                                   | available from your terminal.     |
++-----------------------------------+-----------------------------------+-----------------------------------+
+| "download_dir"                    | (none)                            | Specify the directory where       |
+|                                   |                                   | downloaded files are stored. This |
+|                                   |                                   | directory is a temporary cache,   |
+|                                   |                                   | and can be cleaned up from time   |
+|                                   |                                   | to time.                          |
++-----------------------------------+-----------------------------------+-----------------------------------+
+
+Dotted names should be nested inside JSON objects, for example,
+"list.format" would be specified as "{"list": {"format": "table"}}".
+
+
+4.1.9. Shebang lines
+--------------------
+
+If the first line of a script file starts with "#!", it is known as a
+"shebang" line.  Linux and other Unix like operating systems have
+native support for such lines and they are commonly used on such
+systems to indicate how a script should be executed. The "python" and
+"py" commands allow the same facilities to be used with Python scripts
+on Windows.
+
+To allow shebang lines in Python scripts to be portable between Unix
+and Windows, a number of 'virtual' commands are supported to specify
+which interpreter to use.  The supported virtual commands are:
+
+* "/usr/bin/env <ALIAS>"
+
+* "/usr/bin/env -S <ALIAS>"
+
+* "/usr/bin/<ALIAS>"
+
+* "/usr/local/bin/<ALIAS>"
+
+* "<ALIAS>"
+
+예를 들어, 스크립트의 첫 번째 줄이 다음과 같이 시작하면
+
+   #! /usr/bin/python
+
+기본 파이썬이나 활성 가상 환경을 찾아서 사용합니다. 유닉스에서 작동하
+도록 작성된 많은 파이썬 스크립트에는 이미 이 줄이 있어서, 수정하지 않
+고도 이러한 스크립트를 런처에서 사용할 수 있습니다. 윈도우에서 유닉스
+에서 유용할 새 스크립트를 작성하면, "/usr"로 시작하는 셔뱅 줄 중 하나
+를 사용해야 합니다.
+
+Any of the above virtual commands can have "<ALIAS>" replaced by an
+alias from an installed runtime. That is, any command generated in the
+global aliases directory (which you may have added to your "PATH"
+environment variable) can be used in a shebang, even if it is not on
+your "PATH". This allows the use of shebangs like
+"/usr/bin/python3.12" to select a particular runtime.
+
+If no runtimes are installed, or if automatic installation is enabled,
+the requested runtime will be installed if necessary. See
+Configuration for information about configuration settings.
+
+The "/usr/bin/env" form of shebang line will also search the "PATH"
+environment variable for unrecognized commands. This corresponds to
+the behaviour of the Unix "env" program, which performs the same
+search, but prefers launching known Python commands. A warning may be
+displayed when searching for arbitrary executables, and this search
+may be disabled by the "shebang_can_run_anything" configuration
+option.
+
+Shebang lines that do not match any of patterns are treated as
+*Windows* executable paths that are absolute or relative to the
+directory containing the script file. This is a convenience for
+Windows-only scripts, such as those generated by an installer, since
+the behavior is not compatible with Unix-style shells. These paths may
+be quoted, and may include multiple arguments, after which the path to
+the script and any additional arguments will be appended. This
+functionality may be disabled by the "shebang_can_run_anything"
+configuration option.
+
+참고:
+
+  The behaviour of shebangs in the Python install manager is subtly
+  different from the previous "py.exe" launcher, and the old
+  configuration options no longer apply. If you are specifically
+  reliant on the old behaviour or configuration, we recommend
+  installing the legacy launcher. The legacy launcher's "py" command
+  will override PyManager's one by default, and you will need to use
+  "pymanager" commands for installing and uninstalling.
+
+
+4.1.10. Advanced installation
+-----------------------------
+
+For situations where an MSIX cannot be installed, such as some older
+administrative distribution platforms, there is an MSI available from
+the python.org downloads page. This MSI has no user interface, and can
+only perform per-machine installs to its default location in Program
+Files. It will attempt to modify the system "PATH" environment
+variable to include this install location, but be sure to validate
+this on your configuration.
+
+참고:
+
+  Windows Server 2019 is the only version of Windows that CPython
+  supports that does not support MSIX. For Windows Server 2019, you
+  should use the MSI.
+
+Be aware that the MSI package does not bundle any runtimes, and so is
+not suitable for installs into offline environments without also
+creating an offline install index. See Offline installs and
+Administrative configuration for information on handling these
+scenarios.
+
+Runtimes installed by the MSI are shared with those installed by the
+MSIX, and are all per-user only. The Python install manager does not
+support installing runtimes per-machine. To emulate a per-machine
+install, you can use "py install --target=<shared location>" as
+administrator and add your own system-wide modifications to "PATH",
+the registry, or the Start menu.
+
+When the MSIX is installed, but commands are not available in the
+"PATH" environment variable, they can be found under "%LocalAppData%\M
+icrosoft\WindowsApps\PythonSoftwareFoundation.PythonManager_3847v3x7pw
+1km" or "%LocalAppData%\Microsoft\WindowsApps\PythonSoftwareFoundation
+.PythonManager_qbz5n2kfra8p0", depending on whether it was installed
+from python.org or through the Windows Store. Attempting to run the
+executable directly from Program Files is not recommended.
+
+To programmatically install the Python install manager, it is easiest
+to use WinGet, which is included with all supported versions of
+Windows:
+
+   $> winget install 9NQ7512CXL7T -e --accept-package-agreements --disable-interactivity
+
+   # Optionally run the configuration checker and accept all changes
+   $> py install --configure -y
+
+To download the Python install manager and install on another machine,
+the following WinGet command will download the required files from the
+Store to your Downloads directory (add "-d <location>" to customize
+the output location). This also generates a YAML file that appears to
+be unnecessary, as the downloaded MSIX can be installed by launching
+or using the commands below.
+
+   $> winget download 9NQ7512CXL7T -e --skip-license --accept-package-agreements --accept-source-agreements
+
+To programmatically install or uninstall an MSIX using only
+PowerShell, the Add-AppxPackage and Remove-AppxPackage PowerShell
+cmdlets are recommended:
+
+   $> Add-AppxPackage C:\Downloads\python-manager-25.0.msix
+   ...
+   $> Get-AppxPackage PythonSoftwareFoundation.PythonManager | Remove-AppxPackage
+
+The latest release can be downloaded and installed by Windows by
+passing the AppInstaller file to the Add-AppxPackage command. This
+installs using the MSIX on python.org, and is only recommended for
+cases where installing via the Store (interactively or using WinGet)
+is not possible.
+
+   $> Add-AppxPackage -AppInstallerFile https://www.python.org/ftp/python/pymanager/pymanager.appinstaller
+
+Other tools and APIs may also be used to provision an MSIX package for
+all users on a machine, but Python does not consider this a supported
+scenario. We suggest looking into the PowerShell Add-
+AppxProvisionedPackage cmdlet, the native Windows PackageManager
+class, or the documentation and support for your deployment tool.
+
+Regardless of the install method, users will still need to install
+their own copies of Python itself, as there is no way to trigger those
+installs without being a logged in user. When using the MSIX, the
+latest version of Python will be available for all users to install
+without network access.
+
+Note that the MSIX downloadable from the Store and from the Python
+website are subtly different and cannot be installed at the same time.
+Wherever possible, we suggest using the above WinGet commands to
+download the package from the Store to reduce the risk of setting up
+conflicting installs. There are no licensing restrictions on the
+Python install manager that would prevent using the Store package in
+this way.
+
+
+4.1.11. Administrative configuration
+------------------------------------
+
+There are a number of options that may be useful for administrators to
+override configuration of the Python install manager. These can be
+used to provide local caching, disable certain shortcut types,
+override bundled content. All of the above configuration options may
+be set, as well as those below.
+
+Configuration options may be overridden in the registry by setting
+values under "HKEY_LOCAL_MACHINE\Software\Policies\Python\PyManager",
+where the value name matches the configuration key and the value type
+is "REG_SZ". Note that this key can itself be customized, but only by
+modifying the core config file distributed with the Python install
+manager. We recommend, however, that registry values are used only to
+set "base_config" to a JSON file containing the full set of overrides.
+Registry key overrides will replace any other configured setting,
+while "base_config" allows users to further modify settings they may
+need.
+
+Note that most settings with environment variables support those
+variables because their default setting specifies the variable. If you
+override them, the environment variable will no longer work, unless
+you override it with another one. For example, the default value of
+"confirm" is literally "%PYTHON_MANAGER_CONFIRM%", which will resolve
+the variable at load time. If you override the value to "yes", then
+the environment variable will no longer be used. If you override the
+value to "%CONFIRM%", then that environment variable will be used
+instead.
+
+Configuration settings that are paths are interpreted as relative to
+the directory containing the configuration file that specified them.
+
+-[ Administrative configuration options ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| Config Key                                         | 설명                                               |
+|====================================================|====================================================|
+| "base_config"                                      | The highest priority configuration file to read.   |
+|                                                    | Note that only the built-in configuration file and |
+|                                                    | the registry can modify this setting.              |
++----------------------------------------------------+----------------------------------------------------+
+| "user_config"                                      | The second configuration file to read.             |
++----------------------------------------------------+----------------------------------------------------+
+| "additional_config"                                | The third configuration file to read.              |
++----------------------------------------------------+----------------------------------------------------+
+| "registry_override_key"                            | Registry location to check for overrides. Note     |
+|                                                    | that only the built-in configuration file can      |
+|                                                    | modify this setting.                               |
++----------------------------------------------------+----------------------------------------------------+
+| "bundled_dir"                                      | Read-only directory containing locally cached      |
+|                                                    | files.                                             |
++----------------------------------------------------+----------------------------------------------------+
+| "install.fallback_source"                          | Path or URL to an index to consult when the main   |
+|                                                    | index cannot be accessed.                          |
++----------------------------------------------------+----------------------------------------------------+
+| "install.enable_shortcut_kinds"                    | Comma-separated list of shortcut kinds to allow    |
+|                                                    | (e.g. ""pep514,start""). Enabled shortcuts may     |
+|                                                    | still be disabled by "disable_shortcut_kinds".     |
++----------------------------------------------------+----------------------------------------------------+
+| "install.disable_shortcut_kinds"                   | Comma-separated list of shortcut kinds to exclude  |
+|                                                    | (e.g. ""pep514,start""). Disabled shortcuts are    |
+|                                                    | not reactivated by "enable_shortcut_kinds".        |
++----------------------------------------------------+----------------------------------------------------+
+| "pep514_root"                                      | Registry location to read and write PEP 514        |
+|                                                    | entries into. By default,                          |
+|                                                    | "HKEY_CURRENT_USER\Software\Python".               |
++----------------------------------------------------+----------------------------------------------------+
+| "start_folder"                                     | Start menu folder to write shortcuts into. By      |
+|                                                    | default, "Python". This path is relative to the    |
+|                                                    | user's Programs folder.                            |
++----------------------------------------------------+----------------------------------------------------+
+| "virtual_env"                                      | Path to the active virtual environment. By         |
+|                                                    | default, this is "%VIRTUAL_ENV%", but may be set   |
+|                                                    | empty to disable venv detection.                   |
++----------------------------------------------------+----------------------------------------------------+
+| "shebang_can_run_anything_silently"                | True to suppress visible warnings when a shebang   |
+|                                                    | launches an application other than a Python        |
+|                                                    | runtime.                                           |
++----------------------------------------------------+----------------------------------------------------+
+
+
+4.1.12. Installing free-threaded binaries
+-----------------------------------------
+
+Added in version 3.13.
+
+Pre-built distributions of the free-threaded build are available by
+installing tags with the "t" suffix.
+
+   $> py install 3.14t
+   $> py install 3.14t-arm64
+   $> py install 3.14t-32
+
+This will install and register as normal. If you have no other
+runtimes installed, then "python" will launch this one. Otherwise, you
+will need to use "py -V:3.14t ..." or, if you have added the global
+aliases directory to your "PATH" environment variable, the
+"python3.14t.exe" commands.
+
+
+4.1.13. Troubleshooting
+-----------------------
+
+If your Python install manager does not seem to be working correctly,
+please work through these tests and fixes to see if it helps. If not,
+please report an issue at our bug tracker, including any relevant log
+files (written to your "%TEMP%" directory by default).
+
+-[ Troubleshooting ]-
+
++----------------------------------------------------+----------------------------------------------------+
+| Symptom                                            | Things to try                                      |
+|====================================================|====================================================|
+| "python" gives me a "command not found" error or   | Did you install the Python install manager?        |
+| opens the Store app when I type it in my terminal. |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Click Start, open "Manage app execution aliases",  |
+|                                                    | and check that the aliases for "Python (default)"  |
+|                                                    | are enabled. If they already are, try disabling    |
+|                                                    | and re-enabling to refresh the command. The        |
+|                                                    | "Python (default windowed)" and "Python install    |
+|                                                    | manager" commands may also need refreshing.        |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Check that the "py" and "pymanager" commands work. |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Ensure your "PATH" variable contains the entry for |
+|                                                    | "%UserProfile%\AppData\Local\Microsoft\WindowsApps |
+|                                                    | ". The operating system includes this entry once   |
+|                                                    | by default, after other user paths. If removed,    |
+|                                                    | shortcuts will not be found.                       |
++----------------------------------------------------+----------------------------------------------------+
+| "py" gives me a "command not found" error when I   | Did you install the Python install manager?        |
+| type it in my terminal.                            |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Click Start, open "Manage app execution aliases",  |
+|                                                    | and check that the aliases for "Python (default)"  |
+|                                                    | are enabled. If they already are, try disabling    |
+|                                                    | and re-enabling to refresh the command. The        |
+|                                                    | "Python (default windowed)" and "Python install    |
+|                                                    | manager" commands may also need refreshing.        |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Ensure your "PATH" variable contains the entry for |
+|                                                    | "%UserProfile%\AppData\Local\Microsoft\WindowsApps |
+|                                                    | ". The operating system includes this entry once   |
+|                                                    | by default, after other user paths. If removed,    |
+|                                                    | shortcuts will not be found.                       |
++----------------------------------------------------+----------------------------------------------------+
+| "py" gives me a "can't open file" error when I     | This usually means you have the legacy launcher    |
+| type commands in my terminal.                      | installed and it has priority over the Python      |
+|                                                    | install manager. To remove, click Start, open      |
+|                                                    | "Installed apps", search for "Python launcher" and |
+|                                                    | uninstall it.                                      |
++----------------------------------------------------+----------------------------------------------------+
+| "python" doesn't launch the same runtime as "py"   | Click Start, open "Installed apps", look for any   |
+|                                                    | existing Python runtimes, and either remove them   |
+|                                                    | or Modify and disable the "PATH" options.          |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Click Start, open "Manage app execution aliases",  |
+|                                                    | and check that your "python.exe" alias is set to   |
+|                                                    | "Python (default)"                                 |
++----------------------------------------------------+----------------------------------------------------+
+| "python" and "py" don't launch the runtime I       | Check your "PYTHON_MANAGER_DEFAULT" environment    |
+| expect                                             | variable or "default_tag" configuration. The "py   |
+|                                                    | list" command will show your default based on      |
+|                                                    | these settings.                                    |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Installs that are managed by the Python install    |
+|                                                    | manager will be chosen ahead of unmanaged          |
+|                                                    | installs. Use "py install" to install the runtime  |
+|                                                    | you expect, or configure your default tag.         |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | Prerelease and experimental installs that are not  |
+|                                                    | managed by the Python install manager may be       |
+|                                                    | chosen ahead of stable releases. Configure your    |
+|                                                    | default tag or uninstall the prerelease runtime    |
+|                                                    | and reinstall it using "py install".               |
++----------------------------------------------------+----------------------------------------------------+
+| "pythonw" or "pyw" don't launch the same runtime   | Click Start, open "Manage app execution aliases",  |
+| as "python" or "py"                                | and check that your "pythonw.exe" and "pyw.exe"    |
+|                                                    | aliases are consistent with your others.           |
++----------------------------------------------------+----------------------------------------------------+
+| "pip" gives me a "command not found" error when I  | Have you activated a virtual environment? Run the  |
+| type it in my terminal.                            | ".venv\Scripts\activate" script in your terminal   |
+|                                                    | to activate.                                       |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | The package may be available but missing the       |
+|                                                    | generated executable. We recommend using the       |
+|                                                    | "python -m pip" command instead, or alternatively  |
+|                                                    | the "python -m pip install --force pip" command    |
+|                                                    | will recreate the executables and show you the     |
+|                                                    | path to add to "PATH". These scripts are separated |
+|                                                    | for each runtime, and so you may need to add       |
+|                                                    | multiple paths.                                    |
++----------------------------------------------------+----------------------------------------------------+
+| Typing "script-name.py" in the terminal opens in a | This is a known limitation of the operating        |
+| new window.                                        | system. Either specify "py" before the script      |
+|                                                    | name, create a batch file containing "@py          |
+|                                                    | "%~dpn0.py" %*" with the same name as the script,  |
+|                                                    | or install the legacy launcher and select it as    |
+|                                                    | the association for scripts.                       |
++----------------------------------------------------+----------------------------------------------------+
+| Drag-dropping files onto a script doesn't work     | This is a known limitation of the operating        |
+|                                                    | system. It is supported with the legacy launcher,  |
+|                                                    | or with the Python install manager when installed  |
+|                                                    | from the MSI.                                      |
++----------------------------------------------------+----------------------------------------------------+
+| I have installed the Python install manager        | It is possible to install from the Store or        |
+| multiple times.                                    | WinGet, from the MSIX on the Python website, and   |
+|                                                    | from the MSI, all at once. They are all compatible |
+|                                                    | and will share configuration and runtimes.         |
++----------------------------------------------------+----------------------------------------------------+
+|                                                    | See the earlier Advanced installation section for  |
+|                                                    | ways to uninstall the install manager other than   |
+|                                                    | the typical Installed Apps (Add and Remove         |
+|                                                    | Programs) settings page.                           |
++----------------------------------------------------+----------------------------------------------------+
+| My old "py.ini" settings no longer work.           | The new Python install manager no longer supports  |
+|                                                    | this configuration file or its settings, and so it |
+|                                                    | will be ignored. See Configuration for information |
+|                                                    | about configuration settings.                      |
++----------------------------------------------------+----------------------------------------------------+
+
+
+4.2. 내장 가능한 패키지
+=======================
+
+Added in version 3.5.
+
+내장된 배포는 최소 파이썬 환경을 포함하는 ZIP 파일입니다. 최종 사용자
+가 직접 액세스하기보다는, 다른 응용 프로그램의 일부로 작동하기 위한 것
+입니다.
+
+To install an embedded distribution, we recommend using "py install"
+with the "--target" option:
+
+   $> py install 3.14-embed --target=<directory>
+
+When extracted, the embedded distribution is (almost) fully isolated
+from the user's system, including environment variables, system
+registry settings, and installed packages. The standard library is
+included as pre-compiled and optimized ".pyc" files in a ZIP, and
+"python3.dll", "python313.dll", "python.exe" and "pythonw.exe" are all
+provided. Tcl/tk (including all dependents, such as Idle), pip and the
+Python documentation are not included.
+
+A default "._pth" file is included, which further restricts the
+default search paths (as described below in 모듈 찾기). This file is
+intended for embedders to modify as necessary.
+
+제삼자 패키지는 내장된 배포와 함께 응용 프로그램 설치 프로그램이 설치
+해야 합니다. 일반 파이썬 설치처럼 종속성을 관리하기 위해 pip를 사용하
+는 것은 이 배포에서 지원되지 않지만, 주의를 기울이면 자동 업데이트를
+위해 pip를 포함하고 사용할 수 있습니다. 일반적으로, 제삼자 패키지는 개
+발자가 사용자에게 업데이트를 제공하기 전에 최신 버전과의 호환성을 보장
+할 수 있도록 응용 프로그램의 일부로 처리되어야 합니다 ("벤더링
+(vendoring)").
+
+이 배포에 권장되는 두 가지 사용 사례가 아래에 설명되어 있습니다.
+
+
+4.2.1. Python application
+-------------------------
+
+파이썬으로 작성된 응용 프로그램이 반드시 사용자가 그 사실을 인식하도록
+할 필요는 없습니다. 이 경우 내장된 배포를 사용하여 설치 패키지에 파이
+썬의 내부 버전을 포함할 수 있습니다. 얼마나 투명해야 하는지(또는 반대
+로, 얼마나 전문적으로 보여야 하는지)에 따라, 두 가지 옵션이 있습니다.
+
+특수 실행 파일을 런처로 사용하려면 약간의 코딩이 필요하지만, 사용자에
+게 가장 투명한 경험을 제공합니다. 사용자 정의된 런처를 사용하면, 프로
+그램이 파이썬에서 실행되고 있다는 명백한 표시가 없습니다: 아이콘을 사
+용자 정의하고, 회사와 버전 정보를 지정할 수 있으며 파일 연결이 제대로
+작동합니다. 대부분의 경우, 사용자 정의 런처는 하드 코딩된 명령 줄을 사
+용하여 "Py_Main"을 호출할 수 있어야 합니다.
+
+더 간단한 방법은 필요한 명령 줄 인자를 사용하여 "python.exe"나
+"pythonw.exe"를 직접 호출하는 배치 파일이나 생성된 바로 가기를 제공하
+는 것입니다. 이 경우, 응용 프로그램은 실제 이름이 아닌 파이썬으로 표시
+되며, 사용자는 실행 중인 다른 파이썬 프로세스나 파일 연결과 구별하는
+데 어려움을 겪을 수 있습니다.
+
+후자의 접근 방식에서는, 패키지를 파이썬 실행 파일과 함께 디렉터리로 설
+치하여 경로에서 사용할 수 있도록 해야 합니다. 특수 런처를 사용하면, 응
+용 프로그램을 시작하기 전에 검색 경로를 지정할 수 있어서 패키지를 다른
+위치에 배치할 수 있습니다.
+
+
+4.2.2. 파이썬 내장하기
+----------------------
+
+네이티브 코드로 작성된 응용 프로그램에는 종종 어떤 형태의 스크립팅 언
+어가 필요하며, 내장된 파이썬 배포를 이러한 목적으로 사용할 수 있습니다
+. 일반적으로, 대부분의 응용 프로그램은 네이티브 코드로 되어 있으며, 일
+부가 "python.exe"를 호출하거나 "python3.dll"을 직접 사용합니다. 두 경
+우 모두, 내장된 배포를 응용 프로그램 설치의 하위 디렉터리로 추출하면
+로드할 수 있는 파이썬 인터프리터를 제공하기에 충분합니다.
+
+응용 프로그램 사용과 마찬가지로, 인터프리터를 초기화하기 전에 검색 경
+로를 지정할 기회가 있어서 패키지를 임의의 위치에 설치할 수 있습니다.
+그 외에는, 내장된 배포와 일반 설치를 사용하는 것 간에 근본적인 차이점
+은 없습니다.
+
+
+4.3. nuget.org 패키지
+=====================
+
+Added in version 3.5.2.
+
+nuget.org 패키지는 시스템 전체에 파이썬이 설치되지 않은 지속적인 통합
+과 빌드 시스템에 사용하기 위한 축소된 크기의 파이썬 환경입니다. 너겟은
+".NET 용 패키지 관리자"이지만, 빌드 타임 도구가 포함된 패키지에서도 완
+벽하게 작동합니다.
+
+너겟 사용에 대한 최신 정보를 보려면 nuget.org를 방문하십시오. 다음은
+파이썬 개발자에게 충분한 요약입니다.
+
+"nuget.exe" 명령 줄 도구는, 예를 들어 curl이나 PowerShell을 사용하여
+"https://aka.ms/nugetclidl"에서 직접 다운로드할 수 있습니다. 이 도구를
+사용하면 다음과 같이 64비트나 32비트 컴퓨터용 파이썬의 최신 버전이 설
+치됩니다:
+
+   nuget.exe install python -ExcludeVersion -OutputDirectory .
+   nuget.exe install pythonx86 -ExcludeVersion -OutputDirectory .
+
+특정 버전을 선택하려면, "-Version 3.x.y"를 추가하십시오. 출력 디렉터리
+는 "."에서 변경될 수 있으며, 패키지는 하위 디렉터리에 설치됩니다. 기본
+적으로, 하위 디렉터리의 이름은 패키지와 같으며, "-ExcludeVersion" 옵션
+이 없으면 이 이름에 설치된 특정 버전이 포함됩니다. 하위 디렉터리에는
+파이썬 설치가 포함된 "tools" 디렉터리가 있습니다:
+
+   # -ExcludeVersion 없이
+   > .\python.3.5.2\tools\python.exe -V
+   Python 3.5.2
+
+   # -ExcludeVersion 포함
+   > .\python\tools\python.exe -V
+   Python 3.5.2
+
+일반적으로, 너겟 패키지는 업그레이드할 수 없으며, 최신 버전을 나란히
+설치하고 전체 경로를 사용하여 참조해야 합니다. 또는, 패키지 디렉터리를
+수동으로 삭제하고 다시 설치하십시오. 많은 CI 시스템은 빌드 간에 파일을
+보존하지 않으면 이 작업을 자동으로 수행합니다.
+
+"tools" 디렉터리와 함께 "build\native" 디렉터리가 있습니다. 여기에는
+파이썬 설치를 참조하기 위해 C++ 프로젝트에서 사용할 수 있는 MSBuild 속
+성 파일 "python.props"가 포함되어 있습니다. 설정을 포함하면 빌드에서
+자동으로 헤더와 임포트 라이브러리를 사용합니다.
+
+nuget.org의 패키지 정보 페이지는 64비트 버전의 경우
+www.nuget.org/packages/python, 32비트 버전의 경우
+www.nuget.org/packages/pythonx86 그리고 ARM64 버전의 경우
+www.nuget.org/packages/pythonarm64입니다.
+
+
+4.3.1. 자유 스레드 패키지
+-------------------------
+
+Added in version 3.13.
+
+Packages containing free-threaded binaries are named python-
+freethreaded for the 64-bit version, pythonx86-freethreaded for the
+32-bit version, and pythonarm64-freethreaded for the ARM64 version.
+These packages contain both the "python3.13t.exe" and "python.exe"
+entry points, both of which run free threaded.
+
+
+4.4. 대체 번들
+==============
+
+표준 CPython 배포 외에도, 추가 기능을 포함하는 수정된 패키지가 있습니
+다. 다음은 많이 사용되는 버전과 주요 기능 목록입니다:
+
+ActivePython
+   다중 플랫폼 호환성, 설명서, PyWin32가 있는 설치 프로그램
+
+Anaconda
+   인기 있는 과학 모듈(가령 numpy, scipy 및 pandas)과 "conda" 패키지
+   관리자.
+
+Enthought Deployment Manager
+   "The Next Generation Python Environment and Package Manager".
+
+   Previously Enthought provided Canopy, but it reached end of life in
+   2016.
+
+WinPython
+   사전 빌드된 과학 패키지와 패키지 빌드를 위한 도구가 포함된 윈도우
+   전용 배포.
+
+이러한 패키지들은 최신 버전의 파이썬이나 기타 라이브러리를 포함하지 않
+을 수 있으며, 핵심 파이썬 팀에서 유지 관리하거나 지원하지 않음에 유의
+하십시오.
+
+
+4.5. Supported Windows versions
+===============================
+
+As specified in **PEP 11**, a Python release only supports a Windows
+platform while Microsoft considers the platform under extended
+support. This means that Python 3.14 supports Windows 10 and newer. If
+you require Windows 7 support, please install Python 3.8. If you
+require Windows 8.1 support, please install Python 3.12.
+
+
+4.6. Removing the MAX_PATH limitation
+=====================================
+
+윈도우는 역사적으로 경로 길이를 260자로 제한했습니다. 이는 이보다 긴
+경로는 결정(resolve)되지 않고 에러가 발생함을 의미합니다.
+
+In the latest versions of Windows, this limitation can be expanded to
+over 32,000 characters. Your administrator will need to activate the
+"Enable Win32 long paths" group policy, or set "LongPathsEnabled" to
+"1" in the registry key
+"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem".
+
+이는 "open()" 함수, "os" 모듈 및 대부분의 다른 경로 기능이 260자보다
+긴 경로를 받아들이고 반환할 수 있도록 합니다.
+
+After changing the above option and rebooting, no further
+configuration is required.
+
+
+4.7. UTF-8 모드
+===============
+
+Added in version 3.7.
+
+윈도우는 여전히 시스템 인코딩에 레거시 인코딩을 사용합니다 (ANSI 코드
+페이지). 파이썬은 이를 텍스트 파일의 기본 인코딩에 이를 사용합니다 (예
+를 들어 "locale.getencoding()").
+
+UTF-8은 인터넷과 WSL(Windows Subsystem for Linux)을 포함한 대부분의 유
+닉스 시스템에서 널리 사용되기 때문에 문제가 발생할 수 있습니다.
+
+파이썬 UTF-8 모드를 사용하여 기본 텍스트 인코딩을 UTF-8로 변경할 수 있
+습니다. "-X utf8" 명령 줄 옵션이나 "PYTHONUTF8=1" 환경 변수를 통해 파
+이썬 UTF-8 모드를 활성화할 수 있습니다. UTF-8 모드를 활성화하려면
+"PYTHONUTF8"을, 환경 변수를 수정하는 방법은 Python install manager를
+참조하십시오.
+
+When the Python UTF-8 Mode is enabled, you can still use the system
+encoding (the ANSI Code Page) via the "mbcs" codec.
+
+기본 환경 변수에 "PYTHONUTF8=1"을 추가하면 시스템의 모든 파이썬 3.7+
+응용 프로그램에 영향을 줍니다. 레거시 시스템 인코딩에 의존하는 파이썬
+3.7+ 응용 프로그램이 있으면 환경 변수를 임시로 설정하거나 "-X utf8" 명
+령 줄 옵션을 사용하는 것이 좋습니다.
+
+참고:
+
+  UTF-8 모드가 비활성화된 경우에도, 파이썬은 윈도우에서 기본적으로 다
+  음을 위해 UTF-8을 사용합니다:
+
+  * 표준 I/O를 포함한 콘솔 I/O (자세한 내용은 **PEP 528**을 참조하십시
+    오).
+
+  * *파일 시스템 인코딩* (자세한 내용은 **PEP 529**를 참조하십시오).
+
+
+4.8. 모듈 찾기
+==============
+
+These notes supplement the description at The initialization of the
+sys.path module search path with detailed Windows notes.
+
+"._pth" 파일이 없을 때, 윈도우에서 "sys.path"를 채우는 방법은 다음과
+같습니다:
+
+* 시작에 현재 디렉터리에 해당하는 빈 항목이 추가됩니다.
+
+* 환경 변수에 설명된 대로, 환경 변수 "PYTHONPATH"가 존재하면, 해당 항
+  목이 다음에 추가됩니다. 윈도우에서, 이 변수의 경로는 드라이브 식별자
+  ("C:\" 등)에 사용되는 콜론과 구별하기 위해 세미콜론으로 구분되어야
+  합니다.
+
+* 추가 "응용 프로그램 경로"는 "HKEY_CURRENT_USER"와
+  "HKEY_LOCAL_MACHINE" 하이브 모두의 아래에
+  "\SOFTWARE\Python\PythonCore{version}\PythonPath"의 하위 키로 레지스
+  트리에 추가될 수 있습니다. 세미콜론으로 구분된 경로 문자열을 기본값
+  으로 사용하는 하위 키는 각 경로가 "sys.path"에 추가되도록 합니다. (
+  알려진 모든 설치 프로그램은 HKLM 만 사용하므로, HKCU는 일반적으로 비
+  어 있음에 유의하십시오.)
+
+* 환경 변수 "PYTHONHOME"이 설정되면, "파이썬 홈"으로 간주합니다. 그렇
+  지 않으면, 메인 파이썬 실행 파일의 경로를 사용하여 "랜드마크 파일
+  "("Lib\os.py"나 "pythonXY.zip")을 찾아 "파이썬 홈"을 추론합니다. 파
+  이썬 홈이 발견되면, "sys.path"에 추가되는 관련 하위 디렉터리("Lib",
+  "plat-win" 등)는 해당 폴더를 기반으로 합니다. 그렇지 않으면, 핵심 파
+  이썬 경로가 레지스트리에 저장된 PythonPath에서 구성됩니다.
+
+* 파이썬 홈을 찾을 수 없고, 환경에 "PYTHONPATH"가 지정되어 있지 않고,
+  레지스트리 항목을 찾을 수 없으면, 상대 항목의 기본 경로(예를 들어
+  ".\Lib;.\plat-win" 등)가 사용됩니다.
+
+"pyvenv.cfg" 파일이 메인 실행 파일과 함께 또는 실행 파일보다 한 수준
+위의 디렉터리에서 발견되면, 다음 변형이 적용됩니다:
+
+* "home"이 절대 경로이고 "PYTHONHOME"이 설정되지 않으면, 홈 위치를 추
+  론할 때 메인 실행 파일에 대한 경로 대신 이 경로가 사용됩니다.
+
+이 모든 것의 최종 결과는 다음과 같습니다:
+
+* "python.exe" 또는 기본 파이썬 디렉터리 (설치된 버전 또는 PCbuild 디
+  렉터리에서 직접)에서 다른 .exe를 실행할 때 핵심 경로가 추론되고 레지
+  스트리의 핵심 경로가 무시됩니다. 레지스트리의 다른 "응용 프로그램 경
+  로"는 항상 읽습니다.
+
+* 파이썬이 다른 .exe(다른 디렉터리, COM을 통한 내장, 등)에서 호스팅 될
+  때, "파이썬 홈"이 추론되지 않아서, 레지스트리의 핵심 경로가 사용됩니
+  다. 레지스트리의 다른 "응용 프로그램 경로"는 항상 읽힙니다.
+
+* 파이썬이 홈을 찾을 수 없고 레지스트리 값이 없으면 (고정된(frozen)
+  .exe, 아주 이상한 설치 설정), 일부 기본 (하지만 상대) 경로를 얻게 됩
+  니다.
+
+파이썬을 응용 프로그램이나 배포에 번들로 포함하려는 사용자를 위해, 다
+음 조언은 다른 설치와의 충돌을 방지합니다:
+
+* 포함할 디렉터리가 포함된 실행 파일과 함께 "._pth" 파일을 포함합니다.
+  이것은 레지스트리와 환경 변수에 나열된 경로를 무시하고, "import
+  site"가 나열되지 않는 한 "site"도 무시합니다.
+
+* 여러분 자신의 실행 파일에서 "python3.dll"이나 "python37.dll"을 로드
+  하면, "Py_InitializeFromConfig()" 전에
+  "PyConfig.module_search_paths" 를 명시적으로 설정하십시오.
+
+* 응용 프로그램에서 "python.exe"를 시작하기 전에 "PYTHONPATH"를 지우거
+  나 덮어쓰고 "PYTHONHOME"를 설정하십시오.
+
+* 이전 제안을 사용할 수 없으면 (예를 들어, 사용자가 "python.exe"를 직
+  접 실행할 수 있는 배포판이면), 랜드마크 파일("Lib\os.py")이 설치 디
+  렉터리에 있도록 하십시오. (ZIP 파일 내에서는 감지되지 않지만, 대신
+  올바른 이름의 ZIP 파일은 감지됨에 유의하십시오.)
+
+이렇게 하면 시스템 전체 설치의 파일이 응용 프로그램과 함께 번들로 제공
+되는 표준 라이브러리의 복사본보다 우선하지 않습니다. 그렇지 않으면, 사
+용자가 여러분의 응용 프로그램을 사용하는 데 문제가 발생할 수 있습니다.
+다른 제안은 레지스트리의 비표준 경로와 사용자 site-packages에 여전히
+취약할 수 있어서, 첫 번째 제안이 가장 좋음에 유의하십시오.
+
+버전 3.6에서 변경: "._pth" 파일 지원을 추가하고 "pyvenv.cfg"에서
+"applocal" 옵션을 제거합니다.
+
+버전 3.6에서 변경: 실행 파일에 직접 인접할 때 잠재적인 랜드마크로
+"python*XX*.zip"을 추가합니다.
+
+버전 3.6부터 폐지됨: "Modules"("PythonPath"가 아닙니다) 아래의 레지스
+트리에 지정된 모듈은 "importlib.machinery.WindowsRegistryFinder" 로 임
+포트 할 수 있습니다. 이 파인더는 윈도우 3.6.0과 이전 버전에서 활성화되
+지만, 향후에는 "sys.meta_path"에 명시적으로 추가해야 할 수도 있습니다.
+
+
+4.9. 추가 모듈
+==============
+
+파이썬이 모든 플랫폼 간에 이식성 있는 것을 목표로 하지만, 윈도우에만
+고유한 기능이 있습니다. 이러한 기능을 사용하기 위한 표준 라이브러리와
+외부에 있는 두 개의 모듈과 스니펫(snippets)이 존재합니다.
+
+윈도우 특정 표준 모듈은 MS 윈도우 특정 서비스에 설명되어 있습니다.
+
+
+4.9.1. PyWin32
+--------------
+
+Mark Hammond의 PyWin32 모듈은 고급 윈도우 특정 지원을 위한 모듈 모음입
+니다. 여기에는 다음을 위한 유틸리티가 포함됩니다:
+
+* Component Object Model (COM)
+
+* Win32 API 호출
+
+* 레지스트리
+
+* 이벤트 로그
+
+* Microsoft Foundation Classes (MFC) 사용자 인터페이스
+
+PythonWin은 PyWin32와 함께 제공되는 샘플 MFC 응용 프로그램입니다. 디버
+거가 내장된 내장할 수 있는 IDE입니다.
+
+더 보기:
+
+  Win32 How Do I...?
+     저자: Tim Golden
+
+  Python and COM
+     저자: David와 Paul Boddie
+
+
+4.9.2. cx_Freeze
+----------------
+
+cx_Freeze는 파이썬 스크립트를 실행 가능한 윈도우 프로그램("***.exe" 파
+일)으로 래핑합니다. 이렇게 하면, 사용자가 파이썬을 설치할 필요 없는 응
+용 프로그램을 배포할 수 있습니다.
+
+
+4.10. 윈도우에서 파이썬 컴파일하기
+==================================
+
+CPython을 직접 컴파일하려면, 먼저 소스를 가져와야 합니다. 최신 릴리스
+의 소스를 다운로드하거나 최신 버전을 체크아웃할 수 있습니다.
+
+소스 트리에는 공식 파이썬 릴리스를 빌드하는 데 사용되는 컴파일러인
+Microsoft Visual Studio 용 빌드 솔루션과 프로젝트 파일이 포함되어 있습
+니다. 이 파일들은 "PCbuild" 디렉터리에 있습니다.
+
+빌드 프로세스에 대한 일반 정보는 "PCbuild/readme.txt"를 확인하십시오.
+
+확장 모듈에 대해서는, 윈도우에서 C와 C++ 확장 빌드하기를 참조하십시오.
+
+
+4.11. The full installer (deprecated)
+=====================================
+
+버전 3.14부터 폐지됨: This installer is deprecated since 3.14 and will
+not be produced for Python 3.16 or later. See Python install manager
+for the modern installer.
+
+
+4.11.1. 설치 단계
+-----------------
+
+네 개의 파이썬 3.14 설치 프로그램을 다운로드할 수 있습니다 - 각각 32비
+트와 64비트 버전의 인터프리터를 지원하는 두 가지. *웹 설치 프로그램
+(web installer)*은 작은 초기 다운로드이며, 필요한 구성 요소를 자동으로
+다운로드합니다. *오프라인 설치 프로그램(offline installer)*에는 기본
+설치에 필요한 구성 요소가 포함되어 있으며 선택적 기능을 위해서만 인터
+넷 연결이 필요합니다. 설치 중 다운로드를 피하는 다른 방법은 Installing
+without downloading를 참조하십시오.
+
+설치 프로그램을 시작한 후, 두 가지 옵션 중 하나를 선택할 수 있습니다:
+
+[그림]
+
+"Install Now"를 선택하면:
+
+* 관리자(administrator)일 필요는 *없습니다* (C 런타임 라이브러리에 대
+  한 시스템 업데이트가 필요하거나 모든 사용자를 위해 Python install
+  manager를 설치하지 않는 한)
+
+* 파이썬이 사용자 디렉터리에 설치됩니다
+
+* Python install manager는 첫 페이지 하단의 옵션에 따라 설치됩니다
+
+* 표준 라이브러리, 테스트 스위트, 런처 및 pip가 설치됩니다
+
+* 선택하면, 설치 디렉터리가 "PATH"에 추가됩니다
+
+* 바로 가기는 현재 사용자에게만 표시됩니다
+
+"Customize installation"을 선택하면 설치할 기능, 설치 위치 및 다른 옵
+션이나 설치 후 작업을 선택할 수 있습니다. 디버깅 심볼이나 바이너리를
+설치하려면, 이 옵션을 사용해야 합니다.
+
+모든 사용자 설치를 수행하려면, "Customize installation"을 선택해야 합
+니다. 이 경우:
+
+* 관리자 자격 증명이나 승인을 제공해야 할 수 있습니다.
+
+* 파이썬은 Program Files 디렉터리에 설치됩니다
+
+* Python install manager는 Windows 디렉터리에 설치됩니다
+
+* 설치 중에 선택적 기능을 선택할 수 있습니다
+
+* 표준 라이브러리는 바이트 코드로 사전 컴파일될 수 있습니다
+
+* 선택하면, 설치 디렉터리가 시스템 "PATH"에 추가됩니다
+
+* 모든 사용자가 바로 가기를 사용할 수 있습니다
+
+
+4.11.2. Removing the MAX_PATH limitation
+----------------------------------------
+
+윈도우는 역사적으로 경로 길이를 260자로 제한했습니다. 이는 이보다 긴
+경로는 결정(resolve)되지 않고 에러가 발생함을 의미합니다.
+
+최신 버전의 윈도우에서는, 이 제한을 약 32,000자로 확장할 수 있습니다.
+관리자는 "Enable Win32 long paths" 그룹 정책을 활성화하거나, 레지스트
+리 키 "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem"
+에서 "LongPathsEnabled"를 "1"로 설정해야 합니다.
+
+이는 "open()" 함수, "os" 모듈 및 대부분의 다른 경로 기능이 260자보다
+긴 경로를 받아들이고 반환할 수 있도록 합니다.
+
+위 옵션을 변경한 후에는, 추가 구성이 필요하지 않습니다.
+
+버전 3.6에서 변경: 긴 경로에 대한 지원이 파이썬에서 활성화되었습니다.
+
+
+4.11.3. Installing without UI
+-----------------------------
+
+설치 프로그램 UI에서 사용할 수 있는 모든 옵션은 명령 줄에서도 지정할
+수 있어서, 스크립팅 된 설치 프로그램이 사용자 상호 작용 없이 여러 컴퓨
+터에서 설치를 복제할 수 있도록 합니다. 이러한 옵션은 일부 기본값을 변
+경하기 위해 UI를 억제하지 않고 설정할 수도 있습니다.
+
+The following options (found by executing the installer with "/?") can
+be passed into the installer:
+
++-----------------------+----------------------------------------------------------+
+| 이름                  | 설명                                                     |
+|=======================|==========================================================|
+| /passive              | to display progress without requiring user interaction   |
++-----------------------+----------------------------------------------------------+
+| /quiet                | UI를 표시하지 않고 설치/제거하기                         |
++-----------------------+----------------------------------------------------------+
+| /simple               | 사용자 정의를 방지하기                                   |
++-----------------------+----------------------------------------------------------+
+| /uninstall            | to remove Python (without confirmation)                  |
++-----------------------+----------------------------------------------------------+
+| /layout [디렉터리]    | to pre-download all components                           |
++-----------------------+----------------------------------------------------------+
+| /log [파일명]         | to specify log files location                            |
++-----------------------+----------------------------------------------------------+
+
+다른 모든 옵션은 "name=value"로 전달됩니다. 여기서 value는 일반적으로
+기능을 비활성화하려면 "0", 기능을 활성화하려면 "1" 또는 경로입니다. 사
+용 가능한 옵션의 전체 목록은 다음과 같습니다.
+
++-----------------------------+----------------------------------------+----------------------------+
+| 이름                        | 설명                                   | 기본값                     |
+|=============================|========================================|============================|
+| InstallAllUsers             | 시스템 전체 설치를 수행합니다.         | 0                          |
++-----------------------------+----------------------------------------+----------------------------+
+| TargetDir                   | 설치 디렉터리                          | InstallAllUsers 에 따라 선 |
+|                             |                                        | 택됩니다                   |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultAllUsersTargetDir    | 모든 사용자 설치를 위한 기본 설치 디렉 | "%ProgramFiles%\Python     |
+|                             | 터리                                   | X.Y" or "%ProgramFiles(x86 |
+|                             |                                        | )%\Python X.Y"             |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultJustForMeTargetDir   | 현재 사용자 전용 설치를 위한 기본 설치 | "%LocalAppData%\Programs\P |
+|                             | 디렉터리                               | ython\PythonXY" or "%Local |
+|                             |                                        | AppData%\Programs\Python\P |
+|                             |                                        | ythonXY-32" or "%LocalAppD |
+|                             |                                        | ata%\Programs\Python\Pytho |
+|                             |                                        | nXY-64"                    |
++-----------------------------+----------------------------------------+----------------------------+
+| DefaultCustomTargetDir      | UI에 표시되는 기본 사용자 지정 설치 디 | (비어있음)                 |
+|                             | 렉터리                                 |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| AssociateFiles              | 런처도 설치되었으면 파일 연결을 만듭니 | 1                          |
+|                             | 다.                                    |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| CompileAll                  | 모든 ".py" 파일을 ".pyc"로 컴파일합니  | 0                          |
+|                             | 다.                                    |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| PrependPath                 | 설치 및 Scripts 디렉터리를 "PATH"의 앞 | 0                          |
+|                             | 에 추가하고 ".PY"를 "PATHEXT"에 추가합 |                            |
+|                             | 니다.                                  |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| AppendPath                  | 설치 및 Scripts 디렉터리를 "PATH"의 뒤 | 0                          |
+|                             | 에 추가하고 ".PY"를 "PATHEXT"에 추가합 |                            |
+|                             | 니다.                                  |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Shortcuts                   | 설치되면, 인터프리터, 설명서 및 IDLE에 | 1                          |
+|                             | 대한 바로 가기를 만듭니다.             |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_doc                 | 파이썬 매뉴얼을 설치합니다             | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_debug               | 디버그 바이너리를 설치합니다           | 0                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_dev                 | Install developer headers and          | 1                          |
+|                             | libraries. Omitting this may lead to   |                            |
+|                             | an unusable installation.              |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_exe                 | "python.exe"와 관련 파일들을 설치합니  | 1                          |
+|                             | 다. 이를 생략하면 쓸 수 없는 설치 가   |                            |
+|                             | 될 수 있습니다.                        |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_launcher            | Python install manager를 설치합니다.   | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| InstallLauncherAllUsers     | Installs the launcher for all users.   | 1                          |
+|                             | Also requires "Include_launcher" to be |                            |
+|                             | set to 1                               |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_lib                 | 표준 라이브러리와 확장 모듈을 설치합니 | 1                          |
+|                             | 다. 이를 생략하면 쓸 수 없는 설 치가   |                            |
+|                             | 될 수 있습니다.                        |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_pip                 | 번들로 제공되는 pip와 setuptools를 설  | 1                          |
+|                             | 치합니다                               |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_symbols             | 디버깅 심볼("*.pdb")을 설치합니다      | 0                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_tcltk               | Tcl/Tk 지원과 IDLE을 설치합니다        | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_test                | 표준 라이브러리 테스트 스위트를 설치합 | 1                          |
+|                             | 니다                                   |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| Include_tools               | 유틸리티 스크립트를 설치합니다         | 1                          |
++-----------------------------+----------------------------------------+----------------------------+
+| LauncherOnly                | 런처만 설치합니다. 이것은 대부분의 다  | 0                          |
+|                             | 른 옵션보다 우선합니다.                |                            |
++-----------------------------+----------------------------------------+----------------------------+
+| SimpleInstall               | 대부분의 설치 UI를 비활성화합니다      | 0                          |
++-----------------------------+----------------------------------------+----------------------------+
+| SimpleInstallDescription    | 단순화된 설치 UI를 사용할 때 표시할 사 | (비어있음)                 |
+|                             | 용자 정의 메시지.                      |                            |
++-----------------------------+----------------------------------------+----------------------------+
+
+예를 들어 기본, 시스템 전체 파이썬 설치를 조용히 설치하려면, (관리자
+권한 명령 프롬프트에서) 다음 명령을 사용할 수 있습니다:
+
+   python-3.9.0.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
+
+사용자가 테스트 스위트 없이 파이썬의 개인용 사본을 쉽게 설치할 수 있도
+록, 다음 명령으로 바로 가기를 제공할 수 있습니다. 이렇게 하면 단순화된
+초기 페이지가 표시되고 사용자 정의가 허용되지 않습니다:
+
+   python-3.9.0.exe InstallAllUsers=0 Include_launcher=0 Include_test=0
+       SimpleInstall=1 SimpleInstallDescription="Just for me, no test suite."
+
+(런처를 생략하면 파일 연결도 생략되며, 런처가 포함된 시스템 전체 설치
+가 있을 때, 사용자별 설치에만 권장됨에 유의하십시오.)
+
+위에 나열된 옵션은 실행 파일과 함께 "unattend.xml"이라는 파일로 제공될
+수도 있습니다. 이 파일은 옵션과 값 목록을 지정합니다. 값이 어트리뷰트
+로 제공되면, 가능한 경우 숫자로 변환됩니다. 엘리먼트 텍스트로 제공된
+값은 항상 문자열로 남아 있습니다. 이 예제 파일은 이전 예제와 같은 옵션
+을 설정합니다:
+
+   <Options>
+       <Option Name="InstallAllUsers" Value="no" />
+       <Option Name="Include_launcher" Value="0" />
+       <Option Name="Include_test" Value="no" />
+       <Option Name="SimpleInstall" Value="yes" />
+       <Option Name="SimpleInstallDescription">Just for me, no test suite</Option>
+   </Options>
+
+
+4.11.4. Installing without downloading
+--------------------------------------
+
+파이썬의 일부 기능은 초기 설치 프로그램 다운로드에 포함되어 있지 않아
+서, 이러한 기능을 선택하면 인터넷 연결이 필요할 수 있습니다. 이러한 요
+구를 피하고자, 필요에 따라 모든 가능한 구성 요소를 내려받아 선택한 기
+능과 관계없이 더는 인터넷 연결이 필요하지 않은 완전한 *레이아웃*을 만
+들 수 있습니다. 이 다운로드는 필요한 것보다 클 수 있지만, 많은 수의 설
+치를 수행할 경우 로컬로 캐시 된 사본을 보유하는 것이 매우 유용합니다.
+
+가능한 모든 파일을 다운로드하려면 명령 프롬프트에서 다음 명령을 실행하
+십시오. "python-3.9.0.exe"를 설치 프로그램의 실제 이름으로 대체하고,
+같은 이름을 가진 파일 간의 충돌을 방지하기 위해 자체 디렉터리에 레이아
+웃을 만들어야 합니다.
+
+   python-3.9.0.exe /layout [선택적 대상 디렉터리]
+
+"/quiet" 옵션을 지정하여 진행률 표시를 숨길 수도 있습니다.
+
+
+4.11.5. 설치 수정하기
+---------------------
+
+일단 파이썬이 설치되면, 윈도우의 일부인 Programs and Features 도구를
+통해 기능을 추가하거나 제거할 수 있습니다. Python 항목을 선택하고
+"Uninstall/Change"를 선택하여 유지 관리 모드로 설치 프로그램을 엽니다.
+
+"Modify"는 체크 박스를 수정하여 기능을 추가하거나 제거하도록 합니다 -
+변경되지 않은 체크 박스는 아무것도 설치하거나 제거하지 않습니다. 이 모
+드에서는 설치 디렉터리와 같은 일부 옵션을 변경할 수 없습니다; 이를 수
+정하려면 파이썬을 완전히 제거한 다음 다시 설치해야 합니다.
+
+"Repair"는 현재 설정을 사용하여 설치되어야 하는 모든 파일을 확인하고
+제거되거나 수정된 파일을 대체합니다.
+
+"Uninstall"은 파이썬을 완전히 제거하는데, Programs and Features에 자체
+항목이 있는 Python install manager는 제외합니다.
+
+
+4.11.6. Installing free-threaded binaries
+-----------------------------------------
+
+Added in version 3.13.
+
+To install pre-built binaries with free-threading enabled (see **PEP
+703**), you should select "Customize installation". The second page of
+options includes the "Download free-threaded binaries" checkbox.
+
+[그림]
+
+Selecting this option will download and install additional binaries to
+the same location as the main Python install. The main executable is
+called "python3.13t.exe", and other binaries either receive a "t"
+suffix or a full ABI suffix. Python source files and bundled third-
+party dependencies are shared with the main install.
+
+The free-threaded version is registered as a regular Python install
+with the tag "3.13t" (with a "-32" or "-arm64" suffix as normal for
+those platforms). This allows tools to discover it, and for the Python
+install manager to support "py.exe -3.13t". Note that the launcher
+will interpret "py.exe -3" (or a "python3" shebang) as "the latest 3.x
+install", which will prefer the free-threaded binaries over the
+regular ones, while "py.exe -3.13" will not. If you use the short
+style of option, you may prefer to not install the free-threaded
+binaries at this time.
+
+To specify the install option at the command line, use
+"Include_freethreaded=1". See Installing without downloading for
+instructions on pre-emptively downloading the additional binaries for
+offline install. The options to include debug symbols and binaries
+also apply to the free-threaded builds.
+
+Free-threaded binaries are also available on nuget.org.
+
+
+4.12. Python launcher for Windows (deprecated)
+==============================================
+
+버전 3.14부터 폐지됨: The launcher and this documentation have been
+superseded by the Python Install Manager described above. This is
+preserved temporarily for historical interest.
+
+Added in version 3.3.
+
+윈도우 용 파이썬 런처는 다양한 파이썬 버전을 찾고 실행하는 데 도움이
+되는 유틸리티입니다. 스크립트(또는 명령 줄)가 특정 파이썬 버전에 대한
+선호를 나타내도록 허용하고, 해당 버전을 찾아 실행합니다.
+
+"PATH" 변수와 달리, 런처는 가장 적합한 파이썬 버전을 올바르게 선택합니
+다. 시스템 전체 설치보다 사용자별 설치를 선호하며, 가장 최근에 설치된
+버전을 사용하기보다 언어 버전별로 순서를 매깁니다.
+
+런처는 원래 **PEP 397**에서 지정되었습니다.
+
+
+4.12.1. 시작하기
+----------------
+
+
+4.12.1.1. 명령 줄에서
+~~~~~~~~~~~~~~~~~~~~~
+
+버전 3.6에서 변경.
+
+시스템 전체에 파이썬 3.3 이상을 설치하면 "PATH"에 런처를 넣습니다. 런
+처는 사용 가능한 모든 파이썬 버전과 호환되므로, 어떤 버전이 설치되어
+있는지는 중요하지 않습니다. 런처를 사용할 수 있는지 확인하려면, 명령
+프롬프트에서 다음 명령을 실행하십시오:
+
+   py
+
+설치한 최신 버전의 파이썬이 시작되어야 합니다 - 정상적으로 종료할 수
+있으며, 지정된 추가 명령 줄 인자가 파이썬으로 직접 전송됩니다.
+
+여러 버전의 파이썬이 설치되어있으면 (예를 들어, 3.7과 3.14) 파이썬
+3.14 시작되는 것을 알 수 있을 겁니다 - 파이썬 3.7을 시작하려면, 다음
+명령을 시도하십시오:
+
+   py -3.7
+
+설치한 파이썬 2의 최신 버전을 원하면, 다음 명령을 시도하십시오:
+
+   py -2
+
+다음 에러가 표시되면, 런처가 설치되지 않은 것입니다:
+
+   'py' is not recognized as an internal or external command,
+   operable program or batch file.
+
+명령:
+
+   py --list
+
+displays the currently installed version(s) of Python.
+
+The "-x.y" argument is the short form of the "-V:Company/Tag"
+argument, which allows selecting a specific Python runtime, including
+those that may have come from somewhere other than python.org. Any
+runtime registered by following **PEP 514** will be discoverable. The
+"--list" command lists all available runtimes using the "-V:" format.
+
+When using the "-V:" argument, specifying the Company will limit
+selection to runtimes from that provider, while specifying only the
+Tag will select from all providers. Note that omitting the slash
+implies a tag:
+
+   # '3.*' 태그가 지정된 런타임을 선택합니다
+   py -V:3
+
+   # 'PythonCore' 에서 출시된 런타임을 선택합니다
+   py -V:PythonCore/
+
+   # PythonCore 의 최신 파이썬 3 런타임을 선택합니다
+   py -V:PythonCore/3
+
+The short form of the argument ("-3") only ever selects from core
+Python releases, and not other distributions. However, the longer form
+("-V:3") will select from any.
+
+The Company is matched on the full string, case-insensitive. The Tag
+is matched on either the full string, or a prefix, provided the next
+character is a dot or a hyphen. This allows "-V:3.1" to match
+"3.1-32", but not "3.10". Tags are sorted using numerical ordering
+("3.10" is newer than "3.1"), but are compared using text ("-V:3.01"
+does not match "3.1").
+
+
+4.12.1.2. 가상 환경
+~~~~~~~~~~~~~~~~~~~
+
+Added in version 3.5.
+
+런처가 명시적인 파이썬 버전 지정 없이 실행되고, 가상 환경(표준 라이브
+러리 "venv" 모듈이나 외부 "virtualenv" 도구로 생성된)이 활성화되었으면
+, 런처는 전역 인터프리터가 아닌 가상 환경의 인터프리터를 실행합니다.
+전역 인터프리터를 실행하려면 가상 환경을 비활성화하거나, 전역 파이썬
+버전을 명시적으로 지정하십시오.
+
+
+4.12.1.3. 스크립트에서
+~~~~~~~~~~~~~~~~~~~~~~
+
+테스트 파이썬 스크립트를 만들어 봅시다 - 다음 내용으로 "hello.py"라는
+파일을 만듭니다.
+
+   #! python
+   import sys
+   sys.stdout.write("hello from Python %s\n" % (sys.version,))
+
+hello.py가 있는 디렉터리에서, 다음 명령을 실행합니다:
+
+   py hello.py
+
+최신 파이썬 2.x 설치의 버전 번호가 인쇄됨을 알 수 있습니다. 이제 첫 번
+째 줄을 다음과 같이 변경합니다:
+
+   #! python3
+
+명령을 다시 실행하면 이제 최신 파이썬 3.x 정보가 인쇄됩니다. 위의 명령
+줄 예제와 마찬가지로, 더 명시적인 버전 한정자를 지정할 수 있습니다. 파
+이썬 3.7이 설치되어 있다고 가정하고, 첫 번째 줄을 "#! python3.7"으로
+변경하면 3.7 버전 정보가 인쇄됩니다.
+
+대화 형 사용과 달리, 장식 없는 "python"은 설치된 파이썬 2.x의 최신 버
+전을 사용합니다. 이는 이전 버전과의 호환성과 유닉스와의 호환성을 위한
+것입니다, 여기서 "python" 명령은 일반적으로 파이썬 2를 참조합니다.
+
+
+4.12.1.4. 파일 연결에서
+~~~~~~~~~~~~~~~~~~~~~~~
+
+런처는 설치 시 파이썬 파일(즉 ".py", ".pyw", ".pyc" 파일)과 연결되어
+있어야 합니다. 즉, 윈도우 탐색기에서 이러한 파일 중 하나를 더블 클릭하
+면 런처가 사용되므로, 위에서 설명한 것과 같은 기능을 사용하여 스크립트
+에서 사용해야 하는 버전을 지정할 수 있습니다.
+
+이것의 주요 이점은 첫 번째 줄의 내용에 따라 단일 런처가 동시에 여러 파
+이썬 버전을 지원할 수 있다는 것입니다.
+
+
+4.12.2. Shebang lines
+---------------------
+
+스크립트 파일의 첫 번째 줄이 "#!"로 시작하면 "셔뱅(shebang)"줄이라고
+합니다. 리눅스와 기타 유닉스 류 운영 체제는 이러한 줄을 기본적으로 지
+원하며 스크립트 실행 방법을 나타내기 위해 이러한 시스템에서 일반적으로
+사용됩니다. 이 런처를 사용하면 윈도우에서 파이썬 스크립트로 같은 기능
+을 사용할 수 있으며 위의 예제는 그 사용법을 보여줍니다.
+
+파이썬 스크립트의 셔뱅 줄을 유닉스와 윈도우 간에 이식성 있도록 하기 위
+해, 이 런처는 사용할 인터프리터를 지정하는 여러 '가상' 명령을 지원합니
+다. 지원되는 가상 명령은 다음과 같습니다:
+
+* "/usr/bin/env"
+
+* "/usr/bin/python"
+
+* "/usr/local/bin/python"
+
+* "python"
+
+예를 들어, 스크립트의 첫 번째 줄이 다음과 같이 시작하면
+
+   #! /usr/bin/python
+
+기본 파이썬이나 활성 가상 환경을 찾아서 사용합니다. 유닉스에서 작동하
+도록 작성된 많은 파이썬 스크립트에는 이미 이 줄이 있어서, 수정하지 않
+고도 이러한 스크립트를 런처에서 사용할 수 있습니다. 윈도우에서 유닉스
+에서 유용할 새 스크립트를 작성하면, "/usr"로 시작하는 셔뱅 줄 중 하나
+를 사용해야 합니다.
+
+위의 모든 가상 명령은 명시적 버전(주 버전 만 또는 주 버전과 부 버전)으
+로 접미사를 붙일 수 있습니다. 또한 부 버전 뒤에 "-32"를 추가하여 32비
+트 버전을 요청할 수 있습니다. 즉 "/usr/bin/python3.7-32"는 32비트 파이
+썬 3.7의 사용을 요청합니다. 가상 환경이 활성화되어 있다면, 버전은 무시
+되고 환경이 사용됩니다.
+
+Added in version 3.7: 파이썬 런처 3.7부터는 "-64" 접미사로 64비트 버전
+을 요청할 수 있습니다. 또한 부 버전 없이 주 버전과 아키텍처를 지정할
+수 있습니다 (즉 "/usr/bin/python3-64").
+
+버전 3.11에서 변경: The "-64" suffix is deprecated, and now implies
+"any architecture that is not provably i386/32-bit". To request a
+specific environment, use the new "-V:*TAG*" argument with the
+complete tag.
+
+버전 3.13에서 변경: Virtual commands referencing "python" now prefer
+an active virtual environment rather than searching "PATH". This
+handles cases where the shebang specifies "/usr/bin/env python3" but
+"python3.exe" is not present in the active environment.
+
+The "/usr/bin/env" form of shebang line has one further special
+property. Before looking for installed Python interpreters, this form
+will search the executable "PATH" for a Python executable matching the
+name provided as the first argument. This corresponds to the behaviour
+of the Unix "env" program, which performs a "PATH" search. If an
+executable matching the first argument after the "env" command cannot
+be found, but the argument starts with "python", it will be handled as
+described for the other virtual commands. The environment variable
+"PYLAUNCHER_NO_SEARCH_PATH" may be set (to any value) to skip this
+search of "PATH".
+
+Shebang lines that do not match any of these patterns are looked up in
+the "[commands]" section of the launcher's .INI file. This may be used
+to handle certain commands in a way that makes sense for your system.
+The name of the command must be a single argument (no spaces in the
+shebang executable), and the value substituted is the full path to the
+executable (additional arguments specified in the .INI will be quoted
+as part of the filename).
+
+   [commands]
+   /bin/xpython=C:\Program Files\XPython\python.exe
+
+Any commands not found in the .INI file are treated as **Windows**
+executable paths that are absolute or relative to the directory
+containing the script file. This is a convenience for Windows-only
+scripts, such as those generated by an installer, since the behavior
+is not compatible with Unix-style shells. These paths may be quoted,
+and may include multiple arguments, after which the path to the script
+and any additional arguments will be appended.
+
+
+4.12.3. 셔뱅 줄의 인자
+----------------------
+
+셔뱅 줄은 또한 파이썬 인터프리터에 전달할 추가 옵션을 지정할 수 있습니
+다. 예를 들어, 다음과 같은 셔뱅 줄이 있으면:
+
+   #! /usr/bin/python -v
+
+파이썬은 "-v" 옵션으로 시작됩니다
+
+
+4.12.4. 사용자 정의
+-------------------
+
+
+4.12.4.1. INI 파일을 통한 사용자 정의
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+런처는 두 개의 .ini 파일을 검색합니다 - 현재 사용자의 응용프로그램 데
+이터 디렉터리("%LOCALAPPDATA%"나 "$env:LocalAppData")에 있는 "py.ini"
+와 런처와 같은 디렉터리에 있는 "py.ini". 런처의 '콘솔' 버전(즉 py.exe)
+과 '윈도우' 버전(즉 pyw.exe) 모두에 같은 .ini 파일이 사용됩니다.
+
+"응용 프로그램 디렉터리"에 지정된 사용자 정의가 실행 파일 옆에 있는 사
+용자 지정보다 우선하므로, 런처 옆에 있는 .ini 파일에 대한 쓰기 권한이
+없는 사용자는 전역 .ini 파일에서 명령을 재정의할 수 있습니다.
+
+
+4.12.4.2. 기본 파이썬 버전 사용자 정의
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+때에 따라, 버전 한정자를 명령에 포함하여 명령에서 사용할 파이썬 버전을
+지정할 수 있습니다. 버전 한정자는 주 버전 번호로 시작하며 선택적으로
+마침표('.')와 부 버전 지정자가 올 수 있습니다. 또한 "-32"나 "-64"를 추
+가하여 32비트나 64비트 구현을 요청할지를 지정할 수 있습니다.
+
+예를 들어, "#!python"의 셔뱅 줄에는 버전 한정자가 없는 반면,
+"#!python3"에는 주 버전 만 지정하는 버전 한정자가 있습니다.
+
+If no version qualifiers are found in a command, the environment
+variable "PY_PYTHON" can be set to specify the default version
+qualifier. If it is not set, the default is "3". The variable can
+specify any value that may be passed on the command line, such as "3",
+"3.7", "3.7-32" or "3.7-64". (Note that the "-64" option is only
+available with the launcher included with Python 3.7 or newer.)
+
+부 버전 한정자가 없으면, 환경 변수 "PY_PYTHON{major}"(여기서 "{major}"
+는 위에서 결정된 현재 주 버전 한정자입니다)를 설정하여 전체 버전을 지
+정할 수 있습니다. 그러한 옵션이 없으면, 런처는 설치된 파이썬 버전을 열
+거하고 주 버전에 대해 발견된 최신 부 릴리스를 사용합니다. 이것은 보장
+되지는 않지만, 해당 제품군에서 가장 최근에 설치된 버전일 가능성이 높습
+니다.
+
+같은 (major.minor) 파이썬 버전의 32비트와 64비트 구현이 모두 설치된 64
+비트 윈도우에서는 항상 64비트 버전이 선호됩니다. 이는 32비트와 64비트
+런처 구현 모두에 해당합니다 - 32비트 런처는 가능하면 지정된 버전의 64
+비트 파이썬 설치를 실행하는 것을 선호합니다. 따라서 런처의 동작은 PC에
+설치된 버전만 알고 설치 순서와 관계없이 (즉, 32비트나 64비트 버전의 파
+이썬과 해당 런처가 마지막에 설치되었는지 알지 못하고) 예측할 수 있습니
+다). 위에서 언급했듯이, 선택적 "-32"나 "-64" 접미사를 버전 지정자에 사
+용하여 이 동작을 변경할 수 있습니다.
+
+예:
+
+* 관련 옵션이 설정되지 않으면, "python"과 "python2" 명령은 설치된 최신
+  파이썬 2.x 버전을 사용하고 "python3" 명령은 설치된 최신 파이썬 3.x를
+  사용합니다.
+
+* "python3.7" 명령은 버전이 완전히 지정되어 있어서 옵션을 전혀 참조하
+  지 않습니다.
+
+* "PY_PYTHON=3"이면, "python"과 "python3" 명령은 모두 최신 설치된 파이
+  썬 3 버전을 사용합니다.
+
+* "PY_PYTHON=3.7-32"이면, "python" 명령은 3.7의 32비트 구현을 사용하는
+  반면 "python3" 명령은 가장 최근에 설치된 파이썬을 사용합니다 (주 버
+  전이 지정되었기 때문에 PY_PYTHON은 전혀 고려되지 않았습니다).
+
+* "PY_PYTHON=3"이고 "PY_PYTHON3=3.7"이면, "python"과 "python3" 명령은
+  모두 구체적으로 3.7을 사용합니다.
+
+환경 변수 외에도, 런처에서 사용하는 .INI 파일에서 같은 설정을 구성할
+수 있습니다. INI 파일의 섹션은 "[defaults]"라고 하며 키 이름은 선행
+"PY_" 접두어가 없는 환경 변수와 같습니다 (그리고 INI 파일의 키 이름은
+대소 문자를 구분하지 않음에 유의하십시오.) 환경 변수의 내용은 INI 파일
+에 지정된 것을 재정의합니다.
+
+예를 들면:
+
+* "PY_PYTHON=3.7"을 설정하는 것은 다음을 포함하는 INI 파일과 동등합니
+  다:
+
+   [defaults]
+   python=3.7
+
+* "PY_PYTHON=3"과 "PY_PYTHON3=3.7"을 설정하는 것은 다음을 포함하는 INI
+  파일과 동등합니다:
+
+   [defaults]
+   python=3
+   python3=3.7
+
+
+4.12.5. 진단
+------------
+
+If an environment variable "PYLAUNCHER_DEBUG" is set (to any value),
+the launcher will print diagnostic information to stderr (i.e. to the
+console). While this information manages to be simultaneously verbose
+*and* terse, it should allow you to see what versions of Python were
+located, why a particular version was chosen and the exact command-
+line used to execute the target Python. It is primarily intended for
+testing and debugging.
+
+
+4.12.6. Dry run
+---------------
+
+If an environment variable "PYLAUNCHER_DRYRUN" is set (to any value),
+the launcher will output the command it would have run, but will not
+actually launch Python. This may be useful for tools that want to use
+the launcher to detect and then launch Python directly. Note that the
+command written to standard output is always encoded using UTF-8, and
+may not render correctly in the console.
+
+
+4.12.7. 필요 시 설치
+--------------------
+
+If an environment variable "PYLAUNCHER_ALLOW_INSTALL" is set (to any
+value), and the requested Python version is not installed but is
+available on the Microsoft Store, the launcher will attempt to install
+it. This may require user interaction to complete, and you may need to
+run the command again.
+
+An additional "PYLAUNCHER_ALWAYS_INSTALL" variable causes the launcher
+to always try to install Python, even if it is detected. This is
+mainly intended for testing (and should be used with
+"PYLAUNCHER_DRYRUN").
+
+
+4.12.8. Return codes
+--------------------
+
+The following exit codes may be returned by the Python launcher.
+Unfortunately, there is no way to distinguish these from the exit code
+of Python itself.
+
+The names of codes are as used in the sources, and are only for
+reference. There is no way to access or resolve them apart from
+reading this page. Entries are listed in alphabetical order of names.
+
++---------------------+---------+-------------------------------------------------+
+| 이름                | Value   | 설명                                            |
+|=====================|=========|=================================================|
+| RC_BAD_VENV_CFG     | 107     | A "pyvenv.cfg" was found but is corrupt.        |
++---------------------+---------+-------------------------------------------------+
+| RC_CREATE_PROCESS   | 101     | Failed to launch Python.                        |
++---------------------+---------+-------------------------------------------------+
+| RC_INSTALLING       | 111     | An install was started, but the command will    |
+|                     |         | need to be re-run after it completes.           |
++---------------------+---------+-------------------------------------------------+
+| RC_INTERNAL_ERROR   | 109     | Unexpected error. Please report a bug.          |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_COMMANDLINE   | 108     | Unable to obtain command line from the          |
+|                     |         | operating system.                               |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_PYTHON        | 103     | Unable to locate the requested version.         |
++---------------------+---------+-------------------------------------------------+
+| RC_NO_VENV_CFG      | 106     | A "pyvenv.cfg" was required but not found.      |
++---------------------+---------+-------------------------------------------------+

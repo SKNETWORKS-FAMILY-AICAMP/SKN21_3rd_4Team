@@ -1,0 +1,693 @@
+"venv" --- 가상 환경 생성
+*************************
+
+Added in version 3.3.
+
+**소스 코드:** Lib/venv/
+
+======================================================================
+
+The "venv" module supports creating lightweight "virtual
+environments", each with their own independent set of Python packages
+installed in their "site" directories. A virtual environment is
+created on top of an existing Python installation, known as the
+virtual environment's "base" Python, and by default is isolated from
+the packages in the base environment, so that only those explicitly
+installed in the virtual environment are available. See Virtual
+Environments and "site"'s virtual environments documentation for more
+information.
+
+가상 환경 내에서 사용될 때, pip와 같은 일반적인 설치 도구는 명시적으로
+지정하지 않아도 파이썬 패키지를 가상 환경에 설치합니다.
+
+A virtual environment is (amongst other things):
+
+* Used to contain a specific Python interpreter and software libraries
+  and binaries which are needed to support a project (library or
+  application). These are by default isolated from software in other
+  virtual environments and Python interpreters and libraries installed
+  in the operating system.
+
+* Contained in a directory, conventionally named ".venv" or "venv" in
+  the project directory, or under a container directory for lots of
+  virtual environments, such as "~/.virtualenvs".
+
+* Not checked into source control systems such as Git.
+
+* Considered as disposable -- it should be simple to delete and
+  recreate it from scratch. You don't place any project code in the
+  environment.
+
+* Not considered as movable or copyable -- you just recreate the same
+  environment in the target location.
+
+파이썬 가상 환경에 대한 자세한 배경 정보는 **PEP 405**를 참조하십시오.
+
+더 보기:
+
+  Python Packaging User Guide: Creating and using virtual environments
+
+가용성: not Android, not iOS, not WASI.
+
+이 모듈은 모바일 플랫폼이나 웹어셈블리 플랫폼에서 지원되지 않습니다.
+
+
+가상 환경 만들기
+================
+
+가상 환경은 "venv" 모듈을 실행해서 만들어집니다:
+
+   python -m venv /path/to/new/virtual/environment
+
+This creates the target directory (including parent directories as
+needed) and places a "pyvenv.cfg" file in it with a "home" key
+pointing to the Python installation from which the command was run. It
+also creates a "bin" (or "Scripts" on Windows) subdirectory containing
+a copy or symlink of the Python executable (as appropriate for the
+platform or arguments used at environment creation time). It also
+creates a "lib/pythonX.Y/site-packages" subdirectory (on Windows, this
+is "Lib\site-packages"). If an existing directory is specified, it
+will be re-used.
+
+버전 3.5에서 변경: 이제 가상 환경을 만들 때 "venv"를 사용하는 것이 좋
+습니다.
+
+Deprecated since version 3.6, removed in version 3.8: **pyvenv**는 파
+이썬 3.3 및 3.4 용 가상 환경을 만드는 데 권장되는 도구였으며, 파이썬
+3.5 에서 "venv"를 직접 실행하는 방식으로 대체되었습니다.
+
+윈도우에서는, 다음과 같이 "venv" 명령을 호출하십시오:
+
+   PS> python -m venv C:\path\to\new\virtual\environment
+
+명령에 "-h"를 사용하면 사용 가능한 옵션이 표시됩니다:
+
+   usage: venv [-h] [--system-site-packages] [--symlinks | --copies] [--clear]
+               [--upgrade] [--without-pip] [--prompt PROMPT] [--upgrade-deps]
+               [--without-scm-ignore-files]
+               ENV_DIR [ENV_DIR ...]
+
+   Creates virtual Python environments in one or more target directories.
+
+   Once an environment has been created, you may wish to activate it, e.g. by
+   sourcing an activate script in its bin directory.
+
+ENV_DIR
+
+   A required argument specifying the directory to create the
+   environment in.
+
+--system-site-packages
+
+   Give the virtual environment access to the system site-packages
+   directory.
+
+--symlinks
+
+   Try to use symlinks rather than copies, when symlinks are not the
+   default for the platform.
+
+--copies
+
+   Try to use copies rather than symlinks, even when symlinks are the
+   default for the platform.
+
+--clear
+
+   Delete the contents of the environment directory if it already
+   exists, before environment creation.
+
+--upgrade
+
+   Upgrade the environment directory to use this version of Python,
+   assuming Python has been upgraded in-place.
+
+--without-pip
+
+   Skips installing or upgrading pip in the virtual environment (pip
+   is bootstrapped by default).
+
+--prompt <PROMPT>
+
+   Provides an alternative prompt prefix for this environment.
+
+--upgrade-deps
+
+   Upgrade core dependencies (pip) to the latest version in PyPI.
+
+--without-scm-ignore-files
+
+   Skips adding SCM ignore files to the environment directory (Git is
+   supported by default).
+
+버전 3.4에서 변경: 기본적으로 pip을 설치합니다. "--without-pip" 와 "--
+copies" 옵션을 추가했습니다.
+
+버전 3.4에서 변경: 이전 버전에서는, "--clear" 나 "--upgrade" 옵션이 제
+공되지 않았을 때, 대상 디렉터리가 이미 존재하면 에러가 발생했습니다.
+
+버전 3.9에서 변경: PyPI에 있는 최신으로 pip + setuptools를 업그레이드
+하는 "--upgrade-deps" 옵션을 추가했습니다.
+
+버전 3.12에서 변경: "setuptools" is no longer a core venv dependency.
+
+버전 3.13에서 변경: Added the "--without-scm-ignore-files" option.
+
+버전 3.13에서 변경: "venv" now creates a ".gitignore" file for Git by
+default.
+
+참고:
+
+  심볼릭 링크가 윈도우에서 지원되지만, 추천하지는 않습니다. 특히 파일
+  탐색기에서 "python.exe"를 더블 클릭하면 심볼릭 링크를 열심히 따라가
+  고(resolve) 가상 환경은 무시됩니다.
+
+참고:
+
+  마이크로소프트 윈도우에서는 사용자에 대한 실행 정책을 설정하여
+  "Activate.ps1" 스크립트를 활성화해야 할 수도 있습니다. 다음
+  PowerShell 명령을 실행하여 이를 수행할 수 있습니다:
+
+     PS C:\> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+  자세한 정보는 About Execution Policies를 참조하십시오.
+
+만들어진 "pyvenv.cfg" 파일에는 "include-system-site-packages" 키도 포
+함되어 있으며, "venv"가 "--system-site-packages" 옵션으로 실행되면
+"true"로 설정되고, 그렇지 않으면 "false"로 설정됩니다.
+
+"--without-pip" 옵션을 주지 않는 한, 가상 환경으로 "pip"을 부트스트랩
+하기 위해 "ensurepip"가 호출됩니다.
+
+"venv"에 여러 경로를 지정할 수 있습니다. 이때 지정된 옵션에 따라 제공
+된 각 경로에서 같은 가상 환경이 만들어집니다.
+
+
+How venvs work
+==============
+
+When a Python interpreter is running from a virtual environment,
+"sys.prefix" and "sys.exec_prefix" point to the directories of the
+virtual environment, whereas "sys.base_prefix" and
+"sys.base_exec_prefix" point to those of the base Python used to
+create the environment. It is sufficient to check "sys.prefix !=
+sys.base_prefix" to determine if the current interpreter is running
+from a virtual environment.
+
+A virtual environment may be "activated" using a script in its binary
+directory ("bin" on POSIX; "Scripts" on Windows). This will prepend
+that directory to your "PATH", so that running **python** will invoke
+the environment's Python interpreter and you can run installed scripts
+without having to use their full path. The invocation of the
+activation script is platform-specific ("*<venv>*" must be replaced by
+the path to the directory containing the virtual environment):
+
++---------------+--------------+----------------------------------------------------+
+| 플랫폼        | 셸           | 가상 환경을 활성화하는 명령                        |
+|===============|==============|====================================================|
+| POSIX         | bash/zsh     | "$ source *<venv>*/bin/activate"                   |
+|               +--------------+----------------------------------------------------+
+|               | fish         | "$ source *<venv>*/bin/activate.fish"              |
+|               +--------------+----------------------------------------------------+
+|               | csh/tcsh     | "$ source *<venv>*/bin/activate.csh"               |
+|               +--------------+----------------------------------------------------+
+|               | pwsh         | "$ *<venv>*/bin/Activate.ps1"                      |
++---------------+--------------+----------------------------------------------------+
+| 윈도우        | cmd.exe      | "C:\> *<venv>*\Scripts\activate.bat"               |
+|               +--------------+----------------------------------------------------+
+|               | PowerShell   | "PS C:\> *<venv>*\Scripts\Activate.ps1"            |
++---------------+--------------+----------------------------------------------------+
+
+Added in version 3.4: **fish** 와 **csh** 활성화 스크립트.
+
+Added in version 3.8: PowerShell Core 지원을 위해 POSIX에 설치된
+PowerShell 활성화 스크립트.
+
+가상 환경을 구체적으로 활성화할 *필요*는 없습니다, 파이썬을 호출할 때
+그 환경의 파이썬 인터프리터를 가리키는 전체 경로를 지정하기만 하면 되
+기 때문입니다. 또한, 환경에 설치된 모든 스크립트는 활성화하지 않고도
+실행 가능해야 합니다.
+
+In order to achieve this, scripts installed into virtual environments
+have a "shebang" line which points to the environment's Python
+interpreter, "#!/*<path-to-venv>*/bin/python". This means that the
+script will run with that interpreter regardless of the value of
+"PATH". On Windows, "shebang" line processing is supported if you have
+the Python install manager installed. Thus, double-clicking an
+installed script in a Windows Explorer window should run it with the
+correct interpreter without the environment needing to be activated or
+on the "PATH".
+
+가상 환경이 활성화되면, "VIRTUAL_ENV" 환경 변수가 환경의 경로로 설정됩
+니다. 가상 환경을 사용하기 위해 명시적으로 활성화할 필요가 없기 때문에
+, "VIRTUAL_ENV"로 가상 환경이 사용 중인지를 판단할 수 없습니다.
+
+경고:
+
+  Because scripts installed in environments should not expect the
+  environment to be activated, their shebang lines contain the
+  absolute paths to their environment's interpreters. Because of this,
+  environments are inherently non-portable, in the general case. You
+  should always have a simple means of recreating an environment (for
+  example, if you have a requirements file "requirements.txt", you can
+  invoke "pip install -r requirements.txt" using the environment's
+  "pip" to install all of the packages needed by the environment). If
+  for any reason you need to move the environment to a new location,
+  you should recreate it at the desired location and delete the one at
+  the old location. If you move an environment because you moved a
+  parent directory of it, you should recreate the environment in its
+  new location. Otherwise, software installed into the environment may
+  not work as expected.
+
+셸에서 "deactivate"를 입력하여 가상 환경을 비활성화할 수 있습니다. 정
+확한 메커니즘은 플랫폼에 따라 다르고 내부 구현 상세입니다 (보통, 스크
+립트나 셸 함수가 사용됩니다).
+
+
+API
+===
+
+위에서 설명한 고수준 메서드는 제삼자 가상 환경 작성자가 필요에 따라 환
+경을 사용자 정의할 수 있는 메커니즘을 제공하는 간단한 API를 사용합니다
+: "EnvBuilder" 클래스.
+
+class venv.EnvBuilder(system_site_packages=False, clear=False, symlinks=False, upgrade=False, with_pip=False, prompt=None, upgrade_deps=False, *, scm_ignore_files=frozenset())
+
+   "EnvBuilder" 클래스는 인스턴스를 만들 때 다음 키워드 인자를 받아들
+   입니다:
+
+   * *system_site_packages* -- 시스템 파이썬 site-packages가 환경에서
+     사용 가능해야 함을 나타내는 논릿값입니다 (기본값은 "False").
+
+   * *clear* -- 참이면, 환경을 만들기 전에, 대상 디렉터리에 존재하는
+     내용을 지우도록 하는 논릿값.
+
+   * *symlinks* -- 파이썬 바이너리를 복사하는 대신 심볼릭 링크하려고
+     시도할지를 나타내는 논릿값입니다.
+
+   * *upgrade* -- 참이면 실행 중인 파이썬으로 기존 환경을 업그레이드하
+     도록 하는 논릿값 - 파이썬이 그 자리에서 업그레이드되었을 때 사용
+     됩니다 (기본값은 "False").
+
+   * *with_pip* -- 참이면 가상 환경에 pip이 설치되도록 하는 논릿값입니
+     다. "--default-pip" 옵션과 함께 "ensurepip"를 사용합니다.
+
+   * *prompt* -- 가상 환경이 활성화된 후 사용할 문자열입니다 (기본값은
+     환경의 디렉터리 이름이 사용됨을 뜻하는 "None"입니다). 특수한 문자
+     열 "".""이 제공되면, 현재 디렉터리의 기본 이름(basename)이 프롬프
+     트로 사용됩니다.
+
+   * *upgrade_deps* -- PyPI에서 기반 venv 모듈을 최신으로 갱신합니다
+
+   * *scm_ignore_files* -- Create ignore files based for the specified
+     source control managers (SCM) in the iterable. Support is defined
+     by having a method named "create_{scm}_ignore_file". The only
+     value supported by default is ""git"" via
+     "create_git_ignore_file()".
+
+   버전 3.4에서 변경: "with_pip" 매개 변수 추가
+
+   버전 3.6에서 변경: "prompt" 매개 변수 추가
+
+   버전 3.9에서 변경: "upgrade_deps" 매개 변수 추가
+
+   버전 3.13에서 변경: "scm_ignore_files" 매개 변수 추가
+
+   "EnvBuilder" may be used as a base class.
+
+   create(env_dir)
+
+      가상 환경을 담을 대상 디렉터리(절대 또는 현재 디렉터리에 대한 상
+      대)를 지정해서 가상 환경을 만듭니다. "create" 메서드는 지정된 디
+      렉터리에 환경을 만들거나 적절한 예외를 발생시킵니다.
+
+      "EnvBuilder" 클래스의 "create" 메서드는 서브 클래스가 사용자 정
+      의할 수 있는 훅을 보여줍니다:
+
+         def create(self, env_dir):
+             """
+             디렉터리에 가상화된 파이썬 환경을 만듭니다.
+             env_dir은 안에 환경을 만들 대상 디렉터리입니다.
+             """
+             env_dir = os.path.abspath(env_dir)
+             context = self.ensure_directories(env_dir)
+             self.create_configuration(context)
+             self.setup_python(context)
+             self.setup_scripts(context)
+             self.post_setup(context)
+
+      메서드 "ensure_directories()", "create_configuration()",
+      "setup_python()", "setup_scripts()" 및 "post_setup()" 각각을 재
+      정의할 수 있습니다.
+
+   ensure_directories(env_dir)
+
+      환경 디렉터리와 이미 존재하지 않는 필요한 모든 서브 디렉터리를
+      만들고, 문맥 객체를 돌려줍니다. 문맥 객체는 다른 메서드에서 사용
+      하기 위한 어트리뷰트(가령 경로)를 담고 있을 뿐입니다.
+      "EnvBuilder"가 "clear=True" 인자로 만들어지면, 환경 디렉터리의
+      내용이 지워진 후 모든 필요한 서브 디렉터리가 재생성됩니다.
+
+      The returned context object is a "types.SimpleNamespace" with
+      the following attributes:
+
+      * "env_dir" - The location of the virtual environment. Used for
+        "__VENV_DIR__" in activation scripts (see
+        "install_scripts()").
+
+      * "env_name" - The name of the virtual environment. Used for
+        "__VENV_NAME__" in activation scripts (see
+        "install_scripts()").
+
+      * "prompt" - The prompt to be used by the activation scripts.
+        Used for "__VENV_PROMPT__" in activation scripts (see
+        "install_scripts()").
+
+      * "executable" - The underlying Python executable used by the
+        virtual environment. This takes into account the case where a
+        virtual environment is created from another virtual
+        environment.
+
+      * "inc_path" - The include path for the virtual environment.
+
+      * "lib_path" - The purelib path for the virtual environment.
+
+      * "bin_path" - 가상 환경의 스크립트 경로.
+
+      * "bin_name" - The name of the script path relative to the
+        virtual environment location. Used for "__VENV_BIN_NAME__" in
+        activation scripts (see "install_scripts()").
+
+      * "env_exe" - The name of the Python interpreter in the virtual
+        environment. Used for "__VENV_PYTHON__" in activation scripts
+        (see "install_scripts()").
+
+      * "env_exec_cmd" - The name of the Python interpreter, taking
+        into account filesystem redirections. This can be used to run
+        Python in the virtual environment.
+
+      버전 3.11에서 변경: The *venv* sysconfig installation scheme is
+      used to construct the paths of the created directories.
+
+      버전 3.12에서 변경: The attribute "lib_path" was added to the
+      context, and the context object was documented.
+
+   create_configuration(context)
+
+      환경에 "pyvenv.cfg" 구성 파일을 만듭니다.
+
+   setup_python(context)
+
+      환경에 파이썬 실행 파일의 복사본이나 심볼릭 링크를 만듭니다.
+      POSIX 시스템에서, 특정 실행 파일 "python3.x"가 사용되면, 해당 이
+      름의 파일이 이미 존재하지 않는 한 "python" 과 "python3" 심볼릭
+      링크가 해당 실행 파일을 가리키도록 만들어집니다.
+
+   setup_scripts(context)
+
+      플랫폼에 적합한 활성화 스크립트를 가상 환경에 설치합니다.
+
+   upgrade_dependencies(context)
+
+      환경에서 핵심 venv 종속성 패키지 (현재 pip)를 업그레이드합니다.
+      이것은 환경에서 셸로 "pip" 실행 파일을 실행하여 수행됩니다.
+
+      Added in version 3.9.
+
+      버전 3.12에서 변경: setuptools is no longer a core venv
+      dependency.
+
+   post_setup(context)
+
+      제삼자 구현에서 재정의하여 가상 환경에 패키지를 사전 설치하거나
+      다른 생성 후 단계를 수행할 수 있는 메서드입니다.
+
+   install_scripts(context, path)
+
+      이 메서드는 가상 환경에 사용자 정의 스크립트를 설치하는 데 도움
+      을 주는데, 서브 클래스의 "setup_scripts()" 나 "post_setup()"에서
+      호출할 수 있습니다.
+
+      *path*는 "common", "posix", "nt" 서브 디렉터리를 포함해야 하는
+      디렉터리 경로입니다. 각 디렉터리에는 환경의 "bin" 디렉터리로 들
+      어갈 스크립트가 들어 있습니다. "common"과 "os.name"에 해당하는
+      디렉터리의 내용은 자리 표시자의 일부 텍스트 치환 후 복사됩니다:
+
+      * "__VENV_DIR__"은 환경 디렉터리의 절대 경로로 치환됩니다.
+
+      * "__VENV_NAME__"은 환경 이름(환경 디렉터리의 최종 경로 세그먼트
+        )으로 치환됩니다.
+
+      * "__VENV_PROMPT__"는 프롬프트(괄호로 묶인 환경 이름과 그 뒤의
+        스페이스)로 치환됩니다
+
+      * "__VENV_BIN_NAME__"은 bin 디렉터리의 이름("bin" 이나
+        "Scripts")으로 치환됩니다.
+
+      * "__VENV_PYTHON__"은 환경의 실행 파일의 절대 경로로 치환됩니다.
+
+      디렉터리는 존재하는 것이 허용됩니다 (기존 환경이 업그레이드될 때
+      ).
+
+   create_git_ignore_file(context)
+
+      Creates a ".gitignore" file within the virtual environment that
+      causes the entire directory to be ignored by the Git source
+      control manager.
+
+      Added in version 3.13.
+
+   버전 3.7.2에서 변경: 윈도우는 이제 실제 바이너리를 복사하는 대신
+   "python[w].exe"를 위한 리디렉터 스크립트를 사용합니다. 3.7.2 에서만
+   , 소스 트리의 빌드에서 실행하지 않는 한 "setup_python()"아무 작업도
+   수행하지 않습니다.
+
+   버전 3.7.3에서 변경: 윈도우는 "setup_scripts()" 대신
+   "setup_python()"의 일부로 리디렉터 스크립트를 복사합니다. 이것은
+   3.7.2는 해당하지 않습니다. 심볼릭 링크를 사용하면, 원래 실행 파일이
+   링크됩니다.
+
+모듈 수준의 편리 함수도 있습니다:
+
+venv.create(env_dir, system_site_packages=False, clear=False, symlinks=False, with_pip=False, prompt=None, upgrade_deps=False, *, scm_ignore_files=frozenset())
+
+   주어진 키워드 인자로 "EnvBuilder"를 만들고, *env_dir* 인자로
+   "create()" 메서드를 호출합니다.
+
+   Added in version 3.3.
+
+   버전 3.4에서 변경: *with_pip* 매개 변수 추가
+
+   버전 3.6에서 변경: *prompt* 매개 변수 추가
+
+   버전 3.9에서 변경: *upgrade_deps* 매개 변수 추가
+
+   버전 3.13에서 변경: *scm_ignore_files* 매개 변수 추가
+
+
+"EnvBuilder" 확장 예제
+======================
+
+다음 스크립트는 생성된 가상 환경에 setuptools 와 pip을 설치하는 서브
+클래스를 구현하여 "EnvBuilder"를 확장하는 방법을 보여줍니다:
+
+   import os
+   import os.path
+   from subprocess import Popen, PIPE
+   import sys
+   from threading import Thread
+   from urllib.parse import urlparse
+   from urllib.request import urlretrieve
+   import venv
+
+   class ExtendedEnvBuilder(venv.EnvBuilder):
+       """
+       이 빌더는 setuptools 와 pip을 설치하여 만들어진 가상 환경에 다른 패키지를 pip이나
+       easy_install 할 수 있도록 합니다.
+
+       :param nodist: 참이면, 만들어진 가상 환경에 setuptools와 pip을
+                      설치하지 않습니다.
+       :param nopip: 참이면, 만들어진 가상 환경에 pip을 설치하지
+                     않습니다.
+       :param progress: setuptools 나 pip이 설치되면, progress 콜러블을 전달하여 설치 진행
+                        상황을 감시할 수 있습니다. 지정하면, 두 개의 인자로 호출됩니다: 진행률을
+                        나타내는 문자열과 문자열의 출처를 나타내는 context. context 인자는
+                        세 가지 값 중 하나를 가질 수 있습니다: virtualize() 자체에서
+                        호출되었음을 나타내는 'main'과, 앱 설치에 사용된 자식 프로세스의 출력
+                        스트림에서 줄을 읽어서 얻었음을 나타내는 'stdout'과 'stderr'.
+
+                        콜러블을 지정하지 않으면, sys.stderr에 기본 진행 정보가 출력됩니다.
+       """
+
+       def __init__(self, *args, **kwargs):
+           self.nodist = kwargs.pop('nodist', False)
+           self.nopip = kwargs.pop('nopip', False)
+           self.progress = kwargs.pop('progress', None)
+           self.verbose = kwargs.pop('verbose', False)
+           super().__init__(*args, **kwargs)
+
+       def post_setup(self, context):
+           """
+           만들어지는 가상 환경에 미리 설치될 필요가 있는 것들을 설정합니다.
+
+           :param context: 처리 중인 가상 환경 생성 요청에 대한 정보.
+           """
+           os.environ['VIRTUAL_ENV'] = context.env_dir
+           if not self.nodist:
+               self.install_setuptools(context)
+           # setuptools 없이 pip을 설치할 수 없습니다
+           if not self.nopip and not self.nodist:
+               self.install_pip(context)
+
+       def reader(self, stream, context):
+           """
+           자식 프로세스의 출력 스트림에서 줄을 읽고 (지정되었으면) progress 콜러블로 전달하거나 진행
+           정보를 sys.stderr에 씁니다.
+           """
+           progress = self.progress
+           while True:
+               s = stream.readline()
+               if not s:
+                   break
+               if progress is not None:
+                   progress(s, context)
+               else:
+                   if not self.verbose:
+                       sys.stderr.write('.')
+                   else:
+                       sys.stderr.write(s.decode('utf-8'))
+                   sys.stderr.flush()
+           stream.close()
+
+       def install_script(self, context, name, url):
+           _, _, path, _, _, _ = urlparse(url)
+           fn = os.path.split(path)[-1]
+           binpath = context.bin_path
+           distpath = os.path.join(binpath, fn)
+           # 가상 환경의 바이너리 폴더에 스크립트를 내려받습니다
+           urlretrieve(url, distpath)
+           progress = self.progress
+           if self.verbose:
+               term = '\n'
+           else:
+               term = ''
+           if progress is not None:
+               progress('Installing %s ...%s' % (name, term), 'main')
+           else:
+               sys.stderr.write('Installing %s ...%s' % (name, term))
+               sys.stderr.flush()
+           # 가상 환경에 설치합니다
+           args = [context.env_exe, fn]
+           p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=binpath)
+           t1 = Thread(target=self.reader, args=(p.stdout, 'stdout'))
+           t1.start()
+           t2 = Thread(target=self.reader, args=(p.stderr, 'stderr'))
+           t2.start()
+           p.wait()
+           t1.join()
+           t2.join()
+           if progress is not None:
+               progress('done.', 'main')
+           else:
+               sys.stderr.write('done.\n')
+           # 정리 - 더는 필요 없습니다
+           os.unlink(distpath)
+
+       def install_setuptools(self, context):
+           """
+           가상 환경에 setuptools를 설치합니다.
+
+           :param context: 처리 중인 가상 환경 생성 요청에 대한 정보.
+           """
+           url = "https://bootstrap.pypa.io/ez_setup.py"
+           self.install_script(context, 'setuptools', url)
+           # clear up the setuptools archive which gets downloaded
+           pred = lambda o: o.startswith('setuptools-') and o.endswith('.tar.gz')
+           files = filter(pred, os.listdir(context.bin_path))
+           for f in files:
+               f = os.path.join(context.bin_path, f)
+               os.unlink(f)
+
+       def install_pip(self, context):
+           """
+           Install pip in the virtual environment.
+
+           :param context: The information for the virtual environment
+                           creation request being processed.
+           """
+           url = 'https://bootstrap.pypa.io/get-pip.py'
+           self.install_script(context, 'pip', url)
+
+
+   def main(args=None):
+       import argparse
+
+       parser = argparse.ArgumentParser(prog=__name__,
+                                        description='Creates virtual Python '
+                                                    'environments in one or '
+                                                    'more target '
+                                                    'directories.')
+       parser.add_argument('dirs', metavar='ENV_DIR', nargs='+',
+                           help='A directory in which to create the '
+                                'virtual environment.')
+       parser.add_argument('--no-setuptools', default=False,
+                           action='store_true', dest='nodist',
+                           help="Don't install setuptools or pip in the "
+                                "virtual environment.")
+       parser.add_argument('--no-pip', default=False,
+                           action='store_true', dest='nopip',
+                           help="Don't install pip in the virtual "
+                                "environment.")
+       parser.add_argument('--system-site-packages', default=False,
+                           action='store_true', dest='system_site',
+                           help='Give the virtual environment access to the '
+                                'system site-packages dir.')
+       if os.name == 'nt':
+           use_symlinks = False
+       else:
+           use_symlinks = True
+       parser.add_argument('--symlinks', default=use_symlinks,
+                           action='store_true', dest='symlinks',
+                           help='Try to use symlinks rather than copies, '
+                                'when symlinks are not the default for '
+                                'the platform.')
+       parser.add_argument('--clear', default=False, action='store_true',
+                           dest='clear', help='Delete the contents of the '
+                                              'virtual environment '
+                                              'directory if it already '
+                                              'exists, before virtual '
+                                              'environment creation.')
+       parser.add_argument('--upgrade', default=False, action='store_true',
+                           dest='upgrade', help='Upgrade the virtual '
+                                                'environment directory to '
+                                                'use this version of '
+                                                'Python, assuming Python '
+                                                'has been upgraded '
+                                                'in-place.')
+       parser.add_argument('--verbose', default=False, action='store_true',
+                           dest='verbose', help='Display the output '
+                                                'from the scripts which '
+                                                'install setuptools and pip.')
+       options = parser.parse_args(args)
+       if options.upgrade and options.clear:
+           raise ValueError('you cannot supply --upgrade and --clear together.')
+       builder = ExtendedEnvBuilder(system_site_packages=options.system_site,
+                                      clear=options.clear,
+                                      symlinks=options.symlinks,
+                                      upgrade=options.upgrade,
+                                      nodist=options.nodist,
+                                      nopip=options.nopip,
+                                      verbose=options.verbose)
+       for d in options.dirs:
+           builder.create(d)
+
+   if __name__ == '__main__':
+       rc = 1
+       try:
+           main()
+           rc = 0
+       except Exception as e:
+           print('Error: %s' % e, file=sys.stderr)
+       sys.exit(rc)
+
+이 스크립트는 온라인에서 내려받을 수도 있습니다.

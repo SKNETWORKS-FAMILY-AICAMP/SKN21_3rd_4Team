@@ -1,0 +1,582 @@
+"csv" --- CSV 파일 읽기와 쓰기
+******************************
+
+**소스 코드:** Lib/csv.py
+
+======================================================================
+
+소위 CSV (Comma Separated Values -- 쉼표로 구분된 값) 형식은 스프레드
+시트와 데이터베이스에 대한 가장 일반적인 가져오기 및 내보내기 형식입니
+다. CSV 형식은 **RFC 4180**에서 표준화된 방식으로 형식을 기술하기 전에
+여러 해 동안 사용되었습니다. 잘 정의된 표준이 없다는 것은 다른 애플리
+케이션에 의해 생성되고 소비되는 데이터에 미묘한 차이가 존재한다는 것을
+의미합니다. 이러한 차이로 인해 여러 소스의 CSV 파일을 처리하는 것이 번
+거로울 수 있습니다. 그러나 분리 문자와 인용 문자가 다양하기는 해도, 전
+체 형식은 유사하여 프로그래머에게 데이터 읽기와 쓰기 세부 사항을 숨기
+면서도 이러한 데이터를 효율적으로 조작할 수 있는 단일 모듈을 작성하는
+것이 가능합니다.
+
+"csv" 모듈은 CSV 형식의 표 형식 데이터를 읽고 쓰는 클래스를 구현합니다
+. 이 모듈은 프로그래머가 Excel에서 사용하는 CSV 형식에 대한 자세한 내
+용을 알지 못해도, "Excel에서 선호하는 형식으로 이 데이터를 쓰세요"나
+"Excel에서 생성된 이 파일의 데이터를 읽으세요"라고 말할 수 있도록 합니
+다. 프로그래머는 다른 응용 프로그램에서 이해할 수 있는 CSV 형식을 기술
+하거나 자신만의 특수 용도 CSV 형식을 정의할 수 있습니다.
+
+"csv" 모듈의 "reader"와 "writer" 객체는 시퀀스를 읽고 씁니다. 프로그래
+머는 "DictReader"와 "DictWriter" 클래스를 사용하여 딕셔너리 형식으로
+데이터를 읽고 쓸 수 있습니다.
+
+더 보기:
+
+  **PEP 305** - CSV File API
+     파이썬에 이 모듈의 추가를 제안한 파이썬 개선 제안.
+
+
+모듈 내용
+=========
+
+"csv" 모듈은 다음 함수를 정의합니다:
+
+csv.reader(csvfile, /, dialect='excel', **fmtparams)
+
+   지정된 *csvfile*의 줄을 처리하는 판독기(reader) 객체를 반환합니다.
+   csvfile은 문자열의 이터러블이어야 하며, 각 문자열은 판독기가 정의한
+   csv 형식이어야 합니다. csvfile은 보통 파일류 객체이거나 리스트입니
+   다. *csvfile*가 파일 객체이면, "newline=''"로 열렸어야 합니다. [1]
+   특정 CSV 방언(dialect)에만 적용되는 파라미터 집합을 정의하는 데 사
+   용되는 선택적 *dialect* 매개 변수를 지정할 수 있습니다. "Dialect"
+   클래스의 서브 클래스의 인스턴스이거나 "list_dialects()" 함수가 반환
+   하는 문자열 중 하나일 수 있습니다. 다른 선택적 *fmtparams* 키워드
+   인자는 현재 방언의 개별 포매팅 파라미터를 대체 할 수 있습니다. 방언
+   과 포매팅 파라미터에 대한 자세한 내용은 방언과 포매팅 파라미터 절을
+   참조하십시오.
+
+   Each row read from the csv file is returned as a list of strings.
+   No automatic data type conversion is performed unless the
+   "QUOTE_NONNUMERIC" format option is specified (in which case
+   unquoted fields are transformed into floats).
+
+   간단한 사용 예:
+
+      >>> import csv
+      >>> with open('eggs.csv', newline='') as csvfile:
+      ...     spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+      ...     for row in spamreader:
+      ...         print(', '.join(row))
+      Spam, Spam, Spam, Spam, Spam, Baked Beans
+      Spam, Lovely Spam, Wonderful Spam
+
+csv.writer(csvfile, /, dialect='excel', **fmtparams)
+
+   지정된 파일류 객체에 분리된 문자열로 사용자의 데이터를 변환하는 기
+   록기(writer) 객체를 반환합니다. *csvfile*은 "write()" 메서드가 있는
+   모든 객체일 수 있습니다. *csvfile*이 파일 객체면, "newline=''"으로
+   열렸어야 합니다 [1]. 특정 CSV 방언(dialect)에만 적용되는 파라미터
+   집합을 정의하는 데 사용되는 선택적 *dialect* 매개 변수를 지정할 수
+   있습니다. "Dialect" 클래스의 서브 클래스의 인스턴스이거나
+   "list_dialects()" 함수가 반환하는 문자열 중 하나일 수 있습니다. 다
+   른 선택적 *fmtparams* 키워드 인자는 현재 방언의 개별 포매팅 파라미
+   터를 대체 할 수 있습니다. 방언과 포매팅 파라미터에 대한 자세한 내용
+   은 방언과 포매팅 파라미터 절을 참조하십시오. DB API를 구현하는 모듈
+   과 가능한 한 쉽게 인터페이스 하기 위해, 값 "None"은 빈 문자열로 기
+   록됩니다. 이것은 가역 변환이 아니지만, "cursor.fetch*" 호출에서 반
+   환된 데이터를 전처리하지 않고도, SQL NULL 데이터값을 CSV 파일로 쉽
+   게 덤프할 수 있습니다. 다른 모든 비 문자열 데이터는 기록 전에
+   "str()"로 문자열화 됩니다.
+
+   간단한 사용 예:
+
+      import csv
+      with open('eggs.csv', 'w', newline='') as csvfile:
+          spamwriter = csv.writer(csvfile, delimiter=' ',
+                                  quotechar='|', quoting=csv.QUOTE_MINIMAL)
+          spamwriter.writerow(['Spam'] * 5 + ['Baked Beans'])
+          spamwriter.writerow(['Spam', 'Lovely Spam', 'Wonderful Spam'])
+
+csv.register_dialect(name, /, dialect='excel', **fmtparams)
+
+   *dialect*를 *name*과 연관시킵니다. *name*은 문자열이어야 합니다. 방
+   언은 "Dialect"의 서브 클래스 전달, *fmtparams* 키워드 인자 또는 둘
+   모두를 사용하여 지정할 수 있는데, 키워드 인자가 dialect의 매개 변수
+   보다 우선합니다. 방언과 포매팅 파라미터에 대한 자세한 내용은 방언과
+   포매팅 파라미터 절을 참조하십시오.
+
+csv.unregister_dialect(name)
+
+   방언(dialect) 등록소에서 *name*과 관련된 연관된 방언을 삭제합니다.
+   *name*이 등록된 방언 이름이 아니면 "Error"가 발생합니다.
+
+csv.get_dialect(name)
+
+   *name*과 연관된 방언을 반환합니다. *name*이 등록된 방언 이름이 아니
+   면 "Error"가 발생합니다. 이 함수는 불변 "Dialect"를 반환합니다.
+
+csv.list_dialects()
+
+   등록된 모든 방언의 이름을 반환합니다.
+
+csv.field_size_limit()
+csv.field_size_limit(new_limit)
+
+   구문 분석기가 허락하는 현재의 최대 필드 크기를 반환합니다.
+   *new_limit*가 주어지면, 이것이 새로운 한계가 됩니다.
+
+"csv" 모듈은 다음 클래스를 정의합니다:
+
+class csv.DictReader(f, fieldnames=None, restkey=None, restval=None, dialect='excel', *args, **kwds)
+
+   일반 판독기처럼 작동하지만 각 행(row)의 정보를 키가 선택적
+   *fieldnames* 매개 변수로 지정된 "dict"로 매핑하는 객체를 만듭니다.
+
+   *fieldnames* 매개 변수는 *시퀀스*입니다. *fieldnames*를 생략하면,
+   파일 *f*의 첫 번째 행에 있는 값들을 fieldnames로 사용하며 결과에서
+   생략됩니다. *fieldnames*를 제공하면, 사용되고 첫 번째 행은 결과에
+   포함됩니다. 필드 이름이 어떻게 결정되는지와 관계없이, 딕셔너리는 원
+   래 순서를 유지합니다.
+
+   행에 fieldnames보다 많은 필드가 있으면, 나머지 데이터가 리스트에 저
+   장되고 *restkey*(기본값은 "None")로 지정된 필드 이름으로 저장됩니다
+   . 비어 있지 않은 행에 fieldnames보다 필드 수가 적다면, 빠진 값은
+   *restval*(기본값은 "None")의 값으로 채워집니다.
+
+   다른 모든 선택적 또는 키워드 인자는 하부 "reader" 인스턴스에 전달됩
+   니다.
+
+   If the argument passed to *fieldnames* is an iterator, it will be
+   coerced to a "list".
+
+   버전 3.6에서 변경: 반환된 행은 이제 "OrderedDict" 형입니다.
+
+   버전 3.8에서 변경: 반환된 행은 이제 "dict" 형입니다.
+
+   간단한 사용 예:
+
+      >>> import csv
+      >>> with open('names.csv', newline='') as csvfile:
+      ...     reader = csv.DictReader(csvfile)
+      ...     for row in reader:
+      ...         print(row['first_name'], row['last_name'])
+      ...
+      Eric Idle
+      John Cleese
+
+      >>> print(row)
+      {'first_name': 'John', 'last_name': 'Cleese'}
+
+class csv.DictWriter(f, fieldnames, restval='', extrasaction='raise', dialect='excel', *args, **kwds)
+
+   일반 기록기처럼 작동하지만 딕셔너리를 출력 행에 매핑하는 객체를 만
+   듭니다. *fieldnames* 매개 변수는 키의 "시퀀스"인데, "writerow()" 메
+   서드에 전달된 딕셔너리의 값이 *f* 파일에 기록되는 순서를 식별합니다
+   . 선택적 *restval* 매개 변수는 딕셔너리에 *fieldnames*의 키가 빠졌
+   을 때 기록될 값을 지정합니다. "writerow()" 메서드에 전달된 딕셔너리
+   에 *fieldnames*에 없는 키가 포함되어 있으면, 선택적 *extrasaction*
+   매개 변수가 수행할 작업을 지시합니다. 기본값인 "'raise'"로 설정되면
+   , "ValueError"가 발생합니다. "'ignore'"로 설정하면, 딕셔너리의 추가
+   값이 무시됩니다. 다른 선택적 또는 키워드 인자는 하부 "writer" 인스
+   턴스에 전달됩니다.
+
+   "DictReader" 클래스와 달리 "DictWriter" 클래스의 *fieldnames* 매개
+   변수는 선택 사항이 아닙니다.
+
+   If the argument passed to *fieldnames* is an iterator, it will be
+   coerced to a "list".
+
+   간단한 사용 예:
+
+      import csv
+
+      with open('names.csv', 'w', newline='') as csvfile:
+          fieldnames = ['first_name', 'last_name']
+          writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+          writer.writeheader()
+          writer.writerow({'first_name': 'Baked', 'last_name': 'Beans'})
+          writer.writerow({'first_name': 'Lovely', 'last_name': 'Spam'})
+          writer.writerow({'first_name': 'Wonderful', 'last_name': 'Spam'})
+
+class csv.Dialect
+
+   The "Dialect" class is a container class whose attributes contain
+   information for how to handle doublequotes, whitespace, delimiters,
+   etc. Due to the lack of a strict CSV specification, different
+   applications produce subtly different CSV data.  "Dialect"
+   instances define how "reader" and "writer" instances behave.
+
+   All available "Dialect" names are returned by "list_dialects()",
+   and they can be registered with specific "reader" and "writer"
+   classes through their initializer ("__init__") functions like this:
+
+      import csv
+
+      with open('students.csv', 'w', newline='') as csvfile:
+          writer = csv.writer(csvfile, dialect='unix')
+
+class csv.excel
+
+   "excel" 클래스는 Excel에서 생성한 CSV 파일의 일반적인 속성을 정의합
+   니다. 방언 이름 "'excel'"로 등록됩니다.
+
+class csv.excel_tab
+
+   "excel_tab" 클래스는 Excel에서 생성된 TAB 구분 파일의 일반적인 속성
+   을 정의합니다. 방언 이름 "'excel-tab'"으로 등록됩니다.
+
+class csv.unix_dialect
+
+   "unix_dialect" 클래스는 유닉스 시스템에서 생성된 CSV 파일의 일반적
+   인 속성을 정의합니다. 즉, "'\n'"을 줄 종결자로 사용하고 모든 필드를
+   인용 처리합니다. 방언 이름 "'unix'"로 등록됩니다.
+
+   Added in version 3.2.
+
+class csv.Sniffer
+
+   "Sniffer" 클래스는 CSV 파일의 형식을 추론하는 데 사용됩니다.
+
+   "Sniffer" 클래스는 두 가지 메서드를 제공합니다:
+
+   sniff(sample, delimiters=None)
+
+      지정된 *sample*을 분석하고 발견된 파라미터를 반영하는 "Dialect"
+      서브 클래스를 반환합니다. 선택적인 *delimiters* 매개 변수를 주면
+      , 가능한 유효한 구분 문자를 포함하는 문자열로 해석됩니다.
+
+   has_header(sample)
+
+      sample 텍스트(CSV 형식으로 추정합니다)를 분석하고, 첫 번째 행이
+      일련의 열 머리글로 보이면 "True"를 반환합니다. 각 열을 검사하면
+      서, 샘플에 헤더가 포함되어 있는지 추정하기 위해 두 가지 주요 기
+      준 중 하나가 고려됩니다:
+
+      * the second through n-th rows contain numeric values
+
+      * the second through n-th rows contain strings where at least
+        one value's length differs from that of the putative header of
+        that column.
+
+      Twenty-one rows after the header are sampled; if more than half
+      of the columns + rows meet the criteria, "True" is returned.
+
+   참고:
+
+     This method is a rough heuristic and may produce both false
+     positives and negatives.
+
+"Sniffer" 사용 예:
+
+   with open('example.csv', newline='') as csvfile:
+       dialect = csv.Sniffer().sniff(csvfile.read(1024))
+       csvfile.seek(0)
+       reader = csv.reader(csvfile, dialect)
+       # ... CSV 파일 내용을 여기에서 처리합니다 ...
+
+"csv" 모듈은 다음 상수를 정의합니다:
+
+csv.QUOTE_ALL
+
+   "writer" 객체에 모든 필드를 인용 처리하도록 지시합니다.
+
+csv.QUOTE_MINIMAL
+
+   Instructs "writer" objects to only quote those fields which contain
+   special characters such as *delimiter*, *quotechar*, "'\r'", "'\n'"
+   or any of the characters in *lineterminator*.
+
+csv.QUOTE_NONNUMERIC
+
+   "writer" 객체에 모든 숫자가 아닌 필드를 인용 처리하도록 지시합니다.
+
+   Instructs "reader" objects to convert all non-quoted fields to type
+   "float".
+
+   참고:
+
+     Some numeric types, such as "bool", "Fraction", or "IntEnum",
+     have a string representation that cannot be converted to "float".
+     They cannot be read in the "QUOTE_NONNUMERIC" and "QUOTE_STRINGS"
+     modes.
+
+csv.QUOTE_NONE
+
+   Instructs "writer" objects to never quote fields. When the current
+   *delimiter*, *quotechar*, *escapechar*, "'\r'", "'\n'" or any of
+   the characters in *lineterminator* occurs in output data it is
+   preceded by the current *escapechar* character. If *escapechar* is
+   not set, the writer will raise "Error" if any characters that
+   require escaping are encountered. Set *quotechar* to "None" to
+   prevent its escaping.
+
+   "reader" 객체에게 인용 문자의 특별한 처리를 수행하지 않도록 지시합
+   니다.
+
+csv.QUOTE_NOTNULL
+
+   Instructs "writer" objects to quote all fields which are not
+   "None".  This is similar to "QUOTE_ALL", except that if a field
+   value is "None" an empty (unquoted) string is written.
+
+   Instructs "reader" objects to interpret an empty (unquoted) field
+   as "None" and to otherwise behave as "QUOTE_ALL".
+
+   Added in version 3.12.
+
+csv.QUOTE_STRINGS
+
+   Instructs "writer" objects to always place quotes around fields
+   which are strings.  This is similar to "QUOTE_NONNUMERIC", except
+   that if a field value is "None" an empty (unquoted) string is
+   written.
+
+   Instructs "reader" objects to interpret an empty (unquoted) string
+   as "None" and to otherwise behave as "QUOTE_NONNUMERIC".
+
+   Added in version 3.12.
+
+"csv" 모듈은 다음 예외를 정의합니다:
+
+exception csv.Error
+
+   에러가 감지될 때 모든 함수가 발생시킵니다.
+
+
+방언과 포매팅 파라미터
+======================
+
+입력과 출력 레코드의 형식을 더 쉽게 지정할 수 있도록, 특정 포매팅 파라
+미터가 함께 방언으로 묶입니다. 방언(dialect)은 CSV 파일의 형식을 설명
+하는 다양한 어트리뷰트를 포함하는 "Dialect" 클래스의 서브 클래스입니다
+. "reader"나 "writer" 객체를 만들 때, 프로그래머는 문자열이나
+"Dialect" 클래스의 서브 클래스를 dialect 매개 변수로 지정할 수 있습니
+다. *dialect* 매개 변수에 추가하여, 또는 대신에, 프로그래머는 아래에서
+"Dialect" 클래스에 대해 정의된 어트리뷰트와 같은 이름을 갖는 개별 포매
+팅 매개 변수를 지정할 수 있습니다.
+
+방언은 다음 어트리뷰트를 지원합니다:
+
+Dialect.delimiter
+
+   필드를 구분하는 데 사용되는 한 문자로 된 문자열. 기본값은 "','"입니
+   다.
+
+Dialect.doublequote
+
+   필드 안에 나타나는 *quotechar*의 인스턴스를 인용 처리하는 방법을 제
+   어합니다. "True"일 때, 문자를 두 개로 늘립니다. "False"일 때,
+   *escapechar*를 *quotechar*의 접두어로 사용합니다. 기본값은 "True"입
+   니다.
+
+   출력 시, *doublequote*가 "False"이고 아무런 *escapechar*가 설정되지
+   않았으면, 필드에 *quotechar*가 있으면 "Error"가 발생합니다.
+
+Dialect.escapechar
+
+   A one-character string used by the writer to escape characters that
+   require escaping:
+
+      * the *delimiter*, the *quotechar*, "'\r'", "'\n'" and any of
+        the characters in *lineterminator* are escaped if *quoting* is
+        set to "QUOTE_NONE";
+
+      * the *quotechar* is escaped if *doublequote* is "False";
+
+      * the *escapechar* itself.
+
+   On reading, the *escapechar* removes any special meaning from the
+   following character. It defaults to "None", which disables
+   escaping.
+
+   버전 3.11에서 변경: An empty *escapechar* is not allowed.
+
+Dialect.lineterminator
+
+   "writer"에 의해 생성된 행을 종료하는 데 사용되는 문자열. 기본값은
+   "'\r\n'"입니다.
+
+   참고:
+
+     "reader"는 "'\r'"이나 "'\n'"을 줄 종료로 인식하도록 하드 코딩되어
+     있으며, *lineterminator*를 무시합니다. 이 동작은 앞으로 변경될 수
+     있습니다.
+
+Dialect.quotechar
+
+   A one-character string used to quote fields containing special
+   characters, such as the *delimiter* or the *quotechar*, or which
+   contain new-line characters ("'\r'", "'\n'" or any of the
+   characters in *lineterminator*). It defaults to "'"'". Can be set
+   to "None" to prevent escaping "'"'" if *quoting* is set to
+   "QUOTE_NONE".
+
+   버전 3.11에서 변경: An empty *quotechar* is not allowed.
+
+Dialect.quoting
+
+   Controls when quotes should be generated by the writer and
+   recognised by the reader.  It can take on any of the QUOTE_*
+   constants and defaults to "QUOTE_MINIMAL" if *quotechar* is not
+   "None", and "QUOTE_NONE" otherwise.
+
+Dialect.skipinitialspace
+
+   When "True", spaces immediately following the *delimiter* are
+   ignored. The default is "False".  When combining "delimiter=' '"
+   with "skipinitialspace=True", unquoted empty fields are not
+   allowed.
+
+Dialect.strict
+
+   "True"일 때, 잘못된 CSV 입력에서 예외 "Error"를 발생시킵니다. 기본
+   값은 "False"입니다.
+
+
+판독기 객체
+===========
+
+판독기 객체("DictReader" 인스턴스와 "reader()" 함수에서 반환한 객체)에
+는 다음과 같은 공용 메서드가 있습니다:
+
+csvreader.__next__()
+
+   판독기의 이터러블 객체의 다음 행을 현재 "Dialect"에 따라 구문 분석
+   하여 리스트(객체가 "reader()"에서 반환된 경우)나 딕셔너리
+   ("DictReader" 인스턴스인 경우)로 반환합니다. 보통 이것을
+   "next(reader)"처럼 호출합니다.
+
+판독기 객체에는 다음과 같은 공용 어트리뷰트가 있습니다:
+
+csvreader.dialect
+
+   구문 분석기가 사용 중인 방언의 읽기 전용 설명.
+
+csvreader.line_num
+
+   소스 이터레이터에서 읽은 줄 수. 레코드가 여러 줄에 걸쳐 있을 수 있
+   으므로, 이것은 반환된 레코드 수와 같지 않습니다.
+
+DictReader 객체에는 다음과 같은 공용 어트리뷰트가 있습니다:
+
+DictReader.fieldnames
+
+   객체를 만들 때 매개 변수로 전달되지 않았으면, 이 어트리뷰트는 첫 번
+   째 액세스 시나 파일에서 첫 번째 레코드를 읽을 때 초기화됩니다.
+
+
+기록기 객체
+===========
+
+"writer" 객체("DictWriter" 인스턴스와 "writer()" 함수에서 반환한 객체)
+에는 다음과 같은 공용 메서드가 있습니다. *row*는 "writer" 객체의 경우
+문자열이나 숫자의 이터러블이어야 하며, "DictWriter" 객체의 경우
+fieldnames를 ("str()"을 먼저 통과시킴으로써) 문자열이나 숫자로 매핑하
+는 딕셔너리이어야 합니다. 복소수는 괄호로 둘러싸여 기록됨에 유의하십시
+오. 이것은 CSV 파일을 읽는 다른 프로그램에서 문제를 일으킬 수 있습니다
+(복소수를 지원한다고 가정할 때).
+
+csvwriter.writerow(row, /)
+
+   *row* 매개 변수를 현재 "Dialect"에 따라 포매팅해서, 기록기의 파일
+   객체에 씁니다. 하부 파일 객체의 *write* 메서드 호출의 반환 값을 반
+   환합니다.
+
+   버전 3.5에서 변경: 임의의 이터러블 지원 추가.
+
+csvwriter.writerows(rows, /)
+
+   *rows*(위에서 설명한 *row* 객체의 이터러블)에 있는 모든 요소를 현재
+   방언에 따라 포매팅해서, 기록기의 파일 객체에 씁니다.
+
+기록기 객체에는 다음과 같은 공용 어트리뷰트가 있습니다:
+
+csvwriter.dialect
+
+   기록기가 사용 중인 방언의 읽기 전용 설명.
+
+DictWriter 객체의 공용 메서드는 다음과 같습니다:
+
+DictWriter.writeheader()
+
+   (생성자에 지정된 대로) 필드 이름을 담은 행을 현재 방언에 따라 포매
+   팅해서, 기록기의 파일 객체에 씁니다. 내부적으로 사용되는
+   "csvwriter.writerow()" 호출의 반환 값을 반환합니다.
+
+   Added in version 3.2.
+
+   버전 3.8에서 변경: "writeheader()"는 이제 내부적으로 사용하는
+   "csvwriter.writerow()" 메서드에서 반환된 값도 반환합니다.
+
+
+예제
+====
+
+CSV 파일을 읽는 가장 간단한 예:
+
+   import csv
+   with open('some.csv', newline='') as f:
+       reader = csv.reader(f)
+       for row in reader:
+           print(row)
+
+다른 형식의 파일 읽기:
+
+   import csv
+   with open('passwd', newline='') as f:
+       reader = csv.reader(f, delimiter=':', quoting=csv.QUOTE_NONE)
+       for row in reader:
+           print(row)
+
+대응하는 가장 간단한 쓰기 예는 다음과 같습니다:
+
+   import csv
+   with open('some.csv', 'w', newline='') as f:
+       writer = csv.writer(f)
+       writer.writerows(someiterable)
+
+CSV 파일을 읽기로 여는 데 "open()"이 사용되므로, 파일은 기본적으로 시
+스템 기본 인코딩("locale.getencoding()"를 참조하세요)을 사용하여 유니
+코드로 디코딩됩니다. 다른 인코딩을 사용하여 파일을 디코딩하려면 open의
+"encoding" 인자를 사용하십시오:
+
+   import csv
+   with open('some.csv', newline='', encoding='utf-8') as f:
+       reader = csv.reader(f)
+       for row in reader:
+           print(row)
+
+시스템 기본 인코딩 이외의 다른 것으로 쓸 때도 마찬가지입니다: 출력 파
+일을 열 때 encoding 인자를 지정하십시오.
+
+새로운 방언 등록하기:
+
+   import csv
+   csv.register_dialect('unixpwd', delimiter=':', quoting=csv.QUOTE_NONE)
+   with open('passwd', newline='') as f:
+       reader = csv.reader(f, 'unixpwd')
+
+판독기의 약간 더 고급 사용 --- 에러 잡기와 보고:
+
+   import csv, sys
+   filename = 'some.csv'
+   with open(filename, newline='') as f:
+       reader = csv.reader(f)
+       try:
+           for row in reader:
+               print(row)
+       except csv.Error as e:
+           sys.exit(f'file {filename}, line {reader.line_num}: {e}')
+
+또한, 모듈이 문자열 구문 분석을 직접 지원하지는 않지만, 쉽게 수행할 수
+있습니다:
+
+   import csv
+   for row in csv.reader(['one,two,three']):
+       print(row)
+
+-[ 각주 ]-
+
+[1] If "newline=''" is not specified, newlines embedded inside quoted
+    fields will not be interpreted correctly, and on platforms that
+    use "\r\n" line endings on write an extra "\r" will be added.  It
+    should always be safe to specify "newline=''", since the csv
+    module does its own (*universal*) newline handling.
