@@ -10,9 +10,10 @@ https://docs.langchain.com/oss/python/integrations/tools/tavily_search
 
 ### .env > api key 셋팅
 ```
-OPENAI_API_KEY='<your-openai-api-key>'
-
-HUGGINGFACE_API_KEY='<your-huggingface-api-key>'
+# DO NOT STORE SECRETS IN REPO. Put keys in a local `.env` file (not committed).
+# Example `.env` (local only - add `.env` to .gitignore if not already present):
+OPENAI_API_KEY=<YOUR_OPENAI_API_KEY_HERE>
+HUGGINGFACE_API_KEY=<YOUR_HUGGINGFACE_API_KEY_HERE>
 
 LANGSMITH_TRACING=true
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
