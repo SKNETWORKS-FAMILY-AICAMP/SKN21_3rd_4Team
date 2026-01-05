@@ -79,6 +79,7 @@ target/
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 .virtualenv
+test_*.ipynb
 
 # IPython
 profile_default/
@@ -207,6 +208,3 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
-# snapshots
-snapshots/

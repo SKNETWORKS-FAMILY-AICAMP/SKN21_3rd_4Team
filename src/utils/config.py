@@ -25,3 +25,5 @@ class ConfigDB:
     COLLECTION_NAME = "learning_ai"
     VECTOR_SIZE = 1536
     DISTANCE_FUNCTION = Distance.COSINE
+
+    SNAPSHOT_FOLDER_PATH = "./data/snapshots/"
