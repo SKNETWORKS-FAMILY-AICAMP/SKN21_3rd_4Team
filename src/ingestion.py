@@ -285,7 +285,7 @@ if __name__ == "__main__":
         docs_root=str(docs_path),
         qdrant_host="localhost",
         qdrant_port=6333,
-        collection_name="python_doc_embed_small",
+        collection_name="learning_ai",
         embedding_model_name="text-embedding-3-small",
         batch_size=64,
     )
