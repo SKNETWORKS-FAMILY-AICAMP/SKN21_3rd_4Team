@@ -124,31 +124,9 @@ class Ingestor:
                 docs.append({'text': str(part), 'metadata': meta})
         return docs
 
-    def get_embedding_provider(self, provider: str = 'local', model_name: str = 'all-MiniLM-L6-v2'):
+    def get_embedding_provider(self, provider: str = 'local', model_name: str = 'text-embedding-3-small'):
         provider = provider.lower()
-        if provider == 'openai':
-            if OpenAIEmbeddings is None:
-                raise RuntimeError('OpenAI embeddings provider not available (langchain_openai missing)')
-            logger.info('Using OpenAI embeddings model=%s', model_name)
-            return OpenAIEmbeddings(model=model_name)
-        else:
-            if SentenceTransformer is None:
-                raise RuntimeError('sentence-transformers is not installed')
-            logger.info('Using local SentenceTransformers model=%s', model_name)
-
-            class LocalHFEmbeddings:
-                def __init__(self, model_name):
-                    self.model = SentenceTransformer(model_name)
-
-                def embed_documents(self, texts: List[str]):
-                    embs = self.model.encode(texts, show_progress_bar=False)
-                    return [list(map(float, e)) for e in embs]
-
-                def embed_query(self, text: str):
-                    e = self.model.encode([text], show_progress_bar=False)[0]
-                    return list(map(float, e))
-
-            return LocalHFEmbeddings(model_name)
+        return OpenAIEmbeddings(model=model_name)
 
     def upload_texts_to_qdrant(self, texts: List[str], metadatas: List[Dict], embedding_provider, collection_name: str = None):
         collection_name = collection_name or ConfigDB.COLLECTION_NAME
@@ -191,7 +169,7 @@ class Ingestor:
                 snippet = getattr(d, 'page_content', '')[:200]
                 print(f'[{i}] {meta.get("source_file")} | {meta.get("heading")} | {snippet.replace("\n"," ")[:200]}')
 
-    def build(self, provider: str = 'local', local_model: str = 'all-MiniLM-L6-v2', openai_model: str = 'text-embedding-3-small', recreate_collection: bool = False, run_retriever_test: bool = False):
+    def build(self, provider: str = 'local', local_model: str = 'text-embedding-3-small', openai_model: str = 'text-embedding-3-small', recreate_collection: bool = False, run_retriever_test: bool = False):
         if recreate_collection:
             try:
                 self.client.delete_collection(collection_name=ConfigDB.COLLECTION_NAME)
@@ -237,7 +215,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--provider', choices=['local', 'openai'], default=os.getenv('EMBEDDING_PROVIDER','local'))
-    parser.add_argument('--local-model', default='all-MiniLM-L6-v2')
+    parser.add_argument('--local-model', default='text-embedding-3-small')
     parser.add_argument('--openai-model', default='text-embedding-3-small')
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--recreate-collection', action='store_true')
