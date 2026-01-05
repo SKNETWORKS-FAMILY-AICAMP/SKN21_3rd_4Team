@@ -1,14 +1,29 @@
 # LLM 답변 생성 로직
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
 from src.schema.state import AgentState
+from src.agent.prompts import GENERATOR_PROMPT
+from src.agent.nodes.analyst_tools import AnalystToolNode
+from src.agent.nodes.analyst_generator import AnalystGeneratorNode
+
 
 def analyst_node(state: AgentState):
-    return {}
+    result = generetor_node(state)
+    print(result)
+
 
 def generetor_node(state: AgentState):
-    return {}
+    result = AnalystGeneratorNode(state['question'], [], "gpt-4o-mini")
+    print(type(result))
+    return result
+
 
 def grounding_node(state: AgentState):
-    return {}
+    tool_node = AnalystToolNode([])
+    result = tool_node.invoke(state)
+
+    return result
+
 
 if __name__ == "__main__":
     state = AgentState()

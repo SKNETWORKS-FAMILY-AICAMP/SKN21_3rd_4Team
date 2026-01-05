@@ -1,5 +1,7 @@
 from typing import TypedDict, List, Dict, Any, Optional
 from src.schema.search import SearchConfig
+from typing import Annotated
+from langgraph.graph.message import add_messages
 
 class AgentState(TypedDict):
     """
@@ -20,6 +22,8 @@ class AgentState(TypedDict):
     # 3. Role B (Executor) -> Analysis Agent
     # 실행된 원본 검색 결과 리스트 (메타데이터 포함)
     search_results: List[Dict[str, Any]]
+
+    analyst_results: Annotated[list, add_messages]
     
     # LLM이 답변 생성에 참고할 최종 텍스트 문자열
     # (제목, 내용, 출처 등이 포맷팅된 형태)
