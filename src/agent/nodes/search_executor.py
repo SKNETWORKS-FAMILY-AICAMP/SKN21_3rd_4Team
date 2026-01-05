@@ -1,12 +1,11 @@
+# SearchExecutor
+
+
 from typing import List, Dict, Any
 from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
 from src.utils.config import ConfigDB, ConfigAPI
 from src.schema.search import SearchConfig
-
-
-
-# SearchExecutor
 
 
 class SearchExecutor:
@@ -16,6 +15,7 @@ class SearchExecutor:
     Router가 정해준 설정(Config)에 따라
     실제 Vector DB(Qdrant)를 조회하고 결과를 반환합니다.
     """
+
 
     def __init__(self):
         """
@@ -36,7 +36,6 @@ class SearchExecutor:
 
         # 3. 사용할 컬렉션 이름 (어느 방을 뒤질지)
         self.collection_name = ConfigDB.COLLECTION_NAME
-
 
 
     def execute_search(self, query: str, config: SearchConfig) -> List[Dict]:
@@ -91,6 +90,8 @@ class SearchExecutor:
             unique_results.append(res)
             
         return unique_results
+
+
     def build_context(self, results: List[Dict]) -> str:
         """
         보고서 작성: LLM이 읽기 좋게 문장으로 정리합니다.
@@ -107,6 +108,7 @@ class SearchExecutor:
             context_parts.append(part)
             
         return "\n\n---\n\n".join(context_parts)
+
 
     def prepare_for_analysis_agent(self, query: str, results: List[Dict], config: dict) -> dict:
         """
@@ -141,10 +143,6 @@ class SearchExecutor:
                 "search_method": config.get('search_method', 'similarity')
             }
         }
-
-
-
-
 
 
 # 실행 명령어 python -m src.agent.nodes.search_executor
