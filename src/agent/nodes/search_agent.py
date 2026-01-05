@@ -26,7 +26,8 @@ def run_integration_test():
         "경사하강법이 뭐야",
         "Randomforest 설명해줘",
         "딥러닝 설명해줘",
-        "XGBOOST 설명해줘",
+        "import module from import statement",
+        "open file read write with statement",
         # "Randomforast 설명해줘",
         # "파이썬 클래스 상속 방법"
         # "파이썬 리스트 메서드 종류 알려줘",     # list append, pop, sort 등
