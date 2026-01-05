@@ -43,7 +43,7 @@ class Ingestor:
         # Qdrant
         qdrant_host: str = "localhost",
         qdrant_port: int = 6333,
-        collection_name: str = "lecture_embed_small",
+        collection_name: str = "lecture",
         # Embedding
         embedding_model_name: str = "text-embedding-3-small",
         # Upload
@@ -304,7 +304,7 @@ if __name__ == "__main__":
         docs_root=str(lectures_path),
         qdrant_host="localhost",
         qdrant_port=6333,
-        collection_name="lecture_embed_small",
+        collection_name="lecture",
         embedding_model_name="text-embedding-3-small",
         batch_size=64,
     )
