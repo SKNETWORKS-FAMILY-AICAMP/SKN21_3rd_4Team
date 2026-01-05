@@ -42,23 +42,16 @@ class SearchExecutor:
     def execute_search(self, query: str, config: SearchConfig) -> List[Dict]:
         """
         Qdrant에서 실제 검색을 수행하는 함수
-        
-        Args:
-            query (str): 검색할 질문 키워드 (예: "머신러닝이 뭐야?")
-            config (SearchConfig): Role A가 준 검색 설정 (source, top_k 등)
-            
-        Returns:
-            List[Dict]: 검색된 문서들의 리스트
         """
-
         try:
-
             # 1. 질문(텍스트)을 벡터(숫자)로 변환
             query_vector = self.embeddings.embed_query(query)
-
             # 2. 몇 개 가져올지 설정 (없으면 기본 5개)
             top_k = config.get("top_k", 5)
-
+            # [수정된 부분] search_method 확인
+            method = config.get('search_method', 'similarity')
+            if method == 'mmr':
+                print("ℹ️ MMR 검색 요청됨 (현재는 기본 검색으로 동작)")
             # 3. Qdrant에서 검색 (query_points 사용 - 1.7+ 버전)
             search_result = self.client.query_points(
                 collection_name=self.collection_name,
@@ -68,15 +61,13 @@ class SearchExecutor:
             
             # 4. 결과 정리
             results = []
-            for hit in search_result.points:  # .points 추가!
+            for hit in search_result.points:
                 results.append({
                     "content": hit.payload.get('page_content', ''),
                     "score": hit.score,
                     "metadata": hit.payload.get('metadata', {})
                 })
-
             return results
-
         except Exception as e:
             # 에러가 나면 멈추지 말고, 에러 메시지를 출력하고 빈 리스트를 줍니다.
             print(f"⚠️ [Executor] 검색 에러 발생: {e}")
@@ -117,33 +108,90 @@ class SearchExecutor:
             
         return "\n\n---\n\n".join(context_parts)
 
+    def prepare_for_analysis_agent(self, query: str, results: List[Dict], config: dict) -> dict:
+        """
+        Analysis Agent에게 넘길 형식으로 변환
+        
+        Args:
+            query: 원본 질문
+            results: 검색 결과 리스트 (deduplicate 후)
+            config: Router가 생성한 검색 설정
+            
+        Returns:
+            Analysis Agent가 기대하는 JSON 형식
+        """
+        return {
+            "query": query,                           # 원본 질문
+            "retrieved_documents": [                  # 검색된 문서 리스트
+                {
+                    "content": r['content'],          # 문서 내용
+                    "metadata": {
+                        "source": r['metadata'].get('source', 'unknown'),     # 출처
+                        "title": r['metadata'].get('title', 'Unknown'),       # 파일명
+                        "page": r['metadata'].get('page', None),              # 페이지 번호
+                        "chunk_index": r['metadata'].get('chunk_index', None) # 조각 번호
+                    },
+                    "score": round(r['score'], 4)     # 유사도 점수
+                }
+                for r in results
+            ],
+            "search_metadata": {                      # 검색 정보
+                "total_found": len(results),
+                "sources_searched": config.get('sources', []),
+                "search_method": config.get('search_method', 'similarity')
+            }
+        }
+
+
+
+
 
 
 # 실행 명령어 python -m src.agent.nodes.search_executor
 
 
 if __name__ == "__main__":
-    # 1. 실행기(Executor) 생성
+    """
+    Search Executor 단독 테스트
+    Router가 생성하는 config와 유사한 설정으로 테스트
+    """
     executor = SearchExecutor()
     
-    # 2. 테스트용 질문 & 설정 준비
-    query = "머신러닝이 뭐야?"
-    config = {
-        "sources": ["lecture"],
-        "top_k": 3
-    }
+    # Router와 동일한 테스트 질문들 (search_router.py 참고)
+    test_cases = [
+        {
+            "query": "RAG가 뭐야?",
+            "config": {"sources": ["lecture"], "top_k": 3, "search_method": "similarity"}
+        },
+        {
+            "query": "Python list comprehension 문법",
+            "config": {"sources": ["python_doc"], "top_k": 3, "search_method": "similarity"}
+        },
+        {
+            "query": "딥러닝 모델 최적화 방법",
+            "config": {"sources": ["lecture"], "top_k": 7, "search_method": "mmr"}
+        }
+    ]
     
-    # 3. 검색 실행!
-    print(f"🚀 테스트 시작: 질문 = '{query}'")
-    results = executor.execute_search(query, config)
+    print("=" * 60)
+    print("🧪 Search Executor 단독 테스트 (Router 설정 시뮬레이션)")
+    print("=" * 60)
     
-    # 4. 결과 정리 (중복 제거 & 보고서 작성)
-    deduped = executor.deduplicate_results(results)
-    context = executor.build_context(deduped)
-    
-    # 5. 최종 결과 출력
-    print("\n✅ 정리된 검색 결과:")
-    print(context)
-            
-            
-            
+    for i, case in enumerate(test_cases, 1):
+        query = case["query"]
+        config = case["config"]
+        
+        print(f"\n� [{i}] 질문: {query}")
+        print(f"   설정: {config}")
+        print("-" * 60)
+        
+        # 검색 실행
+        results = executor.execute_search(query, config)
+        deduped = executor.deduplicate_results(results)
+        context = executor.build_context(deduped)
+        
+        # 결과 요약 (전체 context 말고 첫 200자만)
+        preview = context[:200] + "..." if len(context) > 200 else context
+        print(f"   => {len(deduped)}개 문서 검색됨")
+        print(f"   => 첫 번째 결과 미리보기:\n{preview}")
+        print("=" * 60)
