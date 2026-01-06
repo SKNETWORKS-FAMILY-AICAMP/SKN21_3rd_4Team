@@ -9,9 +9,11 @@ OpenAI Embedding으로 벡터화한 뒤 Qdrant(Vector DB)에 저장하는 ingest
 
 - source 메타데이터로 'lecture'를 부여하여 python_doc과 구분 가능
 - Qdrant 컬렉션이 없으면 자동 생성
+- 전처리 로직 적용: 이미지/URL/HTML/LaTeX 제거
 """
 
 import os
+import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -31,15 +33,18 @@ from langchain_openai import OpenAIEmbeddings
 
 
 class Ingestor:
+    # 한국어 불용어 (검색 품질 향상용)
+    STOPWORDS = {'이', '그', '저', '것', '등', '및', '또한', '그리고', '하지만', '그러나', '따라서', '그래서', '즉', '예를', '들어'}
+    
     def __init__(
         self,
         docs_root: str,
         include_exts: Optional[List[str]] = None,
         # chunk 옵션
-        md_chunk_size: int = 1000,
-        md_chunk_overlap: int = 100,
-        code_chunk_size: int = 800,
-        code_chunk_overlap: int = 50,
+        md_chunk_size: int = 1200,        
+        md_chunk_overlap: int = 200,     
+        code_chunk_size: int = 1000,      
+        code_chunk_overlap: int = 150,
         # Qdrant
         qdrant_host: str = "localhost",
         qdrant_port: int = 6333,
@@ -93,7 +98,6 @@ class Ingestor:
         # 컬렉션 없으면 생성
         if not client.collection_exists(collection_name=self.collection_name):
             # text-embedding-3-small = 1536 차원
-            # (필요하면 모델명에 따라 분기 가능)
             vector_size = 1536
 
             client.create_collection(
@@ -141,7 +145,50 @@ class Ingestor:
         return sorted(targets)
 
     # -------------------------
-    # 2) Parse / Split
+    # 2) 전처리 헬퍼 함수들
+    # -------------------------
+    def _preprocess_markdown(self, text: str) -> str:
+        """마크다운 텍스트 전처리: 불필요한 요소 제거"""
+        # 1) Base64 인코딩된 이미지 데이터 제거
+        text = re.sub(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+', '', text)
+        
+        # 2) 이미지 마크다운 문법 완전 제거 (![alt](url) 형식)
+        text = re.sub(r'!\[[^\]]*\]\([^)]+\)', '', text)
+        
+        # 3) URL을 '[링크]'로 대체
+        text = re.sub(r'https?://[^\s\)\]]+', '[링크]', text)
+        
+        # 4) HTML 태그 제거
+        text = re.sub(r'<[^>]+>', '', text)
+        
+        
+        # 5) LaTeX 수식: $ 기호만 제거하고 내용 유지
+        # $x_3 = x_1^2$ → x_3 = x_1^2
+        # $$수식$$ → 수식
+        text = re.sub(r'\$\$([^$]+)\$\$', r'\1', text)  # $$...$$ 처리
+        text = re.sub(r'\$([^$]+)\$', r'\1', text)       # $...$ 처리
+        
+        # 6) 마크다운 헤더 # 기호 제거 (### 제목 → 제목)
+        text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
+        
+        # 7) 불필요한 공백/개행 정리
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r' {2,}', ' ', text)
+        
+        return text.strip()
+
+    def _preprocess_code(self, code: str) -> str:
+        """코드 텍스트 전처리: 주석 정리 및 핵심 코드 유지"""
+        # 1) 빈 줄이 과도하게 많은 경우 정리
+        code = re.sub(r'\n{3,}', '\n\n', code)
+        
+        # 2) 여러 개의 # 주석을 단일 #으로 정규화 (### 주석 → # 주석)
+        code = re.sub(r'^(\s*)#{2,}\s*', r'\1# ', code, flags=re.MULTILINE)
+        
+        return code.strip()
+
+    # -------------------------
+    # 3) Parse / Split
     # -------------------------
     def parse_file(self, file_path: str) -> Dict[str, Any]:
         """
@@ -166,12 +213,22 @@ class Ingestor:
         for idx, cell in enumerate(nb.cells):
             if cell.cell_type == "markdown":
                 txt = cell.source or ""
+                # ✅ 전처리 적용
+                txt = self._preprocess_markdown(txt)
                 if txt.strip():
                     cells.append(
                         {"cell_type": "markdown", "text": txt, "cell_index": idx}
                     )
             elif cell.cell_type == "code":
                 code = cell.source or ""
+                # ✅ 코드 전처리 적용
+                code = self._preprocess_code(code)
+                
+                # ✅ 너무 짧은 코드 셀은 건너뛰기 (검색에 도움 안 됨)
+                # 예: rfc.feature_importances_ 같은 한 줄짜리 셀
+                if len(code.strip()) < 30:
+                    continue
+                    
                 # code는 fenced block으로 감싸면 검색 시 문맥이 좋아짐
                 code_block = f"```python\n{code}\n```"
                 if code.strip():
@@ -188,11 +245,36 @@ class Ingestor:
             },
         }
 
+    def _build_context_prefix(self, meta: Dict[str, Any]) -> str:
+        """
+        문맥 주입: 청크 앞에 강의 제목과 섹션 정보를 추가
+        검색 시 "머신러닝" 같은 키워드가 [강의: 머신러닝]과 매칭되어 정확도 향상
+        """
+        parts = []
+        
+        # 강의 제목 추가
+        lecture_title = meta.get("lecture_title", "")
+        if lecture_title:
+            parts.append(f"[강의: {lecture_title}]")
+        
+        # 섹션(헤더) 정보 추가 (H1, H2, H3 순서대로)
+        headers = []
+        for h in ["H1", "H2", "H3"]:
+            if h in meta and meta[h]:
+                headers.append(meta[h])
+        if headers:
+            parts.append(f"[섹션: {' > '.join(headers)}]")
+        
+        if parts:
+            return "\n".join(parts) + "\n\n"
+        return ""
+
     def split_text(self, parsed: Dict[str, Any]) -> List[Document]:
         """
         셀 단위 → chunk(Document) 리스트 생성
         - markdown: header 기반 split 후(큰 덩어리) 추가로 recursive chunk
         - code: recursive chunk
+        - ✅ 문맥 주입: 각 청크 앞에 강의 제목과 섹션 정보 추가
         """
         base_meta: Dict[str, Any] = parsed["metadata"]
         cells: List[Dict[str, Any]] = parsed["cells"]
@@ -226,24 +308,32 @@ class Ingestor:
                         meta = dict(cell_meta)
 
                     for chunk in self.md_splitter.split_text(text):
+                        # ✅ 문맥 주입
+                        context_prefix = self._build_context_prefix(meta)
+                        enriched_chunk = context_prefix + chunk
+                        
                         out_docs.append(
                             Document(
-                                page_content=chunk,
+                                page_content=enriched_chunk,
                                 metadata={
                                     **meta,
-                                    "text_snippet": chunk[:200],
+                                    "text_snippet": chunk[:200],  # 원본 청크 스니펫 유지
                                 },
                             )
                         )
             else:
                 # code chunk
                 for chunk in self.code_splitter.split_text(cell_text):
+                    # ✅ 코드에도 문맥 주입 (어떤 강의의 코드인지 알 수 있음)
+                    context_prefix = self._build_context_prefix(cell_meta)
+                    enriched_chunk = context_prefix + chunk
+                    
                     out_docs.append(
                         Document(
-                            page_content=chunk,
+                            page_content=enriched_chunk,
                             metadata={
                                 **cell_meta,
-                                "text_snippet": chunk[:200],
+                                "text_snippet": chunk[:200],  # 원본 청크 스니펫 유지
                             },
                         )
                     )
@@ -255,7 +345,7 @@ class Ingestor:
         return out_docs
 
     # -------------------------
-    # 3) Upload
+    # 4) Upload
     # -------------------------
     def upload_to_qdrant(self, chunks: List[Document]) -> Dict[str, int]:
         """
@@ -277,7 +367,7 @@ class Ingestor:
         return {"uploaded": uploaded, "failed": failed}
 
     # -------------------------
-    # 4) Run
+    # 5) Run
     # -------------------------
     def run(self, repo_url: Optional[str] = None) -> Dict[str, int]:
         root_path = self.load_repo(repo_url) if repo_url else self.docs_root
