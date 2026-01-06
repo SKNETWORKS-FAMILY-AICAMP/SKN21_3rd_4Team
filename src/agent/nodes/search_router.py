@@ -27,6 +27,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from typing import Dict, List, Literal
 from langchain_openai import ChatOpenAI  # OpenAI LLM 인터페이스
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from pydantic import BaseModel, Field    # 데이터 검증 및 구조화
 from src.agent.prompts import PROMPTS
 
@@ -96,8 +97,13 @@ def build_search_config(query: str) -> Dict:
         )
     
     # ============================================================
-    # 2단계: LLM 초기화 및 Structured Output 설정
+    # 2단계: LangChain Chain 생성 (체인화)
     # ============================================================
+    # ChatPromptTemplate: 프롬프트를 템플릿으로 관리
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(PROMPTS["SEARCH_ROUTER_PROMPT"])
+    ])
+    
     # ChatOpenAI: OpenAI의 GPT 모델을 사용하기 위한 인터페이스
     llm = ChatOpenAI(
         model="gpt-4o-mini",  # 빠르고 저렴한 모델 (gpt-4보다 10배 이상 저렴)
@@ -111,19 +117,17 @@ def build_search_config(query: str) -> Dict:
     # Structured Output: SearchConfig 형식으로만 반환 → 안정적 ✅
     structured_llm = llm.with_structured_output(SearchConfig)
     
-    # 프롬프트 (src/agent/prompts/search_prompt.py에서 관리)
-    prompt = PROMPTS["SEARCH_ROUTER_PROMPT"].format(query=query)
+    # Chain 연결: prompt | structured_llm
+    chain = prompt | structured_llm
     
-    # ============================================================
-    # 3단계: LLM 호출 및 결과 반환
-    # ============================================================
-    # structured_llm.invoke(): 프롬프트를 LLM에 전송하고 결과를 받음
+
+    # 3단계: Chain 실행 및 결과 반환
+    # chain.invoke(): 프롬프트를 LLM에 전송하고 결과를 받음
     # 반환값: SearchConfig 객체 (Pydantic 모델)
-    result = structured_llm.invoke(prompt)
+    result = chain.invoke({"query": query})
     
-    # ============================================================
+
     # 4단계: Role B가 사용할 형식으로 변환
-    # ============================================================
     # Role B (Search Executor)가 필요한 정보만 추출해서 반환
     return {
         # 핵심 정보 (Role B가 실제로 사용)
@@ -145,8 +149,6 @@ def build_search_config(query: str) -> Dict:
 # ============================================================
 # 테스트 코드 (파일을 직접 실행할 때만 동작)
 # ============================================================
-# 이 파일을 직접 실행하면: python src/agent/nodes/search_router.py
-# 다른 파일에서 import하면: 이 부분은 실행되지 않음
 
 if __name__ == "__main__":
     # 다양한 유형의 질문으로 테스트
@@ -168,10 +170,10 @@ if __name__ == "__main__":
         print(f"\n📌 질문: {query}")
         print("-" * 80)
         
-        # 메인 함수 호출: 질문 → 검색 설정
+        
         config = build_search_config(query)
         
-        # Role B에게 전달될 핵심 정보 출력
+       
         print(f"✅ 검색 대상: {config['sources']}")        # 어디서 검색할지
         print(f"📊 검색 개수: {config['top_k']}개")        # 몇 개 가져올지
         print(f"🔍 검색 방법: {config['search_method']}")  # 어떤 방법으로
