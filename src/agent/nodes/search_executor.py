@@ -6,7 +6,8 @@ from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
 from src.utils.config import ConfigDB, ConfigAPI
 from src.schema.search import SearchConfig
-
+from src.agent.nodes.search_router import build_search_config
+from src.agent.nodes.search_agent import execute_dual_query_search
 
 class SearchExecutor:
     """
@@ -150,19 +151,31 @@ class SearchExecutor:
         }
 
 
-    def update_state_with_results(self, state: dict, query: str, results: list, config: dict) -> dict:
-        # 1. 검색 결과 리스트 저장 (List[Dict] 형식)
-        top_k = config.get('top_k', 5)
-        state['search_results'] = [
-            {
-                "content": r['content'],
-                "score": round(r['score'], 4),
-                "metadata": r['metadata']
-            }
-            for r in results[:top_k]
-        ]
+def search_node(state: dict) -> dict:
+    """
+    LangGraph 노드용 함수
+    state에서 query를 읽고, 검색 결과를 반환
+    """
     
-        # 2. LLM이 읽을 context 문자열 저장
-        state['context'] = self.build_context(results)
+    executor = SearchExecutor()
+    query = state['query']
     
-        return state
+    # 검색 설정 및 실행
+    config = build_search_config(query)
+    results, query_info = execute_dual_query_search(query, executor)
+    
+    # 결과 포맷팅
+    top_k = config.get('top_k', 5)
+    search_results = [
+        {
+            "content": r['content'],
+            "score": round(r['score'], 4),
+            "metadata": r['metadata']
+        }
+        for r in results[:top_k]
+    ]
+    
+    return {
+        'search_results': search_results,
+        'context': executor.build_context(results)
+    }
