@@ -3,6 +3,7 @@
 from src.agent.workflow import build_graph
 from langgraph.checkpoint.memory import MemorySaver # 메모리 이용
 from src.schema.state import AgentState
+from pprint import pprint
 
 def main(query: str):
     '''
@@ -23,8 +24,8 @@ def main(query: str):
 
     config = {"configurable": {"thread_id": "1"}}  # 고유한 ID 지정
     response = graph.invoke(agent_state, config=config)
-    print(response)
- 
+    pprint(response)
+    
     return response
 
 if __name__ == "__main__":

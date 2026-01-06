@@ -16,7 +16,7 @@ def search_node(state: AgentState):
     # 결과 포맷팅
     search_results = [
         {
-            "content": r['content'],
+            "content": "=== [내부 자료 (Original)] === \n\n" + r['content'],
             "score": round(r['score'], 4),
             "metadata": r['metadata']
         }
@@ -45,7 +45,7 @@ def build_context(state: AgentState):
         score = round(res['score'], 2)
         content = res['content'].strip()
         
-        part = f"[{i}] 출처: {source} (유사도: {score})\n{content}"
+        part = f"[Original {i}] 출처: {source} (유사도: {score})\n{content}"
         context_parts.append(part)
         
     context = "\n\n---\n\n".join(context_parts)
