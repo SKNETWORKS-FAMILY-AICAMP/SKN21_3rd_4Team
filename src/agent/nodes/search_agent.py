@@ -30,6 +30,8 @@ from src.agent.nodes.search_router import build_search_config
 from src.agent.nodes.search_executor import SearchExecutor
 from src.agent.prompts import PROMPTS
 from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 
 # ============================================================
@@ -41,11 +43,36 @@ def is_korean(text: str) -> bool:
     return bool(re.search(r'[가-힣]', text))
 
 
-def translate_to_english(query: str) -> str:
-    """LLM으로 한글 → 영어 검색 쿼리 변환"""
+def create_translate_chain():
+    """
+    번역용 LangChain chain 생성
+    
+    Returns:
+        Chain: prompt | llm | parser 형태의 chain
+    """
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(PROMPTS["TRANSLATE_PROMPT"])
+    ])
+    
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    prompt = PROMPTS["TRANSLATE_PROMPT"].format(query=query)
-    return llm.invoke(prompt).content.strip()
+    parser = StrOutputParser()
+    
+    chain = prompt | llm | parser
+    return chain
+
+
+def translate_to_english(query: str) -> str:
+    """
+    LLM으로 한글 → 영어 검색 쿼리 변환 (체인화 버전)
+    
+    Args:
+        query: 한글 질문
+        
+    Returns:
+        영어 검색 키워드
+    """
+    chain = create_translate_chain()
+    return chain.invoke({"query": query}).strip()
 
 
 def search_by_source(query: str, source: str, executor: SearchExecutor, top_k: int) -> list:
@@ -150,7 +177,6 @@ def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
     unique_results.sort(key=lambda x: x['score'], reverse=True)
     
     return unique_results[:top_k], query_info
-
 
 
 # ============================================================
