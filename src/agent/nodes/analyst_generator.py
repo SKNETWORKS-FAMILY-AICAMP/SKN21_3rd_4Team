@@ -1,7 +1,7 @@
 
 from datetime import date
 from langchain_core.prompts import ChatPromptTemplate
-from src.agent.prompts import GENERATOR_PROMPT
+from src.agent.prompts import PROMPTS
 from src.schema.state import AgentState
 from langchain_openai import ChatOpenAI
 
@@ -9,7 +9,7 @@ class AnalystGeneratorNode:
     def __init__(self, query, tools, model_name):
         prompt = ChatPromptTemplate(
             [
-                ("system", GENERATOR_PROMPT),
+                ("system", PROMPTS["ANALYSIS_SYSTEM_PROMPT"]),
                 ("human", query)
             ],
             partial_variables={"today": date.today().strftime("%Y년 %m월 %d일")}

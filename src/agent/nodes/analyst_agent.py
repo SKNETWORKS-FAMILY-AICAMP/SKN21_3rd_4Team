@@ -2,7 +2,7 @@
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from src.schema.state import AgentState
-from src.agent.prompts import GENERATOR_PROMPT
+from src.agent.prompts import PROMPTS
 from src.agent.nodes.analyst_tools import AnalystToolNode
 from src.agent.nodes.analyst_generator import AnalystGeneratorNode
 
