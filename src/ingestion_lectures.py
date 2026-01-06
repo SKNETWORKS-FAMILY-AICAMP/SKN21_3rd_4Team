@@ -215,6 +215,12 @@ class Ingestor:
                 txt = cell.source or ""
                 # ✅ 전처리 적용
                 txt = self._preprocess_markdown(txt)
+                
+                # ✅ 추가 필터링: 10자 이하이거나 '[링크]'가 포함된 경우 제외
+                # 의미 없는 텍스트나 링크만 있는 셀 제거
+                if len(txt.strip()) <= 10 or "[링크]" in txt:
+                    continue
+
                 if txt.strip():
                     cells.append(
                         {"cell_type": "markdown", "text": txt, "cell_index": idx}
