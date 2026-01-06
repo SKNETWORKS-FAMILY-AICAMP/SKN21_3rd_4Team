@@ -1,4 +1,8 @@
 ## 개발환경 셋팅
+```bash
+uv venv
+source .venv/bin/activate
+```
 - 패키지 설치
 ```bash
 uv pip install -r requirements.txt
