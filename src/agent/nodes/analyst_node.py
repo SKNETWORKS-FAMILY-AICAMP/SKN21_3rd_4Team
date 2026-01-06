@@ -1,31 +1,43 @@
-from langgraph.prebuilt import create_react_agent
-from langchain_core.messages import HumanMessage
-from langgraph.types import Command
-from typing import Literal
-from langgraph.graph import END
+# src/agent/nodes/analyst_node.py
 
-from agent.prompts.analyst_prompt import analyst_prompt
+from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage
+from langgraph.types import Command
+from langgraph.graph import END
+from typing import Literal
+
+from src.agent.prompts.analyst_prompt import analyst_prompt
+
+from langgraph.types import Command
+from langgraph.graph import END
+from langchain_core.messages import HumanMessage
+
+from src.agent.prompts.analyst_prompt import analyst_prompt
 
 def build_analyst_node(llm):
 
-    analyst_agent = create_react_agent(
-        llm=llm,
-        tools=[],   # 분석만 할땐 tool X 
-        prompt=analyst_prompt
-    )
+    def analyst_node(state):
+        question = state["messages"][-1].content
+        context = state.get("context", "")
 
-    def analyst_node(state) -> Command[Literal[END]]:
-        result = analyst_agent.invoke(state)
+        prompt_value = analyst_prompt.invoke({
+            "question": question,
+            "context": context
+        })
 
-        # provider 호환을 위해 HumanMessage로 wrapping
-        result["messages"][-1] = HumanMessage(
-            content=result["messages"][-1].content,
-            name="analyst"
-        )
+        response = llm.invoke(prompt_value)
 
         return Command(
-            update={"messages": result["messages"]},
+            update={
+                "messages": state["messages"] + [
+                    AIMessage(
+                        content=response.content,
+                        name="analyst"
+                    )
+                ]
+            },
             goto=END
         )
 
     return analyst_node
+
