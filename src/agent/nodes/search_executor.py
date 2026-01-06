@@ -1,6 +1,3 @@
-# SearchExecutor
-
-
 from typing import List, Dict, Any
 from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
@@ -14,7 +11,6 @@ class SearchExecutor:
     Router가 정해준 설정(Config)에 따라
     실제 Vector DB(Qdrant)를 조회하고 결과를 반환합니다.
     """
-
 
     def __init__(self):
         """
@@ -89,24 +85,6 @@ class SearchExecutor:
             unique_results.append(res)
             
         return unique_results
-
-
-    def build_context(self, results: List[Dict]) -> str:
-        """
-        보고서 작성: LLM이 읽기 좋게 문장으로 정리합니다.
-        """
-        if not results:
-            return "검색된 관련 자료가 없습니다."
-        context_parts = []
-        for i, res in enumerate(results, 1): # 번호는 1번부터
-            source = res['metadata'].get('source', 'Unknown')
-            score = round(res['score'], 2)
-            content = res['content'].strip()
-            
-            part = f"[{i}] 출처: {source} (유사도: {score})\n{content}"
-            context_parts.append(part)
-            
-        return "\n\n---\n\n".join(context_parts)
 
 
     def prepare_for_analysis_agent(self, query: str, results: List[Dict], config: dict) -> dict:

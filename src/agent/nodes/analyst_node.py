@@ -18,12 +18,9 @@ def analyst_node(state: AgentState):
         model="gpt-4o-mini",
         temperature=0
     )
-
-    # 3. Output Parser 설정
-    parser = StrOutputParser()
-
+    
     # 4. Chain 연결 (Prompt -> LLM -> Parser)
-    chain = prompt | llm | parser
+    chain = prompt | llm | StrOutputParser()
 
     # 5. 실행 (state에 있는 'query', 'context' 등이 prompt의 변수로 주입됨)
     # invoke 시 state(dict) 전달

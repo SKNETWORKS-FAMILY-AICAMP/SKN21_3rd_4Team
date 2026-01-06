@@ -9,7 +9,7 @@ Search Agent - 듀얼 쿼리 검색 시스템
 1) 질문 언어 판별: `is_korean()`
 2) 검색 설정 결정: `build_search_config(query)`
    - top_k, sources(lecture/python_doc_rst), search_method 등을 결정
-3) 소스별 검색: `search_by_source(query, source, executor, top_k)`
+3) 소스별 검색: `search_by_source(query, source, top_k)`
    - Qdrant에서 `metadata.source`로 필터링해 각각 검색 (lecture vs python_doc_rst)
 4) (질문이 한글이면) 번역 검색 추가: `translate_to_english()`
    - 영어 키워드 쿼리로 한 번 더 소스별 검색
@@ -32,6 +32,7 @@ from src.agent.prompts import PROMPTS
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from src.utils.config import ConfigDB
 
 
 # ============================================================
@@ -75,14 +76,24 @@ def translate_to_english(query: str) -> str:
     return chain.invoke({"query": query}).strip()
 
 
-def search_by_source(query: str, source: str, executor: SearchExecutor, top_k: int) -> list:
+def search_by_source(query: str, source: str, top_k: int) -> list:
     """특정 소스에서만 검색 (Qdrant 필터 사용)"""
     from qdrant_client.models import Filter, FieldCondition, MatchValue
     
-    query_vector = executor.embeddings.embed_query(query)
+    client = QdrantClient(
+            host=ConfigDB.HOST,
+            port=ConfigDB.PORT
+        )
+
+    embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            api_key=ConfigAPI.OPENAI_API_KEY
+        )
     
-    search_result = executor.client.query_points(
-        collection_name=executor.collection_name,
+    query_vector = embeddings.embed_query(query)
+    
+    search_result = client.query_points(
+        collection_name=ConfigDB.COLLECTION_NAME,
         query=query_vector,
         query_filter=Filter(
             must=[
@@ -105,7 +116,7 @@ def search_by_source(query: str, source: str, executor: SearchExecutor, top_k: i
     return results
 
 
-def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
+def execute_dual_query_search(query: str) -> tuple:
     """
     소스별 듀얼 쿼리 검색
     
@@ -116,6 +127,7 @@ def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
     Returns:
         (results, query_info): 결과 리스트와 쿼리 정보
     """
+
     all_results = []
     query_info = {"original": query, "translated": None, "queries_used": []}
     
@@ -134,7 +146,7 @@ def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
     PYDOC_FALLBACK_SCORE_THRESHOLD = 0.45
 
     # 1) lecture는 원문으로만 검색
-    lecture_results = search_by_source(query, "lecture", executor, top_k) if "lecture" in sources else []
+    lecture_results = search_by_source(query, "lecture", top_k) if "lecture" in sources else []
 
     # 2) python_doc_rst 검색
     python_results = []
@@ -143,7 +155,7 @@ def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
             # 2-1) 번역(영어 키워드) 검색이 기본
             english_query = translate_to_english(query)
             query_info["translated"] = english_query
-            python_results_en = search_by_source(english_query, "python_doc_rst", executor, top_k)
+            python_results_en = search_by_source(english_query, "python_doc_rst", top_k)
             for r in python_results_en:
                 r["query_type"] = "translated"
             all_results.extend(python_results_en)
@@ -152,10 +164,10 @@ def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
             # 2-2) fallback: 번역 결과가 약하면 한글 원문으로도 한 번 더 검색
             best_score = python_results_en[0]["score"] if python_results_en else 0
             if (not python_results_en) or (best_score < PYDOC_FALLBACK_SCORE_THRESHOLD):
-                python_results = search_by_source(query, "python_doc_rst", executor, top_k)
+                python_results = search_by_source(query, "python_doc_rst", top_k)
         else:
             # 영어 질문이면 원문(영어) 그대로
-            python_results = search_by_source(query, "python_doc_rst", executor, top_k)
+            python_results = search_by_source(query, "python_doc_rst", top_k)
     else:
         python_results = []
     
@@ -212,7 +224,7 @@ def run_test():
         # "파일 읽고 쓰는 방법",
     ]
     
-    executor = SearchExecutor()
+    # executor = SearchExecutor()
     
     print("=" * 70)
     print("🔍 듀얼 쿼리 검색 시스템 테스트")
@@ -229,7 +241,7 @@ def run_test():
         
         try:
             # 듀얼 쿼리 검색 실행
-            results, query_info = execute_dual_query_search(query, executor)
+            results, query_info = execute_dual_query_search(query)
             elapsed = time.time() - start
             
             # 결과 출력
