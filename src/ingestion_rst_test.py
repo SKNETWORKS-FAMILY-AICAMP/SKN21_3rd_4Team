@@ -19,8 +19,8 @@ class RSTIngestor:
     def __init__(
         self,
         # 청크 설정: 유사도 최적화
-        chunk_size: int = 400,
-        chunk_overlap: int = 100,
+        chunk_size: int = 900,
+        chunk_overlap: int = 200,
         # Qdrant
         qdrant_host: str = "localhost",
         qdrant_port: int = 6333,
@@ -50,45 +50,118 @@ class RSTIngestor:
         """
         RST 문법 노이즈를 강력하게 제거
         라인 단위로 처리하여 directive를 통째로 제거
+        
+        강화된 제거 대상:
+        - 한 줄짜리 directive (.. highlight::, .. _label:)
+        - .. index:: 블록
+        - 버전 관련 directive (versionadded, versionchanged, deprecated, availability)
+        - RST role (:func:`...`, :class:`...` 등)
+        - 제목 장식 문자 (===, ---, ~~~, ^^^)
         """
         import re
         
         cleaned_lines = []
         skip_until_blank = False
+        skip_index_block = False
         
         for line in text.splitlines():
             stripped = line.strip()
             
-            # 1. RST directive 라인 및 블록 통째로 스킵
-            if stripped.startswith('.. '):
-                # directive 시작 - 다음 빈 줄까지 스킵
-                skip_until_blank = True
+            # === 1. 스킵 대상 한 줄짜리 directive ===
+            # highlight directive (코드 하이라이팅 설정)
+            if stripped.startswith('.. highlight::'):
                 continue
+            
+            # 참조 레이블 (.. _label-name:)
+            if stripped.startswith('.. _') and stripped.endswith(':'):
+                continue
+            
+            # 버전 정보 directive (한 줄)
+            if stripped.startswith(('.. versionadded::', '.. versionchanged::', 
+                                     '.. deprecated::', '.. availability::')):
+                continue
+            
+            # seealso 참조 (한 줄)
+            if stripped.startswith('.. seealso::'):
+                continue
+                
+            # === 2. index 블록 처리 ===
+            if stripped.startswith('.. index::'):
+                # index는 블록일 수도 있고 한 줄일 수도 있음
+                skip_index_block = True
+                continue
+            
+            if skip_index_block:
+                # 들여쓰기 있으면 index 블록 계속
+                if stripped == '' or (line.startswith(' ') or line.startswith('\t')):
+                    if stripped == '':
+                        skip_index_block = False
+                    continue
+                else:
+                    skip_index_block = False
+                    # 현재 라인은 처리 계속
+                    
+            # === 3. 일반 directive 블록 처리 ===
+            if stripped.startswith('.. '):
+                # 특정 directive는 내용 유지 (c:function, c:type 등 API 정의)
+                if any(stripped.startswith(f'.. {d}::') for d in 
+                       ['c:function', 'c:type', 'c:var', 'c:macro', 'c:member',
+                        'py:function', 'py:class', 'py:method', 'py:attribute',
+                        'note', 'warning', 'tip', 'important', 'caution']):
+                    # 이 directive들은 마커만 제거하고 내용은 유지
+                    # 마커 라인은 스킵하지만 다음 내용은 유지
+                    skip_until_blank = False
+                    continue
+                else:
+                    # 그 외 directive는 블록 전체 스킵
+                    skip_until_blank = True
+                    continue
             
             # directive 블록 내부면 스킵
             if skip_until_blank:
                 if stripped == '':
                     skip_until_blank = False
-                    cleaned_lines.append(line)  # 빈 줄은 유지
+                    cleaned_lines.append('')  # 빈 줄은 유지
                 continue
             
-            # 2. RST role 치환 (:role:`text` -> text)
-            line = re.sub(r':[\w~]+:`([^`]+)`', r'\1', line)
+            # === 4. 제목 장식 문자 라인 제거 ===
+            # 전체가 같은 문자로만 구성된 라인 (===, ---, ~~~, ^^^, ***)
+            if stripped and len(stripped) >= 3:
+                if len(set(stripped)) == 1 and stripped[0] in '=-~^*+#':
+                    continue
             
-            # 3. 주석 참조 제거
+            # === 5. RST role 치환 ===
+            # :role:`text` -> text (c:func, py:class, ref, doc, pep 등)
+            line = re.sub(r':[a-zA-Z0-9_~]+:`([^`]+)`', r'\1', line)
+            
+            # :option:`--flag` 형태도 처리
+            line = re.sub(r':option:`([^`]+)`', r'\1', line)
+            
+            # === 6. 기타 RST 문법 정리 ===
+            # 주석 참조 제거 [#]_
             line = re.sub(r'\[#\]_', '', line)
             
-            # 4. 특수 RST 문자 정리
-            line = line.replace('``', '"')  # RST 코드 마커를 일반 따옴표로
+            # RST 코드 마커를 일반 따옴표로
+            line = line.replace('``', '"')
+            
+            # 외부 링크 마커 제거 `text`_  -> text
+            line = re.sub(r'`([^`]+)`_', r'\1', line)
+            
+            # 중복 공백 정리 (탭 -> 공백, 다중 공백 -> 단일 공백)
+            # 단, 들여쓰기는 유지
+            if not line.startswith(' ') and not line.startswith('\t'):
+                line = re.sub(r'[ \t]+', ' ', line)
             
             cleaned_lines.append(line)
         
         # 결과 조합
         result = '\n'.join(cleaned_lines)
         
-        # 5. 과도한 빈 줄 정리 (3개 이상 -> 2개)
+        # === 7. 최종 정리 ===
+        # 과도한 빈 줄 정리 (3개 이상 -> 2개)
         result = re.sub(r'\n{3,}', '\n\n', result)
         
+        # 시작/끝 공백 제거
         return result.strip()
     
     @staticmethod
@@ -393,7 +466,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RST Ingestion")
     parser.add_argument("--single", action="store_true", help="Single file only (default: all files)")
     parser.add_argument("--file", type=str, help="Single file path")
-    parser.add_argument("--collection", type=str, default="python_docs", help="Qdrant collection name")
+    parser.add_argument("--collection", type=str, default="learning_ai", help="Qdrant collection name")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -401,8 +474,8 @@ if __name__ == "__main__":
     print("=" * 60)
 
     ingestor = RSTIngestor(
-        chunk_size=400,
-        chunk_overlap=100,
+        chunk_size=900,
+        chunk_overlap=200,
         qdrant_host="localhost",
         qdrant_port=6333,
         collection_name=args.collection,

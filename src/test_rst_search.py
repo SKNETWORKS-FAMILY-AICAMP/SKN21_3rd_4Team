@@ -22,7 +22,7 @@ def test_rst_search():
     # Qdrant 직접 연결
     client = QdrantClient(host="localhost", port=6333)
     embedding = OpenAIEmbeddings(model="text-embedding-3-small")
-    collection_name = "python_docs"
+    collection_name = "learning_ai"
     
     # 테스트 질문들 (한국어 vs 영어 비교)
     # 문서에 있는 표현을 영어 질문으로 사용하여 '상한선' 확인
@@ -164,10 +164,6 @@ def test_rst_search():
             "__init__ 메서드 역할",
             "__init__ constructor initialize instance attributes"
         ),
-        (
-            "머신러닝이 개념이 뭐임?",
-            "explain machine learning concept"
-        ),
     ]
     
     print("=" * 80)
@@ -193,23 +189,29 @@ def test_rst_search():
                     limit=5
                 )
                 
-                # 3. RST 중 최고 점수 찾기
+                # 3. 전체 결과 출력 (Top 3)
+                print(f"\n  [{lang}] 검색 결과 Top 3:")
+                print("  " + "-" * 60)
+                
                 best_score = 0
-                best_content = ""
+                for idx, hit in enumerate(search_result.points[:3], 1):
+                    score = hit.score
+                    source = hit.payload.get('metadata', {}).get('source', 'unknown')
+                    content = hit.payload.get('page_content', '')[:200].replace('\n', ' ')
+                    
+                    if idx == 1:
+                        best_score = score
+                    
+                    print(f"  #{idx} [유사도: {score:.4f}] 소스: {source}")
+                    print(f"      📄 내용: {content}...")
+                    print()
                 
-                for hit in search_result.points:
-                    if hit.payload.get('metadata', {}).get('source') == 'python_doc_rst':
-                        if hit.score > best_score:
-                            best_score = hit.score
-                            best_content = hit.payload.get('page_content', '')[:100]
-                
-                print(f"  [{lang}] 최고 유사도: {best_score:.4f}")
                 if lang == "ENG":
                     diff = best_score - last_kor_score
                     if last_kor_score > 0:
-                        print(f"  📈 상승폭: +{diff:.4f} ({(diff/last_kor_score)*100:.1f}%)")
+                        print(f"  📈 ENG vs KOR 상승폭: +{diff:.4f} ({(diff/last_kor_score)*100:.1f}%)")
                     else:
-                        print(f"  📈 상승폭: +{diff:.4f} (KOR=0, ipynb가 Top5 차지)")
+                        print(f"  📈 ENG vs KOR 상승폭: +{diff:.4f}")
                 else:
                     last_kor_score = best_score
                     
