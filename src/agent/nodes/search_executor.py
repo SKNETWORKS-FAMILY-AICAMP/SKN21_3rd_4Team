@@ -6,7 +6,8 @@ from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
 from src.utils.config import ConfigDB, ConfigAPI
 from src.schema.search import SearchConfig
-
+from src.agent.nodes.search_router import build_search_config
+from src.agent.nodes.search_agent import execute_dual_query_search
 
 class SearchExecutor:
     """
@@ -34,7 +35,7 @@ class SearchExecutor:
             api_key=ConfigAPI.OPENAI_API_KEY
         )
 
-        # 3. 사용할 컬렉션 이름 (어느 방을 뒤질지)
+        # 3. 사용할 컬렉션 이름
         self.collection_name = ConfigDB.COLLECTION_NAME
 
 
@@ -117,11 +118,15 @@ class SearchExecutor:
         Args:
             query: 원본 질문
             results: 검색 결과 리스트 (deduplicate 후)
-            config: Router가 생성한 검색 설정
+            config: Router가 생성한 검색 설정 (top_k 포함)
             
         Returns:
             Analysis Agent가 기대하는 JSON 형식
         """
+        # ✅ LLM이 결정한 top_k만큼만 결과를 자름 (명시적 적용)
+        top_k = config.get('top_k', 5)
+        limited_results = results[:top_k]
+        
         return {
             "query": query,                           # 원본 질문
             "retrieved_documents": [                  # 검색된 문서 리스트
@@ -135,61 +140,42 @@ class SearchExecutor:
                     },
                     "score": round(r['score'], 4)     # 유사도 점수
                 }
-                for r in results
+                for r in limited_results  # ✅ top_k 적용된 리스트 사용
             ],
             "search_metadata": {                      # 검색 정보
-                "total_found": len(results),
+                "total_found": len(limited_results),  # ✅ 실제 전달되는 개수
+                "top_k_requested": top_k,             # ✅ 요청된 top_k 값
                 "sources_searched": config.get('sources', []),
                 "search_method": config.get('search_method', 'similarity')
             }
         }
 
 
-# 실행 명령어 python -m src.agent.nodes.search_executor
-
-
-if __name__ == "__main__":
+def search_node(state: dict) -> dict:
     """
-    Search Executor 단독 테스트
-    Router가 생성하는 config와 유사한 설정으로 테스트
+    LangGraph 노드용 함수
+    state에서 query를 읽고, 검색 결과를 반환
     """
-    executor = SearchExecutor()
     
-    # Router와 동일한 테스트 질문들 (search_router.py 참고)
-    test_cases = [
+    executor = SearchExecutor()
+    query = state['query']
+    
+    # 검색 설정 및 실행
+    config = build_search_config(query)
+    results, query_info = execute_dual_query_search(query, executor)
+    
+    # 결과 포맷팅
+    top_k = config.get('top_k', 5)
+    search_results = [
         {
-            "query": "RAG가 뭐야?",
-            "config": {"sources": ["lecture"], "top_k": 3, "search_method": "similarity"}
-        },
-        {
-            "query": "Python list comprehension 문법",
-            "config": {"sources": ["python_doc"], "top_k": 3, "search_method": "similarity"}
-        },
-        {
-            "query": "딥러닝 모델 최적화 방법",
-            "config": {"sources": ["lecture"], "top_k": 7, "search_method": "mmr"}
+            "content": r['content'],
+            "score": round(r['score'], 4),
+            "metadata": r['metadata']
         }
+        for r in results[:top_k]
     ]
     
-    print("=" * 60)
-    print("🧪 Search Executor 단독 테스트 (Router 설정 시뮬레이션)")
-    print("=" * 60)
-    
-    for i, case in enumerate(test_cases, 1):
-        query = case["query"]
-        config = case["config"]
-        
-        print(f"\n� [{i}] 질문: {query}")
-        print(f"   설정: {config}")
-        print("-" * 60)
-        
-        # 검색 실행
-        results = executor.execute_search(query, config)
-        deduped = executor.deduplicate_results(results)
-        context = executor.build_context(deduped)
-        
-        # 결과 요약 (전체 context 말고 첫 200자만)
-        preview = context[:200] + "..." if len(context) > 200 else context
-        print(f"   => {len(deduped)}개 문서 검색됨")
-        print(f"   => 첫 번째 결과 미리보기:\n{preview}")
-        print("=" * 60)
+    return {
+        'search_results': search_results,
+        'context': executor.build_context(results)
+    }
