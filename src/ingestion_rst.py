@@ -29,6 +29,7 @@ class RSTIngestor:
         collection_name: str = "learning_ai",
         recreate_collection: bool = False,
         # Embedding
+        # 주의: lecture와 같은 컬렉션을 사용하면 같은 임베딩 모델을 사용해야 함
         embedding_model_name: str = "text-embedding-3-small",
         batch_size: int = 32,
     ):
@@ -591,7 +592,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", type=str, help="Single file path")
     parser.add_argument("--collection", type=str, default="learning_ai", help="Qdrant collection name")
     parser.add_argument("--recreate-collection", action="store_true", help="Delete and recreate collection before upload")
-    parser.add_argument("--embedding-model", type=str, default="text-embedding-3-small", help="OpenAI embedding model")
+    parser.add_argument("--embedding-model", type=str, default="text-embedding-3-large", help="OpenAI embedding model (lecture와 동일한 모델 사용 권장)")
     parser.add_argument("--chunk-size", type=int, default=900)
     parser.add_argument("--chunk-overlap", type=int, default=200)
     parser.add_argument("--batch-size", type=int, default=32)
