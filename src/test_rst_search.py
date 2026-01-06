@@ -177,10 +177,10 @@ def test_rst_search():
         print(f"  🇺🇸 영어: {eng_q}")
         print("-" * 40)
         
-        for lang, question in [("KOR", kor_q), ("ENG", eng_q)]:
+        for lang, query in [("KOR", kor_q), ("ENG", eng_q)]:
             try:
                 # 1. 질문 벡터화
-                query_vector = embedding.embed_query(question)
+                query_vector = embedding.embed_query(query)
                 
                 # 2. 검색
                 search_result = client.query_points(

@@ -10,9 +10,9 @@ class AgentState(TypedDict):
     """
     
     # 1. 입력 (Input)
-    question: str              # 사용자의 원래 질문
+    query: str              # 사용자의 원래 질문
     
-    # [추가] 검색 키워드 (Role A가 질문을 구체화했을 경우 사용, 없으면 question 사용)
+    # [추가] 검색 키워드 (Role A가 질문을 구체화했을 경우 사용, 없으면 query 사용)
     search_query: str
     
     # 2. Role A (Router) -> Role B (Executor)

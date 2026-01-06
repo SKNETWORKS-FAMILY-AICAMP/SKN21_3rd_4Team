@@ -30,12 +30,12 @@ from langchain_openai import ChatOpenAI  # OpenAI LLM 인터페이스
 from pydantic import BaseModel, Field    # 데이터 검증 및 구조화
 
 
-def build_search_config(question: str) -> Dict:
+def build_search_config(query: str) -> Dict:
     """
     LLM을 활용하여 질문 분석 및 검색 설정을 한 번에 생성합니다.
     
     Args:
-        question: 사용자 질문
+        query: 사용자 질문
         
     Returns:
         {
@@ -54,7 +54,7 @@ def build_search_config(question: str) -> Dict:
     
     class SearchConfig(BaseModel):
         # 질문 유형 (3가지 중 하나만 가능)
-        question_type: Literal['concept', 'code', 'syntax'] = Field(
+        query_type: Literal['concept', 'code', 'syntax'] = Field(
             description="질문 타입: concept(개념 설명), code(코드 작성/디버깅), syntax(문법)"
         )
         
@@ -113,11 +113,11 @@ def build_search_config(question: str) -> Dict:
     # 프롬프트
     prompt = f"""다음 질문을 분석하고, 최적의 검색 설정을 결정해주세요:
 
-질문: "{question}"
+질문: "{query}"
 
 분석 및 결정 기준:
 
-1. **question_type** (질문 유형):
+1. **query_type** (질문 유형):
    - concept: "~가 뭐야?", "설명해줘", "차이점은?" 같은 개념 이해 질문
    - code: "코드 작성해줘", "구현 방법", "에러 해결" 같은 코드 관련 질문
    - syntax: "문법", "사용법", "어떻게 써?" 같은 Python 문법 질문
@@ -189,7 +189,7 @@ def build_search_config(question: str) -> Dict:
         # 디버깅/분석용 추가 정보 (선택사항)
         # Role B는 무시해도 되고, 로깅/분석 시 유용
         '_analysis': {
-            'question_type': result.question_type,    # 질문 유형
+            'query_type': result.query_type,    # 질문 유형
             'topic_keywords': result.topic_keywords,  # 추출된 키워드
             'complexity': result.complexity           # 난이도
         }
@@ -204,7 +204,7 @@ def build_search_config(question: str) -> Dict:
 
 if __name__ == "__main__":
     # 다양한 유형의 질문으로 테스트
-    test_questions = [
+    test_querys = [
         "RAG가 뭐야?",                              # ML 개념 질문 (basic)
         "딥러닝 모델 최적화 방법",                    # ML 고급 질문 (advanced)
         "iris 데이터셋 불러오는 코드",               # Python 코드 질문 (basic)
@@ -218,12 +218,12 @@ if __name__ == "__main__":
     print("=" * 80)
     
     # 각 질문에 대해 검색 설정 생성 및 출력
-    for question in test_questions:
-        print(f"\n📌 질문: {question}")
+    for query in test_querys:
+        print(f"\n📌 질문: {query}")
         print("-" * 80)
         
         # 메인 함수 호출: 질문 → 검색 설정
-        config = build_search_config(question)
+        config = build_search_config(query)
         
         # Role B에게 전달될 핵심 정보 출력
         print(f"✅ 검색 대상: {config['sources']}")        # 어디서 검색할지
@@ -233,7 +233,7 @@ if __name__ == "__main__":
         # 디버깅용 분석 정보 출력
         analysis = config['_analysis']
         print(f"\n💡 분석 정보:")
-        print(f"   - 질문 유형: {analysis['question_type']}")       # concept/code/syntax
+        print(f"   - 질문 유형: {analysis['query_type']}")       # concept/code/syntax
         print(f"   - 주요 키워드: {', '.join(analysis['topic_keywords'])}")  # 추출된 키워드
         print(f"   - 난이도: {analysis['complexity']}")             # basic/intermediate/advanced
         print("=" * 80)

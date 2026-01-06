@@ -14,11 +14,7 @@ sys.path.append(os.getcwd())
 
 from src.agent.nodes.search_router import build_search_config
 from src.agent.nodes.search_executor import SearchExecutor
-# prompts.py 파일에서 직접 import (prompts 디렉토리와 충돌 방지)
-import sys
-from pathlib import Path
-prompts_file = Path(__file__).parent.parent / "prompts.py"
-exec(open(prompts_file, encoding='utf-8').read(), globals())
+from src.agent.prompts import PROMPTS
 from langchain_openai import ChatOpenAI
 
 
@@ -31,10 +27,10 @@ def is_korean(text: str) -> bool:
     return bool(re.search(r'[가-힣]', text))
 
 
-def translate_to_english(question: str) -> str:
+def translate_to_english(query: str) -> str:
     """LLM으로 한글 → 영어 검색 쿼리 변환"""
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    prompt = TRANSLATE_PROMPT.format(question=question)
+    prompt = PROMPTS["TRANSLATE_PROMPT"].format(query=query)
     return llm.invoke(prompt).content.strip()
 
 
@@ -68,7 +64,7 @@ def search_by_source(query: str, source: str, executor: SearchExecutor, top_k: i
     return results
 
 
-def execute_dual_query_search(question: str, executor: SearchExecutor) -> tuple:
+def execute_dual_query_search(query: str, executor: SearchExecutor) -> tuple:
     """
     소스별 듀얼 쿼리 검색
     
@@ -80,24 +76,24 @@ def execute_dual_query_search(question: str, executor: SearchExecutor) -> tuple:
         (results, query_info): 결과 리스트와 쿼리 정보
     """
     all_results = []
-    query_info = {"original": question, "translated": None, "queries_used": []}
+    query_info = {"original": query, "translated": None, "queries_used": []}
     
     # LLM이 top_k 결정
-    config = build_search_config(question)
+    config = build_search_config(query)
     top_k = config.get('top_k', 5)
     
     # 1. 원본 쿼리로 소스별 검색
-    lecture_results = search_by_source(question, "lecture", executor, top_k)
-    python_results = search_by_source(question, "python_doc_rst", executor, top_k)
+    lecture_results = search_by_source(query, "lecture", executor, top_k)
+    python_results = search_by_source(query, "python_doc_rst", executor, top_k)
     
     for r in lecture_results + python_results:
         r['query_type'] = 'original'
     all_results.extend(lecture_results + python_results)
-    query_info["queries_used"].append(f"원본: {question}")
+    query_info["queries_used"].append(f"원본: {query}")
     
     # 2. 한글이면 영어 번역 후 소스별 검색
-    if is_korean(question):
-        english_query = translate_to_english(question)
+    if is_korean(query):
+        english_query = translate_to_english(query)
         query_info["translated"] = english_query
         
         lecture_results_en = search_by_source(english_query, "lecture", executor, top_k)
@@ -132,7 +128,7 @@ def run_test():
     """듀얼 쿼리 검색 테스트"""
     
     # 테스트 질문 (영어 + 한글)
-    test_questions = [
+    test_querys = [
         # 영어 질문
         "Using Python as a Calculator numbers operators +, -, *, /",
         "list comprehension concise way to create lists",
@@ -154,16 +150,16 @@ def run_test():
     print("   영어 질문 → 영어만 검색")
     print("=" * 70)
     
-    for i, question in enumerate(test_questions, 1):
+    for i, query in enumerate(test_querys, 1):
         print(f"\n{'='*70}")
-        print(f"📌 [{i}/{len(test_questions)}] 질문: {question}")
+        print(f"📌 [{i}/{len(test_querys)}] 질문: {query}")
         print("-" * 70)
         
         start = time.time()
         
         try:
             # 듀얼 쿼리 검색 실행
-            results, query_info = execute_dual_query_search(question, executor)
+            results, query_info = execute_dual_query_search(query, executor)
             elapsed = time.time() - start
             
             # 결과 출력

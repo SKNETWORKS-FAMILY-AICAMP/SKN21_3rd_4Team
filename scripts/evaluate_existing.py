@@ -44,7 +44,7 @@ class ExistingCollectionEvaluator:
         self.results_dir = project_root / "evaluation_results"
         self.results_dir.mkdir(exist_ok=True)
         
-    def evaluate(self, test_questions: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
+    def evaluate(self, test_querys: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
         """
         컬렉션의 검색 정확도 측정
         
@@ -59,22 +59,22 @@ class ExistingCollectionEvaluator:
         print(f"\n{'='*70}")
         print(f"📊 {self.collection_name} 컬렉션 평가 시작")
         print(f"{'='*70}")
-        print(f"평가 질문 수: {len(test_questions)}")
+        print(f"평가 질문 수: {len(test_querys)}")
         print(f"Top-K: {top_k}")
         print()
         
         correct = 0
-        total = len(test_questions)
+        total = len(test_querys)
         details = []
         
-        for i, qa in enumerate(test_questions, 1):
-            question = qa["question"]
+        for i, qa in enumerate(test_querys, 1):
+            query = qa["query"]
             expected_files = qa["expected_files"]
             topic = qa.get("topic", "")
             
             try:
                 # 질문을 벡터로 변환
-                query_vector = self.embedding.embed_query(question)
+                query_vector = self.embedding.embed_query(query)
                 
                 # Qdrant 검색
                 search_results = self.client.query_points(
@@ -115,7 +115,7 @@ class ExistingCollectionEvaluator:
                     correct += 1
                 
                 status = "✅" if is_correct else "❌"
-                print(f"  [{i:2d}/{total}] {status} [{topic:12s}] {question[:45]}")
+                print(f"  [{i:2d}/{total}] {status} [{topic:12s}] {query[:45]}")
                 if not is_correct:
                     print(f"         기대: {expected_files[0][:60]}")
                     if retrieved_files:
@@ -124,7 +124,7 @@ class ExistingCollectionEvaluator:
                         print(f"         검색: (결과 없음)")
                 
                 details.append({
-                    "question": question,
+                    "query": query,
                     "topic": topic,
                     "expected": expected_files,
                     "retrieved": retrieved_files,
@@ -132,9 +132,9 @@ class ExistingCollectionEvaluator:
                 })
                 
             except Exception as e:
-                print(f"  [{i:2d}/{total}] ⚠️ 오류: {question[:40]} - {e}")
+                print(f"  [{i:2d}/{total}] ⚠️ 오류: {query[:40]} - {e}")
                 details.append({
-                    "question": question,
+                    "query": query,
                     "topic": topic,
                     "expected": expected_files,
                     "retrieved": [],
@@ -200,7 +200,7 @@ class ExistingCollectionEvaluator:
             f.write("\n상세 결과:\n")
             for i, d in enumerate(results["details"], 1):
                 status = "✅" if d["correct"] else "❌"
-                f.write(f"[{i}] {status} {d['question']}\n")
+                f.write(f"[{i}] {status} {d['query']}\n")
                 if not d["correct"]:
                     f.write(f"    기대: {d['expected']}\n")
                     f.write(f"    검색: {d['retrieved'][:2] if d['retrieved'] else []}\n")

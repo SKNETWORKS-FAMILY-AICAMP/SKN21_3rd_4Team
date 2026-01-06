@@ -113,7 +113,7 @@ class ChunkingEvaluator:
     
     def evaluate_collection(
         self, 
-        test_questions: List[Dict[str, Any]],
+        test_querys: List[Dict[str, Any]],
         top_k: int = 5
     ) -> Dict[str, Any]:
         """
@@ -132,20 +132,20 @@ class ChunkingEvaluator:
         print(f"{'='*70}")
         
         correct = 0
-        total = len(test_questions)
+        total = len(test_querys)
         details = []
         
         # 임시로 SearchExecutor의 컬렉션 이름 변경 (원래 코드 수정 필요 시)
         # 현재 SearchExecutor는 하드코딩된 컬렉션 이름 사용할 수 있음
         # 여기서는 간단히 전역으로 수정 (실제로는 리팩토링 필요)
         
-        for i, qa in enumerate(test_questions, 1):
-            question = qa["question"]
+        for i, qa in enumerate(test_querys, 1):
+            query = qa["query"]
             expected_files = qa["expected_files"]
             
             try:
                 # Router로 검색 설정 생성
-                config = build_search_config(question)
+                config = build_search_config(query)
                 config["top_k"] = top_k  # 강제 설정
                 
                 # Executor로 검색 (collection_name을 어떻게 전달할지는 구현에 따라)
@@ -159,7 +159,7 @@ class ChunkingEvaluator:
                 client = QdrantClient(host="localhost", port=6333)
                 embedding = OpenAIEmbeddings(model="text-embedding-3-small")
                 
-                query_vector = embedding.embed_query(question)
+                query_vector = embedding.embed_query(query)
                 
                 # ✅ query_points 사용 (Qdrant 1.7+)
                 search_results = client.query_points(
@@ -198,19 +198,19 @@ class ChunkingEvaluator:
                     correct += 1
                 
                 details.append({
-                    "question": question,
+                    "query": query,
                     "expected": expected_files,
                     "retrieved": retrieved_files,
                     "correct": is_correct,
                 })
                 
                 status = "✅" if is_correct else "❌"
-                print(f"  [{i}/{total}] {status} {question[:40]}")
+                print(f"  [{i}/{total}] {status} {query[:40]}")
                 
             except Exception as e:
-                print(f"  [{i}/{total}] ⚠️ 오류: {question[:40]} - {e}")
+                print(f"  [{i}/{total}] ⚠️ 오류: {query[:40]} - {e}")
                 details.append({
-                    "question": question,
+                    "query": query,
                     "expected": expected_files,
                     "retrieved": [],
                     "correct": False,

@@ -13,7 +13,7 @@ def analyst_node(state: AgentState):
 
 
 def generetor_node(state: AgentState):
-    result = AnalystGeneratorNode(state['question'], [], "gpt-4o-mini")
+    result = AnalystGeneratorNode(state['query'], [], "gpt-4o-mini")
     print(type(result))
     return result
 
