@@ -23,7 +23,14 @@ class ConfigDB:
     HOST = "localhost"
     PORT = "6333"
     COLLECTION_NAME = "learning_ai"
-    VECTOR_SIZE = 1536
+    EMBEDDING_MODEL = "text-embedding-3-large"
+    
+    # 모델별 벡터 크기 자동 매핑
+    VECTOR_SIZE_MAP = {
+        "text-embedding-3-small": 1536,
+        "text-embedding-3-large": 3072,
+    }
+    VECTOR_SIZE = VECTOR_SIZE_MAP.get(EMBEDDING_MODEL)
     DISTANCE_FUNCTION = Distance.COSINE
 
     SNAPSHOT_FOLDER_PATH = "./data/snapshots/"
