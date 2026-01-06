@@ -1,24 +1,39 @@
-# Search Agent - 듀얼 쿼리 검색 시스템
 """
-한글 질문 → 한글 + 영어 동시 검색으로 양쪽 소스에서 균형있게 결과 확보
-영어 질문 → 영어만 검색
+Search Agent - 듀얼 쿼리 검색 시스템
 
-실행: python src/agent/nodes/search_agent.py
+무엇을 하는 파일인가?
+- 사용자 질문을 Qdrant(Vector DB)에서 검색해, 관련 문서 조각(top_k)을 가져오는 실행/테스트 스크립트입니다.
+- Python 공식문서(RST)는 영어 본문이 대부분이라 한글 질문만으로는 유사도 점수가 낮게 나올 수 있어
+  "원문(한글) + 번역(영어)"를 같이 검색해 recall을 올리는 전략(dual query)을 사용합니다.
+
+1) 질문 언어 판별: `is_korean()`
+2) 검색 설정 결정: `build_search_config(question)`
+   - top_k, sources(lecture/python_doc_rst), search_method 등을 결정
+3) 소스별 검색: `search_by_source(query, source, executor, top_k)`
+   - Qdrant에서 `metadata.source`로 필터링해 각각 검색 (lecture vs python_doc_rst)
+4) (질문이 한글이면) 번역 검색 추가: `translate_to_english()`
+   - 영어 키워드 쿼리로 한 번 더 소스별 검색
+5) 결과 합치기 → 중복 제거 → 점수순 정렬 → 최종 top_k 반환
+
+실행
+- `python src/agent/nodes/search_agent.py`
 """
 import sys
 import os
 import time
 import re
 
+# 로컬 실행 시 `src.` import가 깨지지 않게 프로젝트 루트를 path에 추가
 sys.path.append(os.getcwd())
 
 from src.agent.nodes.search_router import build_search_config
 from src.agent.nodes.search_executor import SearchExecutor
-# prompts.py 파일에서 직접 import (prompts 디렉토리와 충돌 방지)
-import sys
-from pathlib import Path
-prompts_file = Path(__file__).parent.parent / "prompts.py"
-exec(open(prompts_file, encoding='utf-8').read(), globals())
+
+# prompts 경로 변경 대응:
+# - 기존: src/agent/prompts.py (단일 파일) 를 exec로 로드
+# - 현재: src/agent/prompts/ (패키지) 로 이전됨 → PROMPTS 딕셔너리로 접근
+from src.agent.prompts import PROMPTS
+TRANSLATE_PROMPT = PROMPTS["TRANSLATE_PROMPT"]
 from langchain_openai import ChatOpenAI
 
 
@@ -82,31 +97,50 @@ def execute_dual_query_search(question: str, executor: SearchExecutor) -> tuple:
     all_results = []
     query_info = {"original": question, "translated": None, "queries_used": []}
     
-    # LLM이 top_k 결정
+    # LLM이 top_k / sources 결정
     config = build_search_config(question)
     top_k = config.get('top_k', 5)
+    sources = config.get("sources", ["lecture", "python_doc"])
+
+    # Router는 python_doc을 주지만 Qdrant payload는 python_doc_rst를 쓰는 경우가 많음
+    sources = ["python_doc_rst" if s == "python_doc" else s for s in sources]
     
-    # 1. 원본 쿼리로 소스별 검색
-    lecture_results = search_by_source(question, "lecture", executor, top_k)
-    python_results = search_by_source(question, "python_doc_rst", executor, top_k)
+    # 정책:
+    # - lecture: (대부분 한국어 텍스트) 질문 원문으로만 검색
+    # - python_doc_rst: (영어 문서) 한글 질문이면 번역(영어 키워드) 검색을 기본으로 하고,
+    #                  결과가 약할 때만 한글 원문으로 fallback 검색
+    PYDOC_FALLBACK_SCORE_THRESHOLD = 0.45
+
+    # 1) lecture는 원문으로만 검색
+    lecture_results = search_by_source(question, "lecture", executor, top_k) if "lecture" in sources else []
+
+    # 2) python_doc_rst 검색
+    python_results = []
+    if "python_doc_rst" in sources:
+        if is_korean(question):
+            # 2-1) 번역(영어 키워드) 검색이 기본
+            english_query = translate_to_english(question)
+            query_info["translated"] = english_query
+            python_results_en = search_by_source(english_query, "python_doc_rst", executor, top_k)
+            for r in python_results_en:
+                r["query_type"] = "translated"
+            all_results.extend(python_results_en)
+            query_info["queries_used"].append(f"번역(python_doc_rst): {english_query}")
+
+            # 2-2) fallback: 번역 결과가 약하면 한글 원문으로도 한 번 더 검색
+            best_score = python_results_en[0]["score"] if python_results_en else 0
+            if (not python_results_en) or (best_score < PYDOC_FALLBACK_SCORE_THRESHOLD):
+                python_results = search_by_source(question, "python_doc_rst", executor, top_k)
+        else:
+            # 영어 질문이면 원문(영어) 그대로
+            python_results = search_by_source(question, "python_doc_rst", executor, top_k)
+    else:
+        python_results = []
     
     for r in lecture_results + python_results:
         r['query_type'] = 'original'
     all_results.extend(lecture_results + python_results)
     query_info["queries_used"].append(f"원본: {question}")
-    
-    # 2. 한글이면 영어 번역 후 소스별 검색
-    if is_korean(question):
-        english_query = translate_to_english(question)
-        query_info["translated"] = english_query
-        
-        lecture_results_en = search_by_source(english_query, "lecture", executor, top_k)
-        python_results_en = search_by_source(english_query, "python_doc_rst", executor, top_k)
-        
-        for r in lecture_results_en + python_results_en:
-            r['query_type'] = 'translated'
-        all_results.extend(lecture_results_en + python_results_en)
-        query_info["queries_used"].append(f"번역: {english_query}")
     
     # 3. 중복 제거
     seen = set()
@@ -134,16 +168,24 @@ def run_test():
     # 테스트 질문 (영어 + 한글)
     test_questions = [
         # 영어 질문
-        "Using Python as a Calculator numbers operators +, -, *, /",
-        "list comprehension concise way to create lists",
-        "try except exception handling error",
-        "open file read write with statement",
+        # "Using Python as a Calculator numbers operators +, -, *, /",
+        # "list comprehension concise way to create lists",
+        # "try except exception handling error",
+        # "open file read write with statement",
         
         # 한글 질문
-        "리스트 컴프리헨션이란",
-        "파이썬 예외처리 방법",
-        "딕셔너리 사용법",
-        "파일 읽고 쓰는 방법",
+        "머신러닝이 뭐야?",
+        "결정트리가 뭐야?",
+        "경사하강법 개념 알려줘"
+        "결정트리와 랜덤포레스트의 차이점이 뭐야?",
+        "xgboost 모델에 대해 설명해줘",
+        "지도학습이 뭐야?",
+        "지도학습 비지도 학습이 뭐야?",
+        "모델 불러오는 코드 예제 알려줘."
+        # "리스트 컴프리헨션이란",
+        # "파이썬 예외처리 방법",
+        # "딕셔너리 사용법",
+        # "파일 읽고 쓰는 방법",
     ]
     
     executor = SearchExecutor()
