@@ -3,7 +3,7 @@
 
 from langgraph.graph import StateGraph, START, END
 # from src.agent.nodes.search_agent import research_node
-from src.agent.nodes.analyst_agent import analyst_node
+from src.agent.nodes.analyst_node import analyst_node
 from src.schema.state import AgentState
 
 def build_graph():
