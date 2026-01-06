@@ -96,9 +96,8 @@ def build_search_config(query: str) -> Dict:
             description="검색 방법. similarity(단순 유사도), mmr(다양성 고려, 고급 질문에 적합)"
         )
     
-    # ============================================================
+
     # 2단계: LangChain Chain 생성 (체인화)
-    # ============================================================
     # ChatPromptTemplate: 프롬프트를 템플릿으로 관리
     prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(PROMPTS["SEARCH_ROUTER_PROMPT"])
@@ -113,22 +112,16 @@ def build_search_config(query: str) -> Dict:
     )
     
     # Structured Output: LLM의 출력을 Pydantic 모델 형식으로 강제
-    # 일반 LLM 호출: "자유 텍스트" 반환 → 파싱 오류 가능 ❌
-    # Structured Output: SearchConfig 형식으로만 반환 → 안정적 ✅
     structured_llm = llm.with_structured_output(SearchConfig)
     
     # Chain 연결: prompt | structured_llm
     chain = prompt | structured_llm
     
-
-    # 3단계: Chain 실행 및 결과 반환
-    # chain.invoke(): 프롬프트를 LLM에 전송하고 결과를 받음
     # 반환값: SearchConfig 객체 (Pydantic 모델)
     result = chain.invoke({"query": query})
     
-
     # 4단계: Role B가 사용할 형식으로 변환
-    # Role B (Search Executor)가 필요한 정보만 추출해서 반환
+
     return {
         # 핵심 정보 (Role B가 실제로 사용)
         'sources': result.search_sources,        # 어디서 검색할지
