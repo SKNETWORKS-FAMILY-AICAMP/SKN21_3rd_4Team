@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage
 from src.agent.prompts import PROMPTS
 from src.schema.state import AgentState
 
-def analyst_chain_node(state: AgentState):
+def analyst_node(state: AgentState):
     # 1. Prompt 정의 (System Message + Human Message)    
     prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(PROMPTS["ANALYSIS_SYSTEM_PROMPT"]),
