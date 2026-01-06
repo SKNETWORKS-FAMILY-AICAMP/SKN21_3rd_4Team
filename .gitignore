@@ -81,6 +81,8 @@ target/
 .virtualenv
 test_*.ipynb
 
+test_*.py
+
 # IPython
 profile_default/
 ipython_config.py
