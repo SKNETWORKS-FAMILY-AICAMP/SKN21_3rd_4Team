@@ -28,6 +28,7 @@ from langchain_text_splitters import (
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
+from utils.config import ConfigDB
 from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings
 
@@ -50,7 +51,7 @@ class Ingestor:
         qdrant_port: int = 6333,
         collection_name: str = "learning_ai",
         # Embedding
-        embedding_model_name: str = "text-embedding-3-small",
+        embedding_model_name: str = ConfigDB.EMBEDDING_MODEL,
         # Upload
         batch_size: int = 64,
     ):
@@ -98,7 +99,7 @@ class Ingestor:
         # 컬렉션 없으면 생성
         if not client.collection_exists(collection_name=self.collection_name):
             # text-embedding-3-small = 1536 차원
-            vector_size = 1536
+            vector_size = ConfigDB.VECTOR_SIZE
 
             client.create_collection(
                 collection_name=self.collection_name,
@@ -401,7 +402,7 @@ if __name__ == "__main__":
         qdrant_host="localhost",
         qdrant_port=6333,
         collection_name="learning_ai",
-        embedding_model_name="text-embedding-3-small",
+        # embedding_model_name은 ConfigDB.EMBEDDING_MODEL 기본값 사용
         batch_size=64,
     )
     stats = ingestor.run()
