@@ -21,16 +21,19 @@ SEARCH_ROUTER_PROMPT = """다음 질문을 분석하고, 최적의 검색 설정
    - advanced: 최적화, 알고리즘, 성능 튜닝 ("모델 최적화", "대규모 데이터 처리")
 
 4. **search_sources** (검색 대상) - 매우 중요!:
-   - ['lecture']: ML/딥러닝 관련 질문 (RAG, embedding, 분류, 회귀, 모델 등)
-   - ['python_doc']: 순수 Python 문법/라이브러리 질문 (list, dict, for, pandas 기초 등)
+   - ['lecture']: ML/딥러닝 관련 질문 (RAG, embedding, 분류, 회귀, 모델, 결정트리, 경사하강법 등)
+   - ['python_doc']: Python 문법/개념/라이브러리 질문 (list, dict, for, class, 상속, 예외처리, 모듈 등)
+     * Python 기본 개념: class, inheritance(상속), polymorphism, encapsulation 등
+     * Python 문법: list, dict, for, while, if, def, try/except 등
+     * Python 표준 라이브러리: os, sys, json, datetime 등
    - ['lecture', 'python_doc']: ML + Python 복합 질문 예시:
      * "RAG 구현할 때 Python list comprehension 사용 방법"
      * "pandas로 iris 데이터 전처리하는 방법"
      * "scikit-learn으로 분류 모델 만들 때 dictionary 활용법"
    
    판단 기준:
-   - ML 키워드만 있으면 → ['lecture']
-   - Python 문법 키워드만 있으면 → ['python_doc']
+   - ML/딥러닝 키워드만 있으면 → ['lecture'] (예: RAG, embedding, 분류, 회귀, 결정트리, 경사하강법)
+   - Python 문법/개념 키워드만 있으면 → ['python_doc'] (예: class, 상속, list, dict, 예외처리, 모듈)
    - ML + Python 문법 둘 다 있으면 → ['lecture', 'python_doc']
 
 5. **top_k** (검색 개수):
@@ -48,6 +51,12 @@ SEARCH_ROUTER_PROMPT = """다음 질문을 분석하고, 최적의 검색 설정
   
 - "Python list comprehension 문법"
   → python_doc만, basic, 3개, similarity
+  
+- "상속이란 무엇인가"
+  → python_doc만, basic, 3개, similarity (Python OOP 개념)
+  
+- "클래스 정의하는 방법"
+  → python_doc만, basic, 3개, similarity (Python 문법)
   
 - "RAG 구현할 때 pandas DataFrame 활용법"
   → lecture + python_doc, intermediate, 5개, similarity

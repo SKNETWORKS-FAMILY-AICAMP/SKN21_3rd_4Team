@@ -1,0 +1,343 @@
+{
+  "metadata": {
+    "timestamp": "20260106_231949",
+    "embedding_model": "text-embedding-3-large",
+    "collection_name": "learning_ai",
+    "use_translation": true,
+    "prompt_version": {
+      "file": "src\\agent\\prompts\\translate_prompt.py",
+      "hash": "741ed11617bac58d",
+      "modified_time": "2026-01-06T22:07:53.043158"
+    },
+    "preprocessing_config": {
+      "file": "src\\ingestion_rst.py",
+      "hash": "5bf84b123fdcf8a2",
+      "embedding_model": "text-embedding-3-large",
+      "chunk_size": 900,
+      "chunk_overlap": 200
+    },
+    "total_queries": 11,
+    "avg_top_score": 0.5115798427272726
+  },
+  "results": [
+    {
+      "query": "파이썬에서 숫자 연산하는 방법",
+      "is_korean": true,
+      "translated_query": "arithmetic operators addition subtraction multiplication division floor division (//) modulo operator (%) power operator (**)",
+      "translation_error": null,
+      "top_score": 0.5429914,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5429914,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Binary arithmetic operations  The division operation can be customized using the special object.__truediv__ and object.__rtruediv__ methods. The floor division operation can b"
+        },
+        {
+          "score": 0.5408608,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Binary arithmetic operations  If only one operand is a complex number, the other operand is converted    to a floating-point number.  The ``@`` (at) operator is intended to be"
+        },
+        {
+          "score": 0.5377764,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] introduction [H1] Using Python as a Calculator [H2] Numbers  Division (``/``) always returns a float. To do floor division and get an integer result you can use the ``//`` operator; to calcula"
+        }
+      ]
+    },
+    {
+      "query": "정수 나눗셈과 나머지 연산자 사용법",
+      "is_korean": true,
+      "translated_query": "integer division floor division (//) modulo operator (%) arithmetic operators remainder operator",
+      "translation_error": null,
+      "top_score": 0.6028342,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.6028342,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Binary arithmetic operations  The floor division and modulo operators are connected by the following identity: ``x == (x//y)*y + (x%y)``. Floor division and modulo are also co"
+        },
+        {
+          "score": 0.58845395,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Binary arithmetic operations  The division operation can be customized using the special object.__truediv__ and object.__rtruediv__ methods. The floor division operation can b"
+        },
+        {
+          "score": 0.48707807,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Binary arithmetic operations  If only one operand is a complex number, the other operand is converted    to a floating-point number.  The ``@`` (at) operator is intended to be"
+        }
+      ]
+    },
+    {
+      "query": "문자열 슬라이싱 하는 법",
+      "is_korean": true,
+      "translated_query": "string slicing syntax string literal brackets [] start index end index step slice notation",
+      "translation_error": null,
+      "top_score": 0.45939004,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.45939004,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Primaries [H2] Slicings  A slicing selects a range of items in a sequence object (e.g., a string, tuple or list). Slicings may be used as expressions or as targets in assignme"
+        },
+        {
+          "score": 0.44791886,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] introduction [H1] Using Python as a Calculator [H2] Text  Slice indices have useful defaults; an omitted first index defaults to zero, an omitted second index defaults to the size of the strin"
+        },
+        {
+          "score": 0.43348902,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Primaries [H2] Slicings  The semantics for a slicing are as follows. The primary is indexed (using the same object.__getitem__ method as normal subscription) with a key that i"
+        }
+      ]
+    },
+    {
+      "query": "리스트 컴프리헨션이란",
+      "is_korean": true,
+      "translated_query": "list comprehension syntax iterable for loop expression brackets [] generator expression",
+      "translation_error": null,
+      "top_score": 0.53203213,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.53203213,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Atoms [H2] Displays for lists, sets and dictionaries  However, aside from the iterable expression in the leftmost for clause, the comprehension is executed in a separate impli"
+        },
+        {
+          "score": 0.5206262,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Atoms [H2] Displays for lists, sets and dictionaries  For constructing a list, a set or a dictionary Python provides special syntax called \"displays\", each of them in two flav"
+        },
+        {
+          "score": 0.50535524,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Atoms [H2] Generator expressions  A generator expression is a compact generator notation in parentheses:  A generator expression yields a new generator object. Its syntax is t"
+        }
+      ]
+    },
+    {
+      "query": "if elif else 조건문 사용법",
+      "is_korean": true,
+      "translated_query": "if statement elif else conditional expression control flow branching logic indentation",
+      "translation_error": null,
+      "top_score": 0.5274464,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5274464,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] if Statements  Perhaps the most well-known statement type is the if statement. For example::     >>> x = int(input(\"Please enter an integer: \"))    Please enter an integer: 42"
+        },
+        {
+          "score": 0.47717762,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Conditional expressions  A conditional expression (sometimes called a \"ternary operator\") is an alternative to the if-else statement. As it is an expression, it returns a valu"
+        },
+        {
+          "score": 0.42815894,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] else Clauses on Loops  (Yes, this is the correct code. Look closely: the ``else`` clause belongs to the ``for`` loop, **not** the ``if`` statement.)  One way to think of the e"
+        }
+      ]
+    },
+    {
+      "query": "for문에서 range 함수 사용하는 방법",
+      "is_korean": true,
+      "translated_query": "for statement range() function iterable syntax loop control flow step size",
+      "translation_error": null,
+      "top_score": 0.5705586,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5705586,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] The range Function  We say such an object is iterable, that is, suitable as a target for functions and constructs that expect something from which they can obtain successive i"
+        },
+        {
+          "score": 0.5607683,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] The range Function  If you do need to iterate over a sequence of numbers, the built-in function range comes in handy. It generates arithmetic progressions::      >>> for i in "
+        },
+        {
+          "score": 0.51699847,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] The range Function  >>> list(range(0, 10, 3))     [0, 3, 6, 9]      >>> list(range(-10, -100, -30))     [-10, -40, -70]  To iterate over the indices of a sequence, you can com"
+        }
+      ]
+    },
+    {
+      "query": "함수 정의하는 방법 def 키워드",
+      "is_korean": true,
+      "translated_query": "function definition def keyword parameters arguments return statement callable scope",
+      "translation_error": null,
+      "top_score": 0.46048695,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.46048695,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] More on Defining Functions [H2] Special parameters  By default, arguments may be passed to a Python function either by position or explicitly by keyword. For readability and p"
+        },
+        {
+          "score": 0.45699033,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] More on Defining Functions [H2] Keyword-Only Arguments  To mark parameters as *keyword-only*, indicating the parameters must be passed by keyword argument, place an ``*`` in t"
+        },
+        {
+          "score": 0.44620368,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] More on Defining Functions [H2] Keyword Arguments  def cheeseshop(kind, *arguments, **keywords):        print(\"-- Do you have any\", kind, \"?\")        print(\"-- I'm sorry, we'r"
+        }
+      ]
+    },
+    {
+      "query": "람다 함수 사용법",
+      "is_korean": true,
+      "translated_query": "lambda expression anonymous function parameters arguments return statement def keyword",
+      "translation_error": null,
+      "top_score": 0.47605196,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.47605196,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Lambdas  Lambda expressions (sometimes called lambda forms) are used to create anonymous functions. The expression ``lambda parameters: expression`` yields a function object. "
+        },
+        {
+          "score": 0.44306394,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] More on Defining Functions [H2] Lambda Expressions  Small anonymous functions can be created with the lambda keyword. This function returns the sum of its two arguments: ``lam"
+        },
+        {
+          "score": 0.3999114,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] controlflow [H1] More on Defining Functions [H2] Lambda Expressions  >>> pairs = [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]    >>> pairs.sort(key=lambda pair: pair[1])    >>> pairs   "
+        }
+      ]
+    },
+    {
+      "query": "딕셔너리 리터럴 사용법",
+      "is_korean": true,
+      "translated_query": "dictionary display dict literal key value pairs curly braces {} dict.get()",
+      "translation_error": null,
+      "top_score": 0.47557017,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.47557017,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] datastructures [H1] Dictionaries  Extracting a value for a non-existent key by subscripting (``d[key]``) raises a KeyError. To avoid getting this error when trying to access a possibly non-exi"
+        },
+        {
+          "score": 0.44903857,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] expressions [H1] Atoms [H2] Dictionary displays  A dictionary display is a possibly empty series of dict items (key/value pairs) enclosed in curly braces:  A dictionary display yields a new di"
+        },
+        {
+          "score": 0.41493437,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] datastructures [H1] Dictionaries  It is best to think of a dictionary as a set of *key: value* pairs, with the requirement that the keys are unique (within one dictionary). A pair of braces cr"
+        }
+      ]
+    },
+    {
+      "query": "모듈 임포트 하는 방법",
+      "is_korean": true,
+      "translated_query": "import statement from import module namespace standard library __init__.py package directory",
+      "translation_error": null,
+      "top_score": 0.47626692,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.47626692,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] modules [H1] More on Modules  Modules can import other modules. It is customary but not required to place all import statements at the beginning of a module (or script, for that matter). The i"
+        },
+        {
+          "score": 0.4381413,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] modules [H1] Packages  When importing the package, Python searches through the directories on ``sys.path`` looking for the package subdirectory.  The __init__.py files are required to make Pyt"
+        },
+        {
+          "score": 0.43568614,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] modules [H1] More on Modules  A module can contain executable statements as well as function definitions. These statements are intended to initialize the module. They are executed only the *fi"
+        }
+      ]
+    },
+    {
+      "query": "try except 예외 처리하는 방법",
+      "is_korean": true,
+      "translated_query": "try except exception handling built-in exceptions KeyError ValueError IndexError traceback raise statement",
+      "translation_error": null,
+      "top_score": 0.5037495,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5037495,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] errors [H1] Handling Exceptions  The try statement works as follows.  * First, the *try clause* (the statement(s) between the try and  * If no exception occurs, the *except clause* is skipped "
+        },
+        {
+          "score": 0.47997934,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] errors [H1] Handling Exceptions  It is possible to write programs that handle selected exceptions. Look at the following example, which asks the user for input until a valid integer has been e"
+        },
+        {
+          "score": 0.47868717,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[TITLE] errors [H1] Handling Exceptions  The most common pattern for handling Exception is to print or log the exception and then re-raise it (allowing a caller to handle the exception as well)::     "
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,343 @@
+{
+  "metadata": {
+    "timestamp": "20260106_235309",
+    "embedding_model": "text-embedding-3-large",
+    "collection_name": "learning_ai",
+    "use_translation": true,
+    "prompt_version": {
+      "file": "src\\agent\\prompts\\translate_prompt.py",
+      "hash": "741ed11617bac58d",
+      "modified_time": "2026-01-06T23:32:29.645353"
+    },
+    "preprocessing_config": {
+      "file": "src\\ingestion_rst.py",
+      "hash": "8773fab126f93b5c",
+      "embedding_model": "text-embedding-3-large",
+      "chunk_size": 500,
+      "chunk_overlap": 100
+    },
+    "total_queries": 11,
+    "avg_top_score": 0.5494872463636363
+  },
+  "results": [
+    {
+      "query": "파이썬에서 숫자 연산하는 방법",
+      "is_korean": true,
+      "translated_query": "arithmetic operators addition subtraction multiplication division floor division (//) modulo operator (%) power operator (**)",
+      "translation_error": null,
+      "top_score": 0.5598255,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5598255,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] floor division modulo divmod operator string formatting object.__mod__ object.__rmod__ abs [TITLE] expressions [H1] Binary arithmetic operations  The floor division and modulo operators are"
+        },
+        {
+          "score": 0.544111,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] expression operators + - * / parentheses int float division // % [TITLE] introduction [H1] Using Python as a Calculator [H2] Numbers  The interpreter acts as a simple calculator: you can ty"
+        },
+        {
+          "score": 0.53935397,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] await exponentiation positive negative bitwise NOT multiplication division addition subtraction shifts bitwise AND [TITLE] expressions [H1] Operator precedence  | await x | Await expression"
+        }
+      ]
+    },
+    {
+      "query": "정수 나눗셈과 나머지 연산자 사용법",
+      "is_korean": true,
+      "translated_query": "integer division floor division (//) modulo operator (%) arithmetic operators remainder operator",
+      "translation_error": null,
+      "top_score": 0.6279769,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.6279769,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] floor division modulo divmod operator string formatting object.__mod__ object.__rmod__ abs [TITLE] expressions [H1] Binary arithmetic operations  The floor division and modulo operators are"
+        },
+        {
+          "score": 0.59716916,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] object.__truediv__ object.__rtruediv__ object.__floordiv__ object.__rfloordiv__ % modulo ZeroDivisionError floating-point [TITLE] expressions [H1] Binary arithmetic operations  The division"
+        },
+        {
+          "score": 0.5095086,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] division floor remainder operator float integer powers assign variable [TITLE] introduction [H1] Using Python as a Calculator [H2] Numbers  Division (``/``) always returns a float. To do fl"
+        }
+      ]
+    },
+    {
+      "query": "문자열 슬라이싱 하는 법",
+      "is_korean": true,
+      "translated_query": "string slicing syntax string literal brackets [] start index end index step slice object",
+      "translation_error": null,
+      "top_score": 0.53058517,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.53058517,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] slicing object.__getitem__ tuple slice slice.start slice.stop slice.step [TITLE] expressions [H1] Primaries [H2] Slicings  The semantics for a slicing are as follows. The primary is indexed"
+        },
+        {
+          "score": 0.52450144,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] slicing sequence object string tuple list subscription expression assignment del [TITLE] expressions [H1] Primaries [H2] Slicings  A slicing selects a range of items in a sequence object (e"
+        },
+        {
+          "score": 0.5160868,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] slice indices omitted first second size character position included excluded end start s [TITLE] introduction [H1] Using Python as a Calculator [H2] Text  Slice indices have useful defaults"
+        }
+      ]
+    },
+    {
+      "query": "리스트 컴프리헨션이란",
+      "is_korean": true,
+      "translated_query": "list comprehension syntax iterable for loop expression brackets [] generator expression",
+      "translation_error": null,
+      "top_score": 0.56952345,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.56952345,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] generator expression generator object syntax comprehensions parentheses brackets curly braces [TITLE] expressions [H1] Atoms [H2] Generator expressions  A generator expression is a compact "
+        },
+        {
+          "score": 0.52746373,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] comprehension for clause iterable scope yield yield from [TITLE] expressions [H1] Atoms [H2] Displays for lists, sets and dictionaries  However, aside from the iterable expression in the le"
+        },
+        {
+          "score": 0.50710726,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] list set dictionary displays comprehension expression for clause if clauses [TITLE] expressions [H1] Atoms [H2] Displays for lists, sets and dictionaries  For constructing a list, a set or "
+        }
+      ]
+    },
+    {
+      "query": "if elif else 조건문 사용법",
+      "is_korean": true,
+      "translated_query": "if statement elif else conditional expression control flow branching syntax indentation",
+      "translation_error": null,
+      "top_score": 0.559432,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.559432,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] if elif else match input print [TITLE] controlflow [H1] if Statements  Perhaps the most well-known statement type is the if statement. For example::     >>> x = int(input(\"Please enter an i"
+        },
+        {
+          "score": 0.54534066,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] conditional expression ternary operator if-else statement evaluates condition returns value sub-expression [TITLE] expressions [H1] Conditional expressions  A conditional expression (someti"
+        },
+        {
+          "score": 0.47331744,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] control flow while statement [TITLE] controlflow [H1] ROOT  More Control Flow Tools  As well as the while statement just introduced, Python uses a few more that we will encounter in this ch"
+        }
+      ]
+    },
+    {
+      "query": "for문에서 range 함수 사용하는 방법",
+      "is_korean": true,
+      "translated_query": "for statement range() function iterable syntax loop control variable step size",
+      "translation_error": null,
+      "top_score": 0.56548464,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.56548464,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] iterable for sum range list [TITLE] controlflow [H1] The range Function  We say such an object is iterable, that is, suitable as a target for functions and constructs that expect something "
+        },
+        {
+          "score": 0.53970206,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] range list print len sequence iterate indices [TITLE] controlflow [H1] The range Function  If you do need to iterate over a sequence of numbers, the built-in function range comes in handy. "
+        },
+        {
+          "score": 0.5273188,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] list range iterate len for enumerate [TITLE] controlflow [H1] The range Function  >>> list(range(0, 10, 3))     [0, 3, 6, 9]      >>> list(range(-10, -100, -30))     [-10, -40, -70]  To ite"
+        }
+      ]
+    },
+    {
+      "query": "함수 정의하는 방법 def 키워드",
+      "is_korean": true,
+      "translated_query": "function definition def keyword parameters arguments return statement callable",
+      "translation_error": null,
+      "top_score": 0.49425852,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.49425852,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] call callable function arguments positional keyword trailing comma evaluate object __call__ [TITLE] expressions [H1] Primaries [H2] Calls  A call calls a callable object (e.g., a function) "
+        },
+        {
+          "score": 0.46887606,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] function call arguments local symbol table call by value reference function definition user-defined function [TITLE] controlflow [H1] Defining Functions  The actual parameters (arguments) t"
+        },
+        {
+          "score": 0.4686736,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] lambda expression function object parameters return [TITLE] expressions [H1] Lambdas  Lambda expressions (sometimes called lambda forms) are used to create anonymous functions. The expressi"
+        }
+      ]
+    },
+    {
+      "query": "람다 함수 사용법",
+      "is_korean": true,
+      "translated_query": "lambda expression anonymous function parameters arguments return statement def keyword",
+      "translation_error": null,
+      "top_score": 0.60229754,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.60229754,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] lambda expression function object parameters return [TITLE] expressions [H1] Lambdas  Lambda expressions (sometimes called lambda forms) are used to create anonymous functions. The expressi"
+        },
+        {
+          "score": 0.50820976,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] lambda function sum arguments expression make_incrementor sort key [TITLE] controlflow [H1] More on Defining Functions [H2] Lambda Expressions  Small anonymous functions can be created with"
+        },
+        {
+          "score": 0.48357838,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] function annotations object.__annotations__ parameter return expression def statement [TITLE] controlflow [H1] More on Defining Functions [H2] Function Annotations  Function annotations are"
+        }
+      ]
+    },
+    {
+      "query": "딕셔너리 리터럴 사용법",
+      "is_korean": true,
+      "translated_query": "dictionary display dict literal key value pairs curly braces {} dict.get()",
+      "translation_error": null,
+      "top_score": 0.49670374,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.49670374,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] dictionary display dict items key value comma-separated sequence mapping unpacking double asterisk [TITLE] expressions [H1] Atoms [H2] Dictionary displays  A dictionary display is a possibl"
+        },
+        {
+          "score": 0.49394923,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] dictionary key value pairs unique braces del store extract delete [TITLE] datastructures [H1] Dictionaries  It is best to think of a dictionary as a set of *key: value* pairs, with the requ"
+        },
+        {
+          "score": 0.48650077,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] KeyError dict.get list sorted in [TITLE] datastructures [H1] Dictionaries  Extracting a value for a non-existent key by subscripting (``d[key]``) raises a KeyError. To avoid getting this er"
+        }
+      ]
+    },
+    {
+      "query": "모듈 임포트 하는 방법",
+      "is_korean": true,
+      "translated_query": "import statement from import module namespace standard library __init__.py package directory",
+      "translation_error": null,
+      "top_score": 0.494947,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.494947,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] import module namespace fib fib2 [TITLE] modules [H1] More on Modules  Modules can import other modules. It is customary but not required to place all import statements at the beginning of "
+        },
+        {
+          "score": 0.46941608,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] module import namespace global variables functions executable statements [TITLE] modules [H1] More on Modules  A module can contain executable statements as well as function definitions. Th"
+        },
+        {
+          "score": 0.4582553,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] module import __name__ .py definitions statements [TITLE] modules [H1] ROOT  To support this, Python has a way to put definitions in a file and use them in a script or in an interactive ins"
+        }
+      ]
+    },
+    {
+      "query": "try except 예외 처리하는 방법",
+      "is_korean": true,
+      "translated_query": "try except exception handling built-in exceptions KeyError ValueError IndexError traceback raise statement",
+      "translation_error": null,
+      "top_score": 0.54332525,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.54332525,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] try except clause exception unhandled execution handler [TITLE] errors [H1] Handling Exceptions  The try statement works as follows.  * First, the *try clause* (the statement(s) between the"
+        },
+        {
+          "score": 0.53872776,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] try except KeyboardInterrupt ValueError input int raise [TITLE] errors [H1] Handling Exceptions  It is possible to write programs that handle selected exceptions. Look at the following exam"
+        },
+        {
+          "score": 0.52914155,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] try except Exception OSError ValueError raise else clause try clause [TITLE] errors [H1] Handling Exceptions  The most common pattern for handling Exception is to print or log the exception"
+        }
+      ]
+    }
+  ]
+}

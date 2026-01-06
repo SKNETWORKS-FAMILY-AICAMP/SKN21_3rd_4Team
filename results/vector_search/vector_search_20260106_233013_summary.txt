@@ -1,0 +1,68 @@
+================================================================================
+벡터 검색 품질 테스트 결과 요약
+================================================================================
+
+실행 시간: 20260106_233013
+임베딩 모델: text-embedding-3-large
+컬렉션: learning_ai
+번역 사용: True
+프롬프트 버전:
+  파일: src\agent\prompts\translate_prompt.py
+  해시: 7890b8038d691777
+  수정 시간: 2026-01-06T23:27:49.828806
+
+전처리 설정:
+  embedding_model: text-embedding-3-large
+  chunk_size: 500
+  chunk_overlap: 100
+
+평균 유사도: 0.5159
+총 질문 수: 11
+
+--------------------------------------------------------------------------------
+질문별 결과:
+--------------------------------------------------------------------------------
+
+[1] 파이썬에서 숫자 연산하는 방법
+    번역: python numeric operations arithmetic calculations
+    최고 유사도: 0.4762
+
+[2] 정수 나눗셈과 나머지 연산자 사용법
+    번역: integer division modulo operator usage
+    최고 유사도: 0.5581
+
+[3] 문자열 슬라이싱 하는 법
+    번역: string slicing substring indices Python
+    최고 유사도: 0.4978
+
+[4] 리스트 컴프리헨션이란
+    번역: list comprehension definition syntax usage
+    최고 유사도: 0.5222
+
+[5] if elif else 조건문 사용법
+    번역: if elif else conditional statements usage
+    최고 유사도: 0.5452
+
+[6] for문에서 range 함수 사용하는 방법
+    번역: for loop range function usage
+    최고 유사도: 0.5609
+
+[7] 함수 정의하는 방법 def 키워드
+    번역: function definition def keyword
+    최고 유사도: 0.5002
+
+[8] 람다 함수 사용법
+    번역: lambda function usage syntax Python
+    최고 유사도: 0.4984
+
+[9] 딕셔너리 리터럴 사용법
+    번역: dictionary literal usage syntax keys values
+    최고 유사도: 0.4303
+
+[10] 모듈 임포트 하는 방법
+    번역: import module Python module system
+    최고 유사도: 0.5034
+
+[11] try except 예외 처리하는 방법
+    번역: try except exception handling error
+    최고 유사도: 0.5827

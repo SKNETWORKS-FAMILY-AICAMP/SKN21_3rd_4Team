@@ -8,9 +8,9 @@ Search Agent - 듀얼 쿼리 검색 시스템
 
 1) 질문 언어 판별: `is_korean()`
 2) 검색 설정 결정: `build_search_config(query)`
-   - top_k, sources(lecture/python_doc_rst), search_method 등을 결정
+   - top_k, sources(lecture/python_doc), search_method 등을 결정
 3) 소스별 검색: `search_by_source(query, source, top_k)`
-   - Qdrant에서 `metadata.source`로 필터링해 각각 검색 (lecture vs python_doc_rst)
+   - Qdrant에서 `metadata.source`로 필터링해 각각 검색 (lecture vs python_doc)
 4) (질문이 한글이면) 번역 검색 추가: `translate_to_english()`
    - 영어 키워드 쿼리로 한 번 더 소스별 검색
 5) 결과 합치기 → 중복 제거 → 점수순 정렬 → 최종 top_k 반환
@@ -31,10 +31,13 @@ sys.path.append(os.getcwd())
 
 from src.agent.nodes.search_router import build_search_config
 from src.agent.prompts import PROMPTS
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from src.utils.config import ConfigDB, ConfigAPI
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue
+from typing import List, Dict, Any, Optional
 
 
 # ============================================================
@@ -78,47 +81,128 @@ def translate_to_english(query: str) -> str:
     return chain.invoke({"query": query}).strip()
 
 
-def search_by_source(query: str, source: str, top_k: int) -> list:
-    """특정 소스에서만 검색 (Qdrant 필터 사용)"""
-    from qdrant_client.models import Filter, FieldCondition, MatchValue
+def calculate_keyword_score(query_keywords: List[str], content: str) -> float:
+    """
+    키워드 매칭 점수 계산 (0.0 ~ 1.0)
+    """
+    if not query_keywords or not content:
+        return 0.0
     
+    content_lower = content.lower()
+    matched_count = 0
+    total_weight = 0
+    
+    for keyword in query_keywords:
+        keyword_lower = keyword.lower().strip()
+        if not keyword_lower:
+            continue
+        
+        weight = len(keyword_lower.split())
+        
+        if keyword_lower in content_lower:
+            matched_count += weight
+            if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
+                matched_count += weight * 0.5
+        
+        total_weight += weight
+    
+    if total_weight == 0:
+        return 0.0
+    
+    score = matched_count / total_weight
+    return min(score, 1.0)
+
+
+def search_by_source(query: str, source: str, top_k: int, use_hybrid: bool = False) -> list:
+    """
+    특정 소스에서만 검색 (Qdrant 필터 사용)
+    
+    Args:
+        query: 검색 쿼리
+        source: 소스 필터 ("lecture" 또는 "python_doc")
+        top_k: 반환할 결과 수
+        use_hybrid: 하이브리드 검색 사용 여부 (기본: False)
+    """
     client = QdrantClient(
-            host=ConfigDB.HOST,
-            port=ConfigDB.PORT
-        )
+        host=ConfigDB.HOST,
+        port=ConfigDB.PORT
+    )
 
     embeddings = OpenAIEmbeddings(
-            model="text-embedding-3-small",
-            api_key=ConfigAPI.OPENAI_API_KEY
-        )
-    
-    query_vector = embeddings.embed_query(query)
-    
-    search_result = client.query_points(
-        collection_name=ConfigDB.COLLECTION_NAME,
-        query=query_vector,
-        query_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="metadata.source",
-                    match=MatchValue(value=source)
-                )
-            ]
-        ),
-        limit=top_k
+        model="text-embedding-3-small",
+        api_key=ConfigAPI.OPENAI_API_KEY
     )
     
-    results = []
-    for hit in search_result.points:
-        results.append({
-            "content": hit.payload.get('page_content', ''),
-            "score": hit.score,
-            "metadata": hit.payload.get('metadata', {})
-        })
-    return results
+    if use_hybrid:
+        # 하이브리드 검색: 벡터 + 키워드 매칭
+        candidate_k = min(top_k * 4, 20)
+        query_vector = embeddings.embed_query(query)
+        
+        vector_result = client.query_points(
+            collection_name=ConfigDB.COLLECTION_NAME,
+            query=query_vector,
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.source",
+                        match=MatchValue(value=source)
+                    )
+                ]
+            ),
+            limit=candidate_k
+        )
+        
+        # 키워드 추출
+        query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
+        query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
+        
+        # 하이브리드 점수 계산
+        candidates = []
+        for hit in vector_result.points:
+            content = hit.payload.get('page_content', '')
+            vector_score = hit.score
+            keyword_score = calculate_keyword_score(query_keywords, content)
+            hybrid_score = vector_score * 0.7 + keyword_score * 0.3
+            
+            candidates.append({
+                "content": content,
+                "score": hybrid_score,
+                "vector_score": vector_score,
+                "keyword_score": keyword_score,
+                "metadata": hit.payload.get('metadata', {})
+            })
+        
+        candidates.sort(key=lambda x: x['score'], reverse=True)
+        return candidates[:top_k]
+    else:
+        # 일반 벡터 검색
+        query_vector = embeddings.embed_query(query)
+        
+        search_result = client.query_points(
+            collection_name=ConfigDB.COLLECTION_NAME,
+            query=query_vector,
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.source",
+                        match=MatchValue(value=source)
+                    )
+                ]
+            ),
+            limit=top_k
+        )
+        
+        results = []
+        for hit in search_result.points:
+            results.append({
+                "content": hit.payload.get('page_content', ''),
+                "score": hit.score,
+                "metadata": hit.payload.get('metadata', {})
+            })
+        return results
 
 
-def execute_dual_query_search(query: str) -> tuple:
+def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
     """
     소스별 듀얼 쿼리 검색
     
@@ -137,39 +221,36 @@ def execute_dual_query_search(query: str) -> tuple:
     config = build_search_config(query)
     top_k = config.get('top_k', 5)
     sources = config.get("sources", ["lecture", "python_doc"])
-
-    # Router는 python_doc을 주지만 Qdrant payload는 python_doc_rst를 쓰는 경우가 많음
-    sources = ["python_doc_rst" if s == "python_doc" else s for s in sources]
     
     # 정책:
     # - lecture: (대부분 한국어 텍스트) 질문 원문으로만 검색
-    # - python_doc_rst: (영어 문서) 한글 질문이면 번역(영어 키워드) 검색을 기본으로 하고,
+    # - python_doc: (영어 문서) 한글 질문이면 번역(영어 키워드) 검색을 기본으로 하고,
     #                  결과가 약할 때만 한글 원문으로 fallback 검색
     PYDOC_FALLBACK_SCORE_THRESHOLD = 0.45
 
     # 1) lecture는 원문으로만 검색
-    lecture_results = search_by_source(query, "lecture", top_k) if "lecture" in sources else []
+    lecture_results = search_by_source(query, "lecture", top_k, use_hybrid=use_hybrid) if "lecture" in sources else []
 
-    # 2) python_doc_rst 검색
+    # 2) python_doc 검색
     python_results = []
-    if "python_doc_rst" in sources:
+    if "python_doc" in sources:
         if is_korean(query):
             # 2-1) 번역(영어 키워드) 검색이 기본
             english_query = translate_to_english(query)
             query_info["translated"] = english_query
-            python_results_en = search_by_source(english_query, "python_doc_rst", top_k)
+            python_results_en = search_by_source(english_query, "python_doc", top_k, use_hybrid=use_hybrid)
             for r in python_results_en:
                 r["query_type"] = "translated"
             all_results.extend(python_results_en)
-            query_info["queries_used"].append(f"번역(python_doc_rst): {english_query}")
+            query_info["queries_used"].append(f"번역(python_doc): {english_query}")
 
             # 2-2) fallback: 번역 결과가 약하면 한글 원문으로도 한 번 더 검색
             best_score = python_results_en[0]["score"] if python_results_en else 0
             if (not python_results_en) or (best_score < PYDOC_FALLBACK_SCORE_THRESHOLD):
-                python_results = search_by_source(query, "python_doc_rst", top_k)
+                python_results = search_by_source(query, "python_doc", top_k, use_hybrid=use_hybrid)
         else:
             # 영어 질문이면 원문(영어) 그대로
-            python_results = search_by_source(query, "python_doc_rst", top_k)
+            python_results = search_by_source(query, "python_doc", top_k, use_hybrid=use_hybrid)
     else:
         python_results = []
     
@@ -191,3 +272,114 @@ def execute_dual_query_search(query: str) -> tuple:
     unique_results.sort(key=lambda x: x['score'], reverse=True)
     
     return unique_results[:top_k], query_info
+
+
+# ============================================================
+# 테스트 실행
+# ============================================================
+
+def run_test(use_hybrid: bool = False):
+    """
+    듀얼 쿼리 검색 테스트
+    
+    Args:
+        use_hybrid: 하이브리드 검색 사용 여부 (기본: False)
+    """
+    
+    # 테스트 질문 (영어 + 한글)
+    test_querys = [
+        # 영어 질문
+        # "Using Python as a Calculator numbers operators +, -, *, /",
+        # "list comprehension concise way to create lists",
+        # "try except exception handling error",
+        # "open file read write with statement",
+        
+        # 한글 질문
+        "유닛/노드/뉴런 개념 알려줘.",
+        "레이어, 층에 대해서 알려줘.",
+        "입력층이 뭐야?",
+        "머신러닝이 뭐야?",
+        "결정트리가 뭐야?",
+        "경사하강법 개념 알려줘",
+        "결정트리와 랜덤포레스트의 차이점이 뭐야?",
+        "xgboost 모델에 대해 설명해줘",
+        # "지도학습이 뭐야?",
+        "비지도 학습이 뭐야?",
+        # "모델 불러오는 코드 예제 알려줘."
+        # "리스트 컴프리헨션이란",
+        # "파이썬 예외처리 방법",
+        # "딕셔너리 사용법",
+        # "파일 읽고 쓰는 방법",
+    ]
+    
+    # executor = SearchExecutor()
+    
+    print("=" * 70)
+    print("🔍 듀얼 쿼리 검색 시스템 테스트")
+    print("   한글 질문 → 한글 + 영어 동시 검색")
+    print("   영어 질문 → 영어만 검색")
+    print(f"   하이브리드 검색: {'ON' if use_hybrid else 'OFF'}")
+    print("=" * 70)
+    
+    for i, query in enumerate(test_querys, 1):
+        print(f"\n{'='*70}")
+        print(f"📌 [{i}/{len(test_querys)}] 질문: {query}")
+        print("-" * 70)
+        
+        start = time.time()
+        
+        try:
+            # 듀얼 쿼리 검색 실행
+            results, query_info = execute_dual_query_search(query, use_hybrid=use_hybrid)
+            elapsed = time.time() - start
+            
+            # 결과 출력
+            print(f"⏱️  검색 시간: {elapsed:.2f}초")
+            print(f"🔤 원본 쿼리: {query_info['original']}")
+            if query_info['translated']:
+                print(f"🔄 번역 쿼리: {query_info['translated']}")
+            
+            print(f"\n📊 검색 결과: {len(results)}개")
+            print("-" * 50)
+            
+            # 상위 5개 미리보기
+            is_original_korean = is_korean(query_info['original'])
+            
+            for j, r in enumerate(results[:5], 1):
+                source = r['metadata'].get('source', 'unknown')
+                score = r['score']
+                query_type = r.get('query_type', '?')
+                
+                # 쿼리 타입에 따른 이모지
+                if query_type == 'original':
+                    emoji = "🇰🇷" if is_original_korean else "🇺🇸"
+                else:  # translated
+                    emoji = "🇺🇸"
+                
+                preview = r['content'][:100].replace('\n', ' ')
+                
+                print(f"[{j}] {emoji} 유사도: {score:.4f} | 소스: {source}")
+                print(f"    {preview}...")
+                
+        except Exception as e:
+            print(f"❌ 검색 실패: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print("\n" + "=" * 70)
+    print("✅ 테스트 완료")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Search Agent 테스트")
+    parser.add_argument(
+        "--hybrid",
+        action="store_true",
+        help="하이브리드 검색 사용 (벡터 + 키워드 매칭)"
+    )
+    args = parser.parse_args()
+    
+    run_test(use_hybrid=args.hybrid)

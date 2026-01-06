@@ -1,0 +1,12 @@
+query,is_korean,translated_query,top_score,lecture_count,python_doc_rst_count,translation_error
+파이썬에서 숫자 연산하는 방법,True,arithmetic operators addition subtraction multiplication division floor division modulo operator power operator,0.738228448,0,5,
+정수 나눗셈과 나머지 연산자 사용법,True,integer division floor division (//) modulo operator (%) arithmetic operators remainder operator,0.735022721,0,5,
+문자열 슬라이싱 하는 법,True,string slicing syntax string literal brackets [] substring indexing slicing notation,0.61580692,0,5,
+리스트 컴프리헨션이란,True,list comprehension syntax iterable for loop expression brackets [],0.650844648,0,5,
+if elif else 조건문 사용법,True,if statement elif else conditional expression control flow boolean expression comparison operators,0.5513998645454545,0,5,
+for문에서 range 함수 사용하는 방법,True,for statement range() function iterable loop control flow syntax,0.70759068,0,5,
+함수 정의하는 방법 def 키워드,True,function definition def keyword parameters arguments return statement callable,0.6612629299999999,0,5,
+람다 함수 사용법,True,lambda expression anonymous function def keyword parameters return statement,0.69547284,0,5,
+딕셔너리 리터럴 사용법,True,dictionary display dict literal key value pairs curly braces {} dict.get(),0.65103719,0,5,
+모듈 임포트 하는 방법,True,import statement from import module namespace standard library __init__.py package directory,0.5925667304545454,0,5,
+try except 예외 처리하는 방법,True,try except exception handling built-in exceptions KeyError ValueError IndexError traceback,0.63437597,0,5,

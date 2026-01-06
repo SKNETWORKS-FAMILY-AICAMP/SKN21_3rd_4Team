@@ -1,0 +1,343 @@
+{
+  "metadata": {
+    "timestamp": "20260106_234419",
+    "embedding_model": "text-embedding-3-large",
+    "collection_name": "learning_ai",
+    "use_translation": true,
+    "prompt_version": {
+      "file": "src\\agent\\prompts\\translate_prompt.py",
+      "hash": "741ed11617bac58d",
+      "modified_time": "2026-01-06T23:32:29.645353"
+    },
+    "preprocessing_config": {
+      "file": "src\\ingestion_rst.py",
+      "hash": "1a49e2bee80dad06",
+      "embedding_model": "text-embedding-3-large",
+      "chunk_size": 500,
+      "chunk_overlap": 100
+    },
+    "total_queries": 11,
+    "avg_top_score": 0.5043446263636363
+  },
+  "results": [
+    {
+      "query": "파이썬에서 숫자 연산하는 방법",
+      "is_korean": true,
+      "translated_query": "arithmetic operators addition subtraction multiplication division floor division (//) modulo operator (%) power operator (**)",
+      "translation_error": null,
+      "top_score": 0.5462785,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5462785,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains Python's division operations, highlighting that the `/` operator returns a float, while `//` performs floor division to yield an integer, and `%` calculates the r"
+        },
+        {
+          "score": 0.52963346,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to use the Python interpreter as a calculator, detailing the syntax for arithmetic expressions with operators like `+`, `-`, `*`, and `/`, as well as the use "
+        },
+        {
+          "score": 0.3335688,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to calculate tax on a price in Python, demonstrating the use of the underscore `_` to reference the last computed value, and emphasizes that certain built-in "
+        }
+      ]
+    },
+    {
+      "query": "정수 나눗셈과 나머지 연산자 사용법",
+      "is_korean": true,
+      "translated_query": "integer division floor division (//) modulo operator (%) arithmetic operators remainder operator",
+      "translation_error": null,
+      "top_score": 0.5510162,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5510162,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains Python's division operations, highlighting that the `/` operator returns a float, while `//` performs floor division to yield an integer, and `%` calculates the r"
+        },
+        {
+          "score": 0.50027806,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to use the Python interpreter as a calculator, detailing the syntax for arithmetic expressions with operators like `+`, `-`, `*`, and `/`, as well as the use "
+        },
+        {
+          "score": 0.29858494,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to calculate tax on a price in Python, demonstrating the use of the underscore `_` to reference the last computed value, and emphasizes that certain built-in "
+        }
+      ]
+    },
+    {
+      "query": "문자열 슬라이싱 하는 법",
+      "is_korean": true,
+      "translated_query": "string slicing syntax string literal brackets [] start index end index step slice object",
+      "translation_error": null,
+      "top_score": 0.5102189,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5102189,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to use slice indices in Python, highlighting that an omitted first index defaults to zero and an omitted second index defaults to the string's length. It emph"
+        },
+        {
+          "score": 0.47272533,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to use string slicing in Python, detailing the use of both non-negative and negative indices, and clarifying that while accessing an out-of-range index raises"
+        },
+        {
+          "score": 0.47198594,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to access characters in a string using indexing and slicing in Python. It details how to use both positive and negative indices to retrieve individual charact"
+        }
+      ]
+    },
+    {
+      "query": "리스트 컴프리헨션이란",
+      "is_korean": true,
+      "translated_query": "list comprehension syntax iterable for loop expression brackets [] generator expression",
+      "translation_error": null,
+      "top_score": 0.49618563,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.49618563,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to use list comprehensions in Python, which provide a concise way to create lists by evaluating an expression within a for loop and optional if clauses. It in"
+        },
+        {
+          "score": 0.4900658,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] List comprehensions in Python offer a concise way to create lists by applying operations to elements of an iterable or filtering elements based on conditions. For example, you can generate a"
+        },
+        {
+          "score": 0.414905,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation emphasizes that when using tuples in for and if statements, the order of these statements should remain consistent, and tuples must be enclosed in parentheses. [TITLE] dat"
+        }
+      ]
+    },
+    {
+      "query": "if elif else 조건문 사용법",
+      "is_korean": true,
+      "translated_query": "if statement elif else conditional expression control flow branching syntax indentation",
+      "translation_error": null,
+      "top_score": 0.57069767,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.57069767,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The documentation explains the use of the `if` statement in Python, including its structure with optional `elif` and `else` parts, and highlights the `match` statement as an alternative for "
+        },
+        {
+          "score": 0.43389726,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The documentation explains the use of the `else` clause in Python loops, clarifying that it is associated with the `for` loop rather than the `if` statement. It highlights that the `else` ex"
+        },
+        {
+          "score": 0.41195956,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The Python documentation explains the use of the `else` clause in `for` and `while` loops, which executes only if the loop completes without encountering a `break` statement. If the loop is "
+        }
+      ]
+    },
+    {
+      "query": "for문에서 range 함수 사용하는 방법",
+      "is_korean": true,
+      "translated_query": "for statement range() function iterable syntax loop control variable step size",
+      "translation_error": null,
+      "top_score": 0.5566369,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.5566369,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The Python `range` function is used to generate sequences of numbers, allowing for customization of the starting point, endpoint, and step increment. It can be combined with `len` to iterate"
+        },
+        {
+          "score": 0.548165,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains the concept of iterable objects in Python, which can be used with constructs like the for statement and functions such as `sum()`, which can take an iterable as a"
+        },
+        {
+          "score": 0.54334706,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation chunk explains the use of the `range()` function in Python to generate sequences of numbers, including examples of creating ranges with specific start, stop, and step valu"
+        }
+      ]
+    },
+    {
+      "query": "함수 정의하는 방법 def 키워드",
+      "is_korean": true,
+      "translated_query": "function definition def keyword parameters arguments return statement callable",
+      "translation_error": null,
+      "top_score": 0.44417498,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.44417498,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how function arguments are passed in Python using call by value, where the value is an object reference, and describes the creation of a new local symbol table fo"
+        },
+        {
+          "score": 0.41820258,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] Function annotations in Python provide optional metadata about the types used in user-defined functions, stored in the `__annotations__` attribute as a dictionary. They are defined using a c"
+        },
+        {
+          "score": 0.41552287,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to define a function in Python using the `def` keyword, specifically demonstrating a function called `fib(n)` that prints the Fibonacci series up to a specifi"
+        }
+      ]
+    },
+    {
+      "query": "람다 함수 사용법",
+      "is_korean": true,
+      "translated_query": "lambda expression anonymous function parameters arguments return statement def keyword",
+      "translation_error": null,
+      "top_score": 0.49854916,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.49854916,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The Python `lambda` keyword allows users to create small anonymous functions, such as `lambda a, b: a + b`, which can be used wherever function objects are needed. Lambda functions are limit"
+        },
+        {
+          "score": 0.4319611,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] Function annotations in Python provide optional metadata about the types used in user-defined functions, stored in the `__annotations__` attribute as a dictionary. They are defined using a c"
+        },
+        {
+          "score": 0.39381748,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to define a function in Python using the `def` keyword, specifically demonstrating a function called `fib(n)` that prints the Fibonacci series up to a specifi"
+        }
+      ]
+    },
+    {
+      "query": "딕셔너리 리터럴 사용법",
+      "is_korean": true,
+      "translated_query": "dictionary display dict literal key value pairs curly braces {} dict.get()",
+      "translation_error": null,
+      "top_score": 0.46163023,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.46163023,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] To safely access values in a dictionary without raising a KeyError for non-existent keys, use the `dict.get` method, which returns `None` or a specified default. You can retrieve all keys in"
+        },
+        {
+          "score": 0.42565346,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to create and manipulate dictionaries in Python, emphasizing that they consist of unique key:value pairs, can be initialized with braces `{}`, and support ope"
+        },
+        {
+          "score": 0.42025635,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation chunk provides examples of using Python dictionaries, including adding and deleting key-value pairs, accessing values with keys, handling missing keys with the `get()` met"
+        }
+      ]
+    },
+    {
+      "query": "모듈 임포트 하는 방법",
+      "is_korean": true,
+      "translated_query": "import statement from import module namespace standard library __init__.py package directory",
+      "translation_error": null,
+      "top_score": 0.50579846,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.50579846,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to import modules in Python, detailing the use of the `import` statement and its variants, such as `from module import name` for importing specific functions "
+        },
+        {
+          "score": 0.44473404,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains that a Python module can include executable statements and function definitions, which are executed the first time the module is imported or when the file is run "
+        },
+        {
+          "score": 0.43428114,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation explains how to import a module in Python using the `import` statement, specifically demonstrating the use of `import fibo as fib` and `from fibo import fib as fibonacci` "
+        }
+      ]
+    },
+    {
+      "query": "try except 예외 처리하는 방법",
+      "is_korean": true,
+      "translated_query": "try except exception handling built-in exceptions KeyError ValueError IndexError traceback raise statement",
+      "translation_error": null,
+      "top_score": 0.40660426,
+      "lecture_count": 0,
+      "python_doc_rst_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.40660426,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] The `builtins` module in Python provides a collection of built-in exceptions, such as `FileNotFoundError`, `KeyError`, and `MemoryError`, which can be accessed using the `dir(builtins)` func"
+        },
+        {
+          "score": 0.38473168,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This documentation chunk lists various built-in exceptions in Python, such as `MemoryError`, `NameError`, and `ValueError`, along with several built-in functions like `abs()`, `all()`, and `"
+        },
+        {
+          "score": 0.33778304,
+          "source": "python_doc_rst",
+          "query_type": "translated",
+          "content_preview": "[SUMMARY] This section of the Python documentation introduces additional control flow tools beyond the while statement, which will be explored further in the chapter. Users can expect to learn about v"
+        }
+      ]
+    }
+  ]
+}

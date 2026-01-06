@@ -32,7 +32,7 @@ RECREATE_COLLECTION = False  # ← True로 설정하면 기존 컬렉션 삭제 
 class RSTIngestor:
     def __init__(
         self,
-        # 청크 설정: 유사도 최적화
+        # 청크 설정: 유사도 최적화 (테스트: 500으로 축소)
         chunk_size: int = 900,
         chunk_overlap: int = 200,
         # Qdrant
@@ -59,6 +59,89 @@ class RSTIngestor:
         self.batch_size = batch_size
 
         self._vector_store: Optional[QdrantVectorStore] = None
+
+    # -------------------------
+    # API 시그니처 및 코드 키워드 추출
+    # -------------------------
+    @staticmethod
+    def _extract_api_signature(content: str) -> str:
+        """
+        청크의 첫 줄에서 API 시그니처 추출
+        예: "class Name(...)", "def function_name(...)"
+        """
+        import re
+        lines = content.split('\n')
+        if not lines:
+            return ""
+        
+        first_line = lines[0].strip()
+        
+        # API 시그니처 패턴: class/def로 시작하는 줄
+        patterns = [
+            r'^(class\s+\w+[^(]*\([^)]*\))',  # class Name(...)
+            r'^(def\s+\w+[^(]*\([^)]*\))',    # def function_name(...)
+            r'^(\w+\s+\w+[^(]*\([^)]*\))',   # method_name(...)
+        ]
+        
+        for pattern in patterns:
+            match = re.match(pattern, first_line)
+            if match:
+                return match.group(1).strip()
+        
+        return ""
+    
+    @staticmethod
+    def _extract_code_keywords(content: str) -> str:
+        """
+        코드 예제에서 키워드 추출
+        예: "list.append(x)" -> "append method list"
+        """
+        import re
+        keywords = []
+        
+        # 코드 블록에서 키워드 추출
+        lines = content.split('\n')
+        
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            
+            # 메서드 호출 패턴: obj.method(...)
+            # 예: list.append(x), dict.get(key), str.split()
+            method_matches = re.findall(r'(\w+)\.(\w+)\s*\(', stripped)
+            for obj, method in method_matches:
+                # 일반적인 변수명은 제외 (x, y, i, j 등)
+                if len(obj) > 1 and obj not in ['self', 'cls']:
+                    keywords.append(f"{method} method {obj}")
+                keywords.append(method)  # 메서드명도 추가
+            
+            # 함수 호출 패턴: function(...)
+            # 예: range(10), len(list), open(file)
+            func_matches = re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', stripped)
+            for func in func_matches:
+                # Python 키워드 제외
+                if func not in ['if', 'for', 'while', 'def', 'class', 'return', 'print', 
+                               'import', 'from', 'as', 'try', 'except', 'finally', 'with',
+                               'elif', 'else', 'break', 'continue', 'pass', 'raise', 'yield',
+                               'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False']:
+                    keywords.append(func)
+            
+            # 연산자 패턴: //, %, **
+            if '//' in stripped:
+                keywords.append('floor division')
+            if '%' in stripped and re.search(r'\b\d+\s*%', stripped):
+                keywords.append('modulo operator')
+            if '**' in stripped:
+                keywords.append('power operator')
+            
+            # 특수 메서드: __init__, __str__, __repr__ 등
+            special_methods = re.findall(r'(__\w+__)', stripped)
+            keywords.extend(special_methods)
+        
+        # 중복 제거 및 정렬
+        unique_keywords = list(dict.fromkeys(keywords))  # 순서 유지하면서 중복 제거
+        return ' '.join(unique_keywords[:15])  # 최대 15개
 
     # -------------------------
     # 0) RST 정제 및 파싱 유틸
@@ -384,7 +467,7 @@ class RSTIngestor:
         return {
             "content": text,
             "metadata": {
-                "source": "python_doc_rst",
+                "source": "python_doc",
                 "title": file_name,
                 "file_path": str(fp),
             },
@@ -438,19 +521,37 @@ class RSTIngestor:
         # chunk 분할
         chunk_docs = splitter.split_documents(section_docs)
 
-        # chunk index 부여
+        # chunk index 부여 + 프리픽스 추가
         for idx, d in enumerate(chunk_docs):
             d.metadata["chunk_index"] = idx
+            
+            # API 시그니처 추출 (첫 줄에서)
+            api_sig = self._extract_api_signature(d.page_content)
+            
+            # 코드 키워드 추출 (코드 예제에서)
+            code_keywords = self._extract_code_keywords(d.page_content)
+            
             # 모든 chunk에 문맥 프리픽스를 붙여 검색 품질 향상
-            prefix_lines = [
-                f"[TITLE] {d.metadata.get('title', '')}",
-                f"[H1] {d.metadata.get('section', '')}",
-            ]
+            prefix_lines = []
+            
+            # API 시그니처가 있으면 맨 앞에 추가
+            if api_sig:
+                prefix_lines.append(f"[API] {api_sig}")
+            
+            # 코드 키워드가 있으면 추가
+            if code_keywords:
+                prefix_lines.append(f"[KEYWORDS] {code_keywords}")
+            
+            # 제목 정보 추가
+            prefix_lines.append(f"[TITLE] {d.metadata.get('title', '')}")
+            prefix_lines.append(f"[H1] {d.metadata.get('section', '')}")
             if d.metadata.get("subsection") and d.metadata.get("subsection") != d.metadata.get("section"):
                 prefix_lines.append(f"[H2] {d.metadata.get('subsection', '')}")
+            
             prefix = "\n".join(prefix_lines).strip()
             if prefix:
                 d.page_content = prefix + "\n\n" + d.page_content
+            
             # 첫 200자를 snippet으로
             d.metadata["snippet"] = d.page_content[:200].replace("\n", " ")
 
@@ -523,9 +624,19 @@ class RSTIngestor:
             "file_path": str(file_path),
         }
 
-    def run_all(self, directory: str, verbose: bool = True) -> Dict[str, Any]:
+    def run_all(self, directory: str, verbose: bool = True, 
+                sample_only: bool = False,
+                subdirs: Optional[List[str]] = None,
+                test_files: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         디렉토리 내 모든 .rst 파일 재귀 ingestion
+        
+        Args:
+            directory: RST 파일이 있는 디렉토리
+            verbose: 상세 출력 여부
+            sample_only: True면 tutorial/reference/howto만 (빠른 테스트용)
+            subdirs: 특정 하위 디렉토리만 처리 (예: ['tutorial'])
+            test_files: 특정 파일만 처리 (예: ['tutorial/introduction.rst', 'tutorial/controlflow.rst'])
         """
         import glob
         
@@ -534,11 +645,63 @@ class RSTIngestor:
             raise NotADirectoryError(f"디렉토리를 찾을 수 없습니다: {directory}")
         
         # 모든 .rst 파일 찾기 (재귀)
-        rst_files = list(dir_path.rglob("*.rst"))
+        all_rst_files = list(dir_path.rglob("*.rst"))
+        
+        # 필터링
+        if test_files:
+            # 특정 파일만 (가장 우선)
+            rst_files = []
+            for test_file in test_files:
+                # 상대 경로 또는 절대 경로 모두 지원
+                test_path = Path(test_file)
+                if test_path.is_absolute():
+                    target_file = test_path
+                else:
+                    # 상대 경로면 디렉토리 기준으로 찾기
+                    target_file = dir_path / test_file
+                
+                if target_file.exists() and target_file.suffix == '.rst':
+                    rst_files.append(target_file)
+                else:
+                    # 파일명만 주어진 경우 찾기
+                    found = list(dir_path.rglob(test_file))
+                    if found:
+                        rst_files.extend(found)
+                    else:
+                        print(f"[WARN] 파일을 찾을 수 없습니다: {test_file}")
+        elif subdirs:
+            # 특정 디렉토리만
+            rst_files = []
+            for rst_file in all_rst_files:
+                rel_path = rst_file.relative_to(dir_path)
+                if rel_path.parts and rel_path.parts[0] in subdirs:
+                    rst_files.append(rst_file)
+        elif sample_only:
+            # 샘플 모드: tutorial, reference, howto만 (빠른 테스트용)
+            priority_dirs = ['tutorial', 'reference', 'howto']
+            rst_files = []
+            for rst_file in all_rst_files:
+                rel_path = rst_file.relative_to(dir_path)
+                if rel_path.parts and rel_path.parts[0] in priority_dirs:
+                    rst_files.append(rst_file)
+        else:
+            rst_files = all_rst_files
         
         print("=" * 60)
         print(f"[DIR] RST Ingestion: {directory}")
-        print(f"   Found .rst files: {len(rst_files)}")
+        print(f"   Found .rst files: {len(all_rst_files)}")
+        if test_files:
+            print(f"   [TEST] Test files mode: {len(rst_files)} files")
+            for f in rst_files[:10]:  # 최대 10개만 출력
+                print(f"      - {f.relative_to(dir_path)}")
+            if len(rst_files) > 10:
+                print(f"      ... and {len(rst_files) - 10} more")
+        elif sample_only:
+            print(f"   [SAMPLE] Sample mode: {len(rst_files)} files (tutorial/reference/howto only)")
+        elif subdirs:
+            print(f"   [SUBDIRS] Subdirs filter: {subdirs} -> {len(rst_files)} files")
+        else:
+            print(f"   Processing all: {len(rst_files)} files")
         print("=" * 60)
         
         total_stats = {
@@ -610,6 +773,9 @@ if __name__ == "__main__":
     parser.add_argument("--chunk-overlap", type=int, default=200)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--dry-run", action="store_true", help="Upload 없이 청킹 결과만 출력")
+    parser.add_argument("--sample-only", action="store_true", help="빠른 테스트용: tutorial/reference/howto만 업로드 (약 50-70개 파일)")
+    parser.add_argument("--subdirs", type=str, nargs="+", help="특정 하위 디렉토리만 처리 (예: --subdirs tutorial)")
+    parser.add_argument("--test-files", type=str, nargs="+", help="특정 파일만 처리 (예: --test-files tutorial/introduction.rst tutorial/controlflow.rst)")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -665,4 +831,9 @@ if __name__ == "__main__":
             # 디렉토리 dry-run은 비용이 클 수 있어 안내만
             print("[DRY RUN] 디렉토리 전체는 업로드 없이 실행하지 않습니다. --single/--file로 확인하세요.")
         else:
-            stats = ingestor.run_all(str(rst_dir))
+            stats = ingestor.run_all(
+                str(rst_dir),
+                sample_only=args.sample_only,
+                subdirs=args.subdirs,
+                test_files=args.test_files
+            )
