@@ -1,5 +1,4 @@
 from src.schema.state import AgentState
-from src.agent.nodes.search_executor import SearchExecutor
 from src.agent.nodes.search_agent import execute_dual_query_search
 
 

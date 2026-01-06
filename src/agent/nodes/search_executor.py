@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict
 from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings
 from src.utils.config import ConfigDB, ConfigAPI

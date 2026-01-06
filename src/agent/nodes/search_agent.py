@@ -23,16 +23,18 @@ import os
 import time
 import re
 
+from qdrant_client import QdrantClient
+from langchain_openai import OpenAIEmbeddings
+
 # 로컬 실행 시 `src.` import가 깨지지 않게 프로젝트 루트를 path에 추가
 sys.path.append(os.getcwd())
 
 from src.agent.nodes.search_router import build_search_config
-from src.agent.nodes.search_executor import SearchExecutor
 from src.agent.prompts import PROMPTS
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from src.utils.config import ConfigDB
+from src.utils.config import ConfigDB, ConfigAPI
 
 
 # ============================================================
@@ -189,98 +191,3 @@ def execute_dual_query_search(query: str) -> tuple:
     unique_results.sort(key=lambda x: x['score'], reverse=True)
     
     return unique_results[:top_k], query_info
-
-
-# ============================================================
-# 테스트 실행
-# ============================================================
-
-def run_test():
-    """듀얼 쿼리 검색 테스트"""
-    
-    # 테스트 질문 (영어 + 한글)
-    test_querys = [
-        # 영어 질문
-        # "Using Python as a Calculator numbers operators +, -, *, /",
-        # "list comprehension concise way to create lists",
-        # "try except exception handling error",
-        # "open file read write with statement",
-        
-        # 한글 질문
-        "유닛/노드/뉴런 개념 알려줘.",
-        "레이어, 층에 대해서 알려줘.",
-        "입력층이 뭐야?",
-        "머신러닝이 뭐야?",
-        "결정트리가 뭐야?",
-        "경사하강법 개념 알려줘",
-        "결정트리와 랜덤포레스트의 차이점이 뭐야?",
-        "xgboost 모델에 대해 설명해줘",
-        # "지도학습이 뭐야?",
-        "비지도 학습이 뭐야?",
-        # "모델 불러오는 코드 예제 알려줘."
-        # "리스트 컴프리헨션이란",
-        # "파이썬 예외처리 방법",
-        # "딕셔너리 사용법",
-        # "파일 읽고 쓰는 방법",
-    ]
-    
-    # executor = SearchExecutor()
-    
-    print("=" * 70)
-    print("🔍 듀얼 쿼리 검색 시스템 테스트")
-    print("   한글 질문 → 한글 + 영어 동시 검색")
-    print("   영어 질문 → 영어만 검색")
-    print("=" * 70)
-    
-    for i, query in enumerate(test_querys, 1):
-        print(f"\n{'='*70}")
-        print(f"📌 [{i}/{len(test_querys)}] 질문: {query}")
-        print("-" * 70)
-        
-        start = time.time()
-        
-        try:
-            # 듀얼 쿼리 검색 실행
-            results, query_info = execute_dual_query_search(query)
-            elapsed = time.time() - start
-            
-            # 결과 출력
-            print(f"⏱️  검색 시간: {elapsed:.2f}초")
-            print(f"🔤 원본 쿼리: {query_info['original']}")
-            if query_info['translated']:
-                print(f"🔄 번역 쿼리: {query_info['translated']}")
-            
-            print(f"\n📊 검색 결과: {len(results)}개")
-            print("-" * 50)
-            
-            # 상위 5개 미리보기
-            is_original_korean = is_korean(query_info['original'])
-            
-            for j, r in enumerate(results[:5], 1):
-                source = r['metadata'].get('source', 'unknown')
-                score = r['score']
-                query_type = r.get('query_type', '?')
-                
-                # 쿼리 타입에 따른 이모지
-                if query_type == 'original':
-                    emoji = "🇰🇷" if is_original_korean else "🇺🇸"
-                else:  # translated
-                    emoji = "🇺🇸"
-                
-                preview = r['content'][:100].replace('\n', ' ')
-                
-                print(f"[{j}] {emoji} 유사도: {score:.4f} | 소스: {source}")
-                print(f"    {preview}...")
-                
-        except Exception as e:
-            print(f"❌ 검색 실패: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    print("\n" + "=" * 70)
-    print("✅ 테스트 완료")
-    print("=" * 70)
-
-
-if __name__ == "__main__":
-    run_test()
