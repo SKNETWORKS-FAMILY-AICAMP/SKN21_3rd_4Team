@@ -42,6 +42,7 @@ def learning_agent(message, context=None):
     from main import main
     
     try:
+        print(">>> learning_agent 호출됨!", flush=True)
         # LangGraph workflow 실행
         response = main(message)
         
@@ -78,6 +79,22 @@ def learning_agent(message, context=None):
         
         # search_results에서 sources 추출
         search_results = response.get('search_results', [])
+        
+        # ─────────────────────────────────────────────────────────────
+        # 터미널 로그: Qdrant 검색 결과 출력
+        # ─────────────────────────────────────────────────────────────
+        print("\n" + "="*60)
+        print(f"🔍 [Qdrant 검색 결과] 질문: {message}")
+        print("="*60)
+        for i, r in enumerate(search_results, 1):
+            source = r.get('metadata', {}).get('source', 'Unknown')
+            lecture = r.get('metadata', {}).get('lecture_title', 'Unknown')
+            score = r.get('score', 0)
+            content_preview = r.get('content', '')[:150].replace('\n', ' ')
+            print(f"\n📄 [{i}] 유사도: {score}")
+            print(f"   출처: {source} | 강의: {lecture}")
+            print(f"   내용: {content_preview}...")
+        print("="*60 + "\n", flush=True)
         sources = [
             {
                 'type': 'IPYNB',
@@ -97,6 +114,8 @@ def learning_agent(message, context=None):
             ]
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # 전체 에러 스택 출력
         # 에러 발생 시 폴백
         return {
             'text': f"⚠️ 오류가 발생했습니다: {str(e)}\n\n백엔드 설정을 확인해주세요.",

@@ -80,15 +80,23 @@ def web_search_node(state: AgentState):
         print(f"Web Search Error: {e}")
         search_results = []
     
-    web_context_parts = []
-    for i, res in enumerate(search_results, 1):
-        content = res.get('content', '')
-        url = res.get('url', '')
-        # Analyst가 "외부 자료"임을 알 수 있게 명시
-        part = f"[External Web {i}] 출처: {url}\n{content}"
-        web_context_parts.append(part)
-        
-    web_context_str = "\n\n".join(web_context_parts)
+    # Tavily 결과가 문자열인 경우 처리
+    if isinstance(search_results, str):
+        # 문자열이면 그대로 context에 추가
+        web_context_str = f"[External Web] {search_results}"
+    else:
+        # 리스트인 경우 기존 로직
+        web_context_parts = []
+        for i, res in enumerate(search_results, 1):
+            if isinstance(res, dict):
+                content = res.get('content', '')
+                url = res.get('url', '')
+            else:
+                content = str(res)
+                url = ''
+            part = f"[External Web {i}] 출처: {url}\n{content}"
+            web_context_parts.append(part)
+        web_context_str = "\n\n".join(web_context_parts)
     
     # 기존 build_context에서 만들어진 state['context'] 뒤에 추가
     current_context = state['context']
