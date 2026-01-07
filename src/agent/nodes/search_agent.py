@@ -166,7 +166,7 @@ def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_lengt
     return score
 
 
-def search_by_source(query: str, source: str, top_k: int) -> list:
+def search_by_source(query: str, source: str, top_k: int, keywords: Optional[List[str]] = None) -> list:
     """
     특정 소스에서만 검색 (Qdrant 필터 사용)
     하이브리드 검색(벡터 + 키워드 매칭 + BM25)을 사용합니다.
@@ -175,6 +175,7 @@ def search_by_source(query: str, source: str, top_k: int) -> list:
         query: 검색 쿼리
         source: 소스 필터 ("lecture" 또는 "python_doc")
         top_k: 반환할 결과 수
+        keywords: 명시적으로 지정된 키워드 리스트 (None이면 query에서 단순 추출)
     """
     client = QdrantClient(
         host=ConfigDB.HOST,
@@ -205,8 +206,11 @@ def search_by_source(query: str, source: str, top_k: int) -> list:
     )
     
     # 키워드 추출
-    query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
-    query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
+    if keywords:
+        query_keywords = [k.strip() for k in keywords if k.strip()]
+    else:
+        query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
+        query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
     
     # 벡터 검색 결과 수집 및 점수 계산
     candidates = []
@@ -275,6 +279,8 @@ def execute_dual_query_search(query: str) -> tuple:
     config = build_search_config(query)
     top_k = config.get('top_k', 5)
     sources = config.get("sources", ["lecture", "python_doc"])
+    analysis = config.get('_analysis', {})
+    topic_keywords = analysis.get('topic_keywords', [])
     
     # 정책:
     # - lecture: (대부분 한국어 텍스트) 질문 원문으로만 검색
@@ -283,7 +289,7 @@ def execute_dual_query_search(query: str) -> tuple:
     PYDOC_FALLBACK_SCORE_THRESHOLD = 0.45
 
     # 1) lecture는 원문으로만 검색
-    lecture_results = search_by_source(query, "lecture", top_k) if "lecture" in sources else []
+    lecture_results = search_by_source(query, "lecture", top_k, keywords=topic_keywords) if "lecture" in sources else []
 
     # 2) python_doc 검색
     python_results = []
@@ -292,6 +298,7 @@ def execute_dual_query_search(query: str) -> tuple:
             # 2-1) 번역(영어 키워드) 검색이 기본
             english_query = _translate_to_english(query)
             query_info["translated"] = english_query
+            # python_doc(영어 번역 검색)은 영어 키워드이므로 topic_keywords(한글) 대신 쿼리에서 자동 추출하도록 None 전달
             python_results_en = search_by_source(english_query, "python_doc", top_k)
             for r in python_results_en:
                 r["query_type"] = "translated"
@@ -301,7 +308,7 @@ def execute_dual_query_search(query: str) -> tuple:
             # 2-2) fallback: 번역 결과가 약하면 한글 원문으로도 한 번 더 검색
             best_score = python_results_en[0]["score"] if python_results_en else 0
             if (not python_results_en) or (best_score < PYDOC_FALLBACK_SCORE_THRESHOLD):
-                python_results = search_by_source(query, "python_doc", top_k)
+                python_results = search_by_source(query, "python_doc", top_k, keywords=topic_keywords)
         else:
             # 영어 질문이면 원문(영어) 그대로
             python_results = search_by_source(query, "python_doc", top_k)
