@@ -129,7 +129,7 @@ def search_by_source(query: str, source: str, top_k: int, use_hybrid: bool = Fal
     )
 
     embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small",
+        model=ConfigDB.EMBEDDING_MODEL,
         api_key=ConfigAPI.OPENAI_API_KEY
     )
     
