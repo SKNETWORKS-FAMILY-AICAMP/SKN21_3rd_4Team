@@ -55,6 +55,15 @@ def build_search_config(query: str) -> Dict:
     # 이렇게 하면 LLM이 항상 올바른 형식으로 응답하게 됩니다.
     
     class SearchConfig(BaseModel):
+        # 질문 유효성 검증 (가장 먼저 판단, 매우 엄격하게!)
+        is_valid: bool = Field(
+            description="질문이 머신러닝/Python 학습 자료와 관련된 명확하고 구체적인 질문인지 여부. "
+                       "반드시 질문 형식이거나 학습 목적이 명확해야 True. "
+                       "False인 경우: 의미없는 단어 혼합, 의미없는 반복 단어, 일상 대화/감정 표현, "
+                       "키워드만 나열된 경우(실제 질문 아님), 학습과 무관한 주제, 명확하지 않은 질문. "
+                       "중요: 키워드('파이썬', '머신러닝')가 있어도 실제 질문이 아니거나 일상 대화면 반드시 False!"
+        )
+        
         # 질문 유형 (3가지 중 하나만 가능)
         query_type: Literal['concept', 'code', 'syntax'] = Field(
             description="질문 타입: concept(개념 설명), code(코드 작성/디버깅), syntax(문법)"
@@ -128,6 +137,7 @@ def build_search_config(query: str) -> Dict:
         'top_k': result.top_k,                   # 몇 개 가져올지
         'search_method': result.search_method,   # 어떤 방법으로
         'filters': {},                           # 메타데이터 필터 (향후 확장)
+        'is_valid': result.is_valid,             # 질문 유효성
         
         # 디버깅/분석용 추가 정보 (선택사항)
         # Role B는 무시해도 되고, 로깅/분석 시 유용

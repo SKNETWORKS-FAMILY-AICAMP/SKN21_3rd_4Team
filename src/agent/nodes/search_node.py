@@ -1,5 +1,6 @@
 from src.schema.state import AgentState
 from src.agent.nodes.search_agent import execute_dual_query_search
+from src.agent.nodes.search_router import build_search_config
 
 
 def search_node(state: AgentState):
@@ -9,6 +10,16 @@ def search_node(state: AgentState):
     """
     
     query = state['query']
+    
+    # 검색 설정 결정
+    config = build_search_config(query)
+    
+    # 질문 유효성 체크
+    if not config.get('is_valid', True):  # 기본값 True (기존 호환성)
+        print("⚠️ 질문이 학습 자료와 관련이 없어 검색을 건너뜁니다.")
+        return {
+            'search_results': []
+        }
     
     # 검색 설정 및 실행 (하이브리드 검색 기본 적용)
     results, query_info = execute_dual_query_search(query)
