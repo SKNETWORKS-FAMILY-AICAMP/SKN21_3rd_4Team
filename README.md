@@ -1,14 +1,16 @@
-## SKN21_3rd_4Team
-
 <div align="center">
 
 ![header](https://capsule-render.vercel.app/api?type=waving&color=ffb3dc&height=180&section=header&text=Bootcamp%20AI%20RAG%20Tutor&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Vector%20DB%20%7C%20Search%20Agent%20%7C%20Analysis%20Agent&descSize=18&descAlignY=60)
 
 </div>
 
+
+
 ## 팀원 및 담당 업무
-<p><strong>Team 캣쵸크레용</strong></p>
-      
+<p align="left" style="display: flex; align-items: center;">
+  <img src="image/team.png" width="190" style="margin-left: 15px;" />
+</p>
+          
 <table>
 <tr>
 
@@ -80,9 +82,9 @@
 ## 프로젝트 주제 및 주제 설명 및 선정 이유
 
 ### 1. 주제 
-부트캠프 수업 자료(ipynb)를 핵심 지식으로 활용하여
-**개념·코드·실습 질문에 답변하는 RAG 기반 학습 지원 챗봇**
-<br><br>
+> **개념·코드·실습 질문에 답변하는 RAG 기반 학습 지원 챗봇**
+
+<br>
 
 본 프로젝트는 **부트캠프 학습 자료(ipynb)** 와 **Python 공식 문서(Python 3 Documentation)** 를 
 핵심 지식으로 활용하여 개념, 코드, 실습 질문에 답변할 수 있는
@@ -96,9 +98,13 @@ RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하�
 
 ### 2. 주제를 선택한 이유 
 🔹 팀원 모두가 실제로 학습한 부트캠프 수업 자료를 그대로 활용 <br>
+
 🔹 Markdown 설명 + Code 셀이 결합된 고품질 학습 데이터 <br>
+
 🔹 Python 개념 및 문법 설명을 **공식 문서(Python Docs)** 로 보완하여 정확성 강화 <br>
+
 🔹 “수업 범위 + 언어 공식 기준”이라는 명확한 질문 기준으로 학습 몰입도와 실용성 우수 <br>
+
 🔹 RAG 구조(수집 → 임베딩 → 검색 → 생성)를 교육 관점에서 명확히 설명·구현·확장 가능한 주제 <br>
 
 향후 Agent 확장 및 추가 데이터 소스 연계가 자연스러운 구조
@@ -142,7 +148,6 @@ SKN21_3rd_4Team
 ├── data/                          # RAG 학습 및 검색에 사용되는 데이터
 │   ├── raw/                         # 원본 데이터 (강의 자료, 문서 등)
 │   ├── query_enhancement/           # 질의 확장(Query Enhancement) 관련 데이터
-│   └── snapshots/                   # Ingestion 결과 스냅샷 (중간 산출물)
 │ 
 ├── docs/                          # 프로젝트 관련 문서 및 설명 자료
 ├── image/                         # README 및 UI에 사용되는 이미지 파일
