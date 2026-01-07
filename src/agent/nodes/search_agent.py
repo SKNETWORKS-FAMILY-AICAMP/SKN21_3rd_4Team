@@ -44,12 +44,12 @@ from typing import List, Dict, Any, Optional
 # 듀얼 쿼리 검색 함수
 # ============================================================
 
-def is_korean(text: str) -> bool:
+def _is_korean(text: str) -> bool:
     """한글 포함 여부 확인"""
     return bool(re.search(r'[가-힣]', text))
 
 
-def create_translate_chain():
+def _create_translate_chain():
     """
     번역용 LangChain chain 생성
     
@@ -67,7 +67,7 @@ def create_translate_chain():
     return chain
 
 
-def translate_to_english(query: str) -> str:
+def _translate_to_english(query: str) -> str:
     """
     LLM으로 한글 → 영어 검색 쿼리 변환 (체인화 버전)
     
@@ -77,11 +77,11 @@ def translate_to_english(query: str) -> str:
     Returns:
         영어 검색 키워드
     """
-    chain = create_translate_chain()
+    chain = _create_translate_chain()
     return chain.invoke({"query": query}).strip()
 
 
-def calculate_keyword_score(query_keywords: List[str], content: str) -> float:
+def _calculate_keyword_score(query_keywords: List[str], content: str) -> float:
     """
     키워드 매칭 점수 계산 (0.0 ~ 1.0)
     """
@@ -161,7 +161,7 @@ def search_by_source(query: str, source: str, top_k: int, use_hybrid: bool = Fal
         for hit in vector_result.points:
             content = hit.payload.get('page_content', '')
             vector_score = hit.score
-            keyword_score = calculate_keyword_score(query_keywords, content)
+            keyword_score = _calculate_keyword_score(query_keywords, content)
             hybrid_score = vector_score * 0.7 + keyword_score * 0.3
             
             candidates.append({
@@ -234,9 +234,9 @@ def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
     # 2) python_doc 검색
     python_results = []
     if "python_doc" in sources:
-        if is_korean(query):
+        if _is_korean(query):
             # 2-1) 번역(영어 키워드) 검색이 기본
-            english_query = translate_to_english(query)
+            english_query = _translate_to_english(query)
             query_info["translated"] = english_query
             python_results_en = search_by_source(english_query, "python_doc", top_k, use_hybrid=use_hybrid)
             for r in python_results_en:
@@ -272,114 +272,3 @@ def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
     unique_results.sort(key=lambda x: x['score'], reverse=True)
     
     return unique_results[:top_k], query_info
-
-
-# ============================================================
-# 테스트 실행
-# ============================================================
-
-def run_test(use_hybrid: bool = False):
-    """
-    듀얼 쿼리 검색 테스트
-    
-    Args:
-        use_hybrid: 하이브리드 검색 사용 여부 (기본: False)
-    """
-    
-    # 테스트 질문 (영어 + 한글)
-    test_querys = [
-        # 영어 질문
-        # "Using Python as a Calculator numbers operators +, -, *, /",
-        # "list comprehension concise way to create lists",
-        # "try except exception handling error",
-        # "open file read write with statement",
-        
-        # 한글 질문
-        "유닛/노드/뉴런 개념 알려줘.",
-        "레이어, 층에 대해서 알려줘.",
-        "입력층이 뭐야?",
-        "머신러닝이 뭐야?",
-        "결정트리가 뭐야?",
-        "경사하강법 개념 알려줘",
-        "결정트리와 랜덤포레스트의 차이점이 뭐야?",
-        "xgboost 모델에 대해 설명해줘",
-        # "지도학습이 뭐야?",
-        "비지도 학습이 뭐야?",
-        # "모델 불러오는 코드 예제 알려줘."
-        # "리스트 컴프리헨션이란",
-        # "파이썬 예외처리 방법",
-        # "딕셔너리 사용법",
-        # "파일 읽고 쓰는 방법",
-    ]
-    
-    # executor = SearchExecutor()
-    
-    print("=" * 70)
-    print("🔍 듀얼 쿼리 검색 시스템 테스트")
-    print("   한글 질문 → 한글 + 영어 동시 검색")
-    print("   영어 질문 → 영어만 검색")
-    print(f"   하이브리드 검색: {'ON' if use_hybrid else 'OFF'}")
-    print("=" * 70)
-    
-    for i, query in enumerate(test_querys, 1):
-        print(f"\n{'='*70}")
-        print(f"📌 [{i}/{len(test_querys)}] 질문: {query}")
-        print("-" * 70)
-        
-        start = time.time()
-        
-        try:
-            # 듀얼 쿼리 검색 실행
-            results, query_info = execute_dual_query_search(query, use_hybrid=use_hybrid)
-            elapsed = time.time() - start
-            
-            # 결과 출력
-            print(f"⏱️  검색 시간: {elapsed:.2f}초")
-            print(f"🔤 원본 쿼리: {query_info['original']}")
-            if query_info['translated']:
-                print(f"🔄 번역 쿼리: {query_info['translated']}")
-            
-            print(f"\n📊 검색 결과: {len(results)}개")
-            print("-" * 50)
-            
-            # 상위 5개 미리보기
-            is_original_korean = is_korean(query_info['original'])
-            
-            for j, r in enumerate(results[:5], 1):
-                source = r['metadata'].get('source', 'unknown')
-                score = r['score']
-                query_type = r.get('query_type', '?')
-                
-                # 쿼리 타입에 따른 이모지
-                if query_type == 'original':
-                    emoji = "🇰🇷" if is_original_korean else "🇺🇸"
-                else:  # translated
-                    emoji = "🇺🇸"
-                
-                preview = r['content'][:100].replace('\n', ' ')
-                
-                print(f"[{j}] {emoji} 유사도: {score:.4f} | 소스: {source}")
-                print(f"    {preview}...")
-                
-        except Exception as e:
-            print(f"❌ 검색 실패: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    print("\n" + "=" * 70)
-    print("✅ 테스트 완료")
-    print("=" * 70)
-
-
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Search Agent 테스트")
-    parser.add_argument(
-        "--hybrid",
-        action="store_true",
-        help="하이브리드 검색 사용 (벡터 + 키워드 매칭)"
-    )
-    args = parser.parse_args()
-    
-    run_test(use_hybrid=args.hybrid)

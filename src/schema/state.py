@@ -1,34 +1,32 @@
-from typing import TypedDict, List, Dict, Any, Optional
-from src.schema.search import SearchConfig
+from typing import TypedDict, List, Dict, Any
 from typing import Annotated
 from langgraph.graph.message import add_messages
 
+
 class AgentState(TypedDict):
     """
-    Search Agent 전체 상태 관리
-    Role A(Router)와 Role B(Executor) 간의 데이터 전달 통로
+    LangGraph 워크플로우 상태 관리
+    
+    [데이터 흐름]
+    START → search_node → rerank_node → build_context → check_relevance → analyst_node/web_search_node → END
     """
     
-    # 1. 입력 (Input)
-    query: str              # 사용자의 원래 질문
+    # ─────────────────────────────────────────────────────────────
+    # 1. 입력 (Input) - main.py에서 초기화
+    # ─────────────────────────────────────────────────────────────
+    query: str  # 사용자의 원래 질문
     
-    # [추가] 검색 키워드 (Role A가 질문을 구체화했을 경우 사용, 없으면 query 사용)
-    search_query: str
+    # ─────────────────────────────────────────────────────────────
+    # 2. 검색 결과 (search_node → rerank_node → build_context)
+    # ─────────────────────────────────────────────────────────────
+    search_results: List[Dict[str, Any]]  # content, score, metadata 포함
     
-    # 2. Role A (Router) -> Role B (Executor)
-    # 정의된 SearchConfig 타입 사용 (src/schema/search.py)
-    search_config: SearchConfig
+    # ─────────────────────────────────────────────────────────────
+    # 3. 컨텍스트 (build_context → analyst_node/web_search_node)
+    # ─────────────────────────────────────────────────────────────
+    context: str  # LLM이 참고할 포맷팅된 텍스트
     
-    # 3. Role B (Executor) -> Analysis Agent
-    # 실행된 원본 검색 결과 리스트 (메타데이터 포함)
-    search_results: List[Dict[str, Any]]
-
+    # ─────────────────────────────────────────────────────────────
+    # 4. 분석 결과 (analyst_node → END) - 최종 출력
+    # ─────────────────────────────────────────────────────────────
     analyst_results: Annotated[list, add_messages]
-    
-    # LLM이 답변 생성에 참고할 최종 텍스트 문자열
-    # (제목, 내용, 출처 등이 포맷팅된 형태)
-    context: str
-    
-    # 4. 최종 답변 (Output)
-    answer: str
-

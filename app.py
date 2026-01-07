@@ -45,11 +45,34 @@ def learning_agent(message, context=None):
         # LangGraph workflow 실행
         response = main(message)
         
-        # analyst_results에서 답변 추출
-        analyst_results = response.get('analyst_results', [])
-        if analyst_results:
-            # HumanMessage 객체에서 content 추출
-            answer_text = analyst_results[0].content if hasattr(analyst_results[0], 'content') else str(analyst_results[0])
+        # messages에서 답변 추출 및 포맷팅
+        analyst_result = response.get('analyst_results', [])
+        if analyst_result:
+            # 마지막 메시지(AI 답변) 객체에서 content 추출
+            last_msg = analyst_result[-1]
+            raw_content = last_msg.content if hasattr(last_msg, 'content') else str(last_msg)
+            
+            # 딕셔너리 문자열 파싱 시도
+            try:
+                import ast
+                result_dict = ast.literal_eval(raw_content)
+                
+                # 마크다운 형태로 포맷팅
+                answer_text = f"""## 📚 요약
+{result_dict.get('summary', '')}
+
+## 💻 코드 설명
+{result_dict.get('code_explanation', '')}
+
+## 💡 실습 팁
+{result_dict.get('practice_tips', '')}
+
+## 📌 한 줄 정리
+> {result_dict.get('one_liner', '')}
+"""
+            except (ValueError, SyntaxError):
+                # 파싱 실패 시 원본 텍스트 사용
+                answer_text = raw_content
         else:
             answer_text = "답변을 생성할 수 없습니다."
         
