@@ -41,10 +41,11 @@ import re
 # 테스트 설정 (여기서 쉽게 변경 가능)
 # ============================================================
 # 임베딩 모델 선택: "text-embedding-3-small" 또는 "text-embedding-3-large"
-EMBEDDING_MODEL = "text-embedding-3-large"  # ← 여기 변경!
+# None이면 ConfigDB.EMBEDDING_MODEL 사용
+EMBEDDING_MODEL = None  # ← 필요시 변경 (None이면 ConfigDB.EMBEDDING_MODEL 사용)
 
 # 컬렉션 이름 (None이면 ConfigDB.COLLECTION_NAME 사용)
-COLLECTION_NAME = None  # ← 필요시 변경
+COLLECTION_NAME = None  # ← 필요시 변경 (None이면 ConfigDB.COLLECTION_NAME 사용)
 
 
 def get_vector_size(model_name: str) -> int:
@@ -377,8 +378,7 @@ def save_test_results(
     embedding_model: str,
     collection_name: str,
     use_translation: bool,
-    save_dir: Optional[Path] = None,
-    use_hybrid: bool = False
+    save_dir: Optional[Path] = None
 ):
     """테스트 결과를 JSON과 CSV로 저장"""
     if save_dir is None:
@@ -403,7 +403,7 @@ def save_test_results(
             "embedding_model": embedding_model,
             "collection_name": collection_name,
             "use_translation": use_translation,
-            "use_hybrid": use_hybrid,
+            "use_hybrid": True,  # 항상 하이브리드 검색 사용
             "prompt_version": prompt_version,
             "preprocessing_config": preprocessing_config,
             "total_queries": len(test_results),
@@ -451,7 +451,7 @@ def save_test_results(
         f.write(f"임베딩 모델: {embedding_model}\n")
         f.write(f"컬렉션: {collection_name}\n")
         f.write(f"번역 사용: {use_translation}\n")
-        f.write(f"하이브리드 검색: {use_hybrid}\n\n")
+        f.write(f"하이브리드 검색: 활성화 (벡터 + 키워드 매칭 + BM25)\n\n")
         f.write(f"프롬프트 버전:\n")
         f.write(f"  파일: {prompt_version.get('file', 'N/A')}\n")
         f.write(f"  해시: {prompt_version.get('hash', 'N/A')}\n")
@@ -479,11 +479,11 @@ def test_vector_search(
     embedding_model: str = None,
     collection_name: str = None,
     use_translation: bool = True,
-    save_results: bool = True,
-    use_hybrid: bool = False
+    save_results: bool = True
 ):
     """
     벡터 검색 품질 테스트 (lecture + python_doc)
+    하이브리드 검색(벡터 + 키워드 매칭 + BM25)을 기본으로 사용합니다.
     
     Args:
         embedding_model: 사용할 임베딩 모델 (None이면 파일 상단 EMBEDDING_MODEL 사용)
@@ -492,11 +492,11 @@ def test_vector_search(
     """
     load_dotenv(override=True)
     
-    # 기본값 설정 (파일 상단 변수 사용)
+    # 기본값 설정 (파일 상단 변수 또는 ConfigDB 사용)
     if embedding_model is None:
-        embedding_model = EMBEDDING_MODEL
+        embedding_model = EMBEDDING_MODEL if EMBEDDING_MODEL is not None else ConfigDB.EMBEDDING_MODEL
     if collection_name is None:
-        collection_name = COLLECTION_NAME if COLLECTION_NAME else ConfigDB.COLLECTION_NAME
+        collection_name = COLLECTION_NAME if COLLECTION_NAME is not None else ConfigDB.COLLECTION_NAME
     
     # Qdrant 직접 연결
     client = QdrantClient(host=ConfigDB.HOST, port=ConfigDB.PORT)
@@ -516,7 +516,7 @@ def test_vector_search(
     print(f"   벡터 크기: {vector_size}")
     print(f"   컬렉션: {collection_name}")
     print(f"   번역 사용: {use_translation} (한글 질문 → 영어 키워드로 python_doc 검색)")
-    print(f"   하이브리드 검색: {use_hybrid} (벡터 + 키워드 매칭)")
+    print(f"   하이브리드 검색: 활성화 (벡터 + 키워드 매칭 + BM25)")
     print("=" * 80)
     
     # 테스트 질문들 (간단한 한 줄 형식)
@@ -677,44 +677,20 @@ def test_vector_search(
             lecture_count = 0
             if "lecture" in sources:
                 lecture_query = query  # lecture는 원문으로 검색
-                if use_hybrid:
-                    lecture_results = hybrid_search(
-                        client, embedding, lecture_query, collection_name, "lecture", top_k=top_k, use_bm25=True
-                    )
-                    lecture_count = len(lecture_results)
-                    for r in lecture_results:
-                        all_results.append({
-                            "content": r['content'],
-                            "score": r['score'],
-                            "source": r['source'],
-                            "query_type": "original",
-                            "vector_score": r.get('vector_score', 0),
-                            "keyword_score": r.get('keyword_score', 0),
-                            "bm25_score": r.get('bm25_score', 0)
-                        })
-                else:
-                    lecture_vector = embedding.embed_query(lecture_query)
-                    lecture_result = client.query_points(
-                        collection_name=collection_name,
-                        query=lecture_vector,
-                        query_filter=Filter(
-                            must=[
-                                FieldCondition(
-                                    key="metadata.source",
-                                    match=MatchValue(value="lecture")
-                                )
-                            ]
-                        ),
-                        limit=top_k
-                    )
-                    lecture_count = len(lecture_result.points)
-                    for hit in lecture_result.points:
-                        all_results.append({
-                            "content": hit.payload.get('page_content', ''),
-                            "score": hit.score,
-                            "source": hit.payload.get('metadata', {}).get('source', 'unknown'),
-                            "query_type": "original"
-                        })
+                lecture_results = hybrid_search(
+                    client, embedding, lecture_query, collection_name, "lecture", top_k=top_k, use_bm25=True
+                )
+                lecture_count = len(lecture_results)
+                for r in lecture_results:
+                    all_results.append({
+                        "content": r['content'],
+                        "score": r['score'],
+                        "source": r['source'],
+                        "query_type": "original",
+                        "vector_score": r.get('vector_score', 0),
+                        "keyword_score": r.get('keyword_score', 0),
+                        "bm25_score": r.get('bm25_score', 0)
+                    })
             
             # 2. python_doc 검색 (LLM이 결정한 sources에 포함되어 있을 때만)
             translated_query = None
@@ -739,46 +715,21 @@ def test_vector_search(
                     # 영어 질문이면 원문 그대로 python_doc에서 검색
                     python_query = query
                 
-                if use_hybrid:
-                    python_results = hybrid_search(
-                        client, embedding, python_query, collection_name, "python_doc", top_k=top_k, use_bm25=True
-                    )
-                    python_doc_count = len(python_results)
-                    query_type = "translated" if (use_translation and is_korean(query) and translated_query) else "original"
-                    for r in python_results:
-                        all_results.append({
-                            "content": r['content'],
-                            "score": r['score'],
-                            "source": r['source'],
-                            "query_type": query_type,
-                            "vector_score": r.get('vector_score', 0),
-                            "keyword_score": r.get('keyword_score', 0),
-                            "bm25_score": r.get('bm25_score', 0)
-                        })
-                else:
-                    python_vector = embedding.embed_query(python_query)
-                    python_result = client.query_points(
-                        collection_name=collection_name,
-                        query=python_vector,
-                        query_filter=Filter(
-                            must=[
-                                FieldCondition(
-                                    key="metadata.source",
-                                    match=MatchValue(value="python_doc")
-                                )
-                            ]
-                        ),
-                        limit=top_k
-                    )
-                    python_doc_count = len(python_result.points)
-                    query_type = "translated" if (use_translation and is_korean(query) and translated_query) else "original"
-                    for hit in python_result.points:
-                        all_results.append({
-                            "content": hit.payload.get('page_content', ''),
-                            "score": hit.score,
-                            "source": hit.payload.get('metadata', {}).get('source', 'unknown'),
-                            "query_type": query_type
-                        })
+                python_results = hybrid_search(
+                    client, embedding, python_query, collection_name, "python_doc", top_k=top_k, use_bm25=True
+                )
+                python_doc_count = len(python_results)
+                query_type = "translated" if (use_translation and is_korean(query) and translated_query) else "original"
+                for r in python_results:
+                    all_results.append({
+                        "content": r['content'],
+                        "score": r['score'],
+                        "source": r['source'],
+                        "query_type": query_type,
+                        "vector_score": r.get('vector_score', 0),
+                        "keyword_score": r.get('keyword_score', 0),
+                        "bm25_score": r.get('bm25_score', 0)
+                    })
             
             # 3. 중복 제거 (search_agent와 동일한 로직)
             seen = set()
@@ -805,13 +756,10 @@ def test_vector_search(
                 content = result['content'][:200].replace('\n', ' ')
                 
                 emoji = "🇰🇷" if query_type == "original" and is_korean(query) else "🇺🇸"
-                if use_hybrid:
-                    vector_score = result.get('vector_score', 0)
-                    keyword_score = result.get('keyword_score', 0)
-                    bm25_score = result.get('bm25_score', 0)
-                    print(f"[{idx}] {emoji} 하이브리드: {score:.4f} (벡터: {vector_score:.4f}, 키워드: {keyword_score:.4f}, BM25: {bm25_score:.4f}) | 소스: {source}")
-                else:
-                    print(f"[{idx}] {emoji} 유사도: {score:.4f} | 소스: {source}")
+                vector_score = result.get('vector_score', 0)
+                keyword_score = result.get('keyword_score', 0)
+                bm25_score = result.get('bm25_score', 0)
+                print(f"[{idx}] {emoji} 하이브리드: {score:.4f} (벡터: {vector_score:.4f}, 키워드: {keyword_score:.4f}, BM25: {bm25_score:.4f}) | 소스: {source}")
                 print(f"    {content}...")
                 print()
             
@@ -852,8 +800,7 @@ def test_vector_search(
             test_results=test_results,
             embedding_model=embedding_model,
             collection_name=collection_name,
-            use_translation=use_translation,
-            use_hybrid=use_hybrid
+            use_translation=use_translation
         )
     
     print("\n" + "=" * 80)
@@ -881,7 +828,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         choices=["text-embedding-3-small", "text-embedding-3-large"],
-        help=f"사용할 임베딩 모델 (None이면 파일 상단 EMBEDDING_MODEL={EMBEDDING_MODEL} 사용)"
+        help=f"사용할 임베딩 모델 (None이면 파일 상단 EMBEDDING_MODEL 또는 ConfigDB.EMBEDDING_MODEL 사용)"
     )
     parser.add_argument(
         "--collection",
@@ -899,18 +846,11 @@ if __name__ == "__main__":
         action="store_true",
         help="결과 저장 비활성화"
     )
-    parser.add_argument(
-        "--hybrid",
-        action="store_true",
-        help="하이브리드 검색 사용 (벡터 + 키워드 매칭)"
-    )
-    
     args = parser.parse_args()
     
     test_vector_search(
         embedding_model=args.embedding_model,
         collection_name=args.collection,
         use_translation=not args.no_translation,
-        save_results=not args.no_save,
-        use_hybrid=args.hybrid
+        save_results=not args.no_save
     )

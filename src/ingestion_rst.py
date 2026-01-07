@@ -16,14 +16,19 @@ from qdrant_client.models import VectorParams, Distance
 from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings
 
+import sys
+sys.path.append(os.getcwd())
+from src.utils.config import ConfigDB
+
 # ============================================================
 # 테스트 설정 (여기서 쉽게 변경 가능)
 # ============================================================
 # 임베딩 모델 선택: "text-embedding-3-small" 또는 "text-embedding-3-large"
-EMBEDDING_MODEL = "text-embedding-3-large"  # ← 여기 변경!
+# None이면 ConfigDB.EMBEDDING_MODEL 사용
+EMBEDDING_MODEL = None  # ← 필요시 변경 (None이면 ConfigDB.EMBEDDING_MODEL 사용)
 
-# 컬렉션 이름 (None이면 기본값 "learning_ai" 사용)
-COLLECTION_NAME = "learning_ai"  # ← 필요시 변경
+# 컬렉션 이름 (None이면 ConfigDB.COLLECTION_NAME 사용)
+COLLECTION_NAME = None  # ← 필요시 변경 (None이면 ConfigDB.COLLECTION_NAME 사용)
 
 # 컬렉션 재생성 여부 (기존 컬렉션 삭제 후 재생성)
 RECREATE_COLLECTION = False  # ← True로 설정하면 기존 컬렉션 삭제 후 재생성
@@ -54,8 +59,9 @@ class RSTIngestor:
         self.qdrant_port = qdrant_port
         self.collection_name = collection_name
         self.recreate_collection = recreate_collection
-        # 파일 상단 EMBEDDING_MODEL 사용 (None이면)
-        self.embedding_model_name = embedding_model_name if embedding_model_name is not None else EMBEDDING_MODEL
+        # 파일 상단 EMBEDDING_MODEL 또는 ConfigDB.EMBEDDING_MODEL 사용 (None이면)
+        default_embedding = EMBEDDING_MODEL if EMBEDDING_MODEL is not None else ConfigDB.EMBEDDING_MODEL
+        self.embedding_model_name = embedding_model_name if embedding_model_name is not None else default_embedding
         self.batch_size = batch_size
 
         self._vector_store: Optional[QdrantVectorStore] = None
@@ -766,9 +772,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RST Ingestion")
     parser.add_argument("--single", action="store_true", help="Single file only (default: all files)")
     parser.add_argument("--file", type=str, help="Single file path")
-    parser.add_argument("--collection", type=str, default=None, help=f"Qdrant collection name (None이면 파일 상단 COLLECTION_NAME={COLLECTION_NAME} 사용)")
+    parser.add_argument("--collection", type=str, default=None, help=f"Qdrant collection name (None이면 파일 상단 COLLECTION_NAME 또는 ConfigDB.COLLECTION_NAME 사용)")
     parser.add_argument("--recreate-collection", action="store_true", default=None, help="Delete and recreate collection before upload (None이면 파일 상단 RECREATE_COLLECTION 사용)")
-    parser.add_argument("--embedding-model", type=str, default=None, help=f"OpenAI embedding model (None이면 파일 상단 EMBEDDING_MODEL={EMBEDDING_MODEL} 사용)")
+    parser.add_argument("--embedding-model", type=str, default=None, help=f"OpenAI embedding model (None이면 파일 상단 EMBEDDING_MODEL 또는 ConfigDB.EMBEDDING_MODEL 사용)")
     parser.add_argument("--chunk-size", type=int, default=900)
     parser.add_argument("--chunk-overlap", type=int, default=200)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -782,10 +788,12 @@ if __name__ == "__main__":
     print("RST Ingestion (optimized chunking)")
     print("=" * 60)
 
-    # 파일 상단 설정 사용 (명령줄 인자가 None이면)
-    collection_name = args.collection if args.collection is not None else COLLECTION_NAME
+    # 파일 상단 설정 또는 ConfigDB 사용 (명령줄 인자가 None이면)
+    default_collection = COLLECTION_NAME if COLLECTION_NAME is not None else ConfigDB.COLLECTION_NAME
+    default_embedding = EMBEDDING_MODEL if EMBEDDING_MODEL is not None else ConfigDB.EMBEDDING_MODEL
+    collection_name = args.collection if args.collection is not None else default_collection
     recreate_collection = args.recreate_collection if args.recreate_collection is not None else RECREATE_COLLECTION
-    embedding_model = args.embedding_model if args.embedding_model is not None else EMBEDDING_MODEL
+    embedding_model = args.embedding_model if args.embedding_model is not None else default_embedding
     
     ingestor = RSTIngestor(
         chunk_size=args.chunk_size,

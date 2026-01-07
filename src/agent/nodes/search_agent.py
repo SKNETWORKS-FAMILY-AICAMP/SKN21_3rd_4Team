@@ -113,15 +113,68 @@ def _calculate_keyword_score(query_keywords: List[str], content: str) -> float:
     return min(score, 1.0)
 
 
-def search_by_source(query: str, source: str, top_k: int, use_hybrid: bool = False) -> list:
+def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_length: float = 100.0, k1: float = 1.5, b: float = 0.75) -> float:
+    """
+    BM25 점수 계산 (Sparse 검색)
+    
+    BM25는 TF-IDF의 개선 버전으로, 문서 길이 정규화를 포함합니다.
+    
+    Args:
+        query_keywords: 검색 쿼리의 키워드 리스트
+        content: 문서 내용
+        avg_doc_length: 평균 문서 길이 (기본값: 100.0, 실제로는 전체 문서 평균 사용 권장)
+        k1: TF 정규화 파라미터 (기본값: 1.5)
+        b: 문서 길이 정규화 파라미터 (기본값: 0.75)
+        
+    Returns:
+        BM25 점수 (정규화되지 않음, 비교용으로만 사용)
+    """
+    if not query_keywords or not content:
+        return 0.0
+    
+    # 문서를 단어로 분리 (소문자 변환)
+    doc_words = re.findall(r'\b\w+\b', content.lower())
+    doc_length = len(doc_words)
+    
+    if doc_length == 0:
+        return 0.0
+    
+    # 각 키워드의 TF 계산
+    score = 0.0
+    for keyword in query_keywords:
+        keyword_lower = keyword.lower().strip()
+        if not keyword_lower:
+            continue
+        
+        # 키워드가 문서에 나타나는 빈도 (TF)
+        term_freq = doc_words.count(keyword_lower)
+        if term_freq == 0:
+            continue
+        
+        # BM25 공식: IDF는 간단히 log로 근사 (실제로는 전체 문서 집합에서 계산해야 함)
+        # 여기서는 키워드가 문서에 나타나면 점수를 주는 방식
+        # 실제 IDF는 전체 문서 집합에서 계산해야 하지만, 여기서는 간단히 처리
+        
+        # TF 정규화 (BM25 공식)
+        tf_norm = (term_freq * (k1 + 1)) / (term_freq + k1 * (1 - b + b * (doc_length / avg_doc_length)))
+        
+        # 간단한 IDF 근사 (키워드 길이 기반 가중치)
+        idf_weight = 1.0 + len(keyword_lower.split())  # 긴 키워드가 더 중요
+        
+        score += tf_norm * idf_weight
+    
+    return score
+
+
+def search_by_source(query: str, source: str, top_k: int) -> list:
     """
     특정 소스에서만 검색 (Qdrant 필터 사용)
+    하이브리드 검색(벡터 + 키워드 매칭 + BM25)을 사용합니다.
     
     Args:
         query: 검색 쿼리
         source: 소스 필터 ("lecture" 또는 "python_doc")
         top_k: 반환할 결과 수
-        use_hybrid: 하이브리드 검색 사용 여부 (기본: False)
     """
     client = QdrantClient(
         host=ConfigDB.HOST,
@@ -133,76 +186,77 @@ def search_by_source(query: str, source: str, top_k: int, use_hybrid: bool = Fal
         api_key=ConfigAPI.OPENAI_API_KEY
     )
     
-    if use_hybrid:
-        # 하이브리드 검색: 벡터 + 키워드 매칭
-        candidate_k = min(top_k * 4, 20)
-        query_vector = embeddings.embed_query(query)
+    # 하이브리드 검색: 벡터 + 키워드 매칭 + BM25 (vector_search.py와 동일한 방식)
+    candidate_k = min(top_k * 4, 20)
+    query_vector = embeddings.embed_query(query)
+    
+    vector_result = client.query_points(
+        collection_name=ConfigDB.COLLECTION_NAME,
+        query=query_vector,
+        query_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.source",
+                    match=MatchValue(value=source)
+                )
+            ]
+        ),
+        limit=candidate_k
+    )
+    
+    # 키워드 추출
+    query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
+    query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
+    
+    # 벡터 검색 결과 수집 및 점수 계산
+    candidates = []
+    bm25_scores = []
+    
+    for hit in vector_result.points:
+        content = hit.payload.get('page_content', '')
+        vector_score = hit.score
+        keyword_score = _calculate_keyword_score(query_keywords, content)
         
-        vector_result = client.query_points(
-            collection_name=ConfigDB.COLLECTION_NAME,
-            query=query_vector,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="metadata.source",
-                        match=MatchValue(value=source)
-                    )
-                ]
-            ),
-            limit=candidate_k
-        )
+        # BM25 점수 계산
+        bm25_raw = _calculate_bm25_score(query_keywords, content)
+        bm25_scores.append(bm25_raw)
         
-        # 키워드 추출
-        query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
-        query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
-        
-        # 하이브리드 점수 계산
-        candidates = []
-        for hit in vector_result.points:
-            content = hit.payload.get('page_content', '')
-            vector_score = hit.score
-            keyword_score = _calculate_keyword_score(query_keywords, content)
-            hybrid_score = vector_score * 0.7 + keyword_score * 0.3
-            
-            candidates.append({
-                "content": content,
-                "score": hybrid_score,
-                "vector_score": vector_score,
-                "keyword_score": keyword_score,
-                "metadata": hit.payload.get('metadata', {})
-            })
-        
-        candidates.sort(key=lambda x: x['score'], reverse=True)
-        return candidates[:top_k]
+        candidates.append({
+            "content": content,
+            "vector_score": vector_score,
+            "keyword_score": keyword_score,
+            "bm25_raw": bm25_raw,
+            "metadata": hit.payload.get('metadata', {})
+        })
+    
+    # BM25 점수 정규화 (0~1 범위로)
+    if bm25_scores and max(bm25_scores) > 0:
+        max_bm25 = max(bm25_scores)
+        for i, candidate in enumerate(candidates):
+            candidate['bm25_score'] = bm25_scores[i] / max_bm25 if max_bm25 > 0 else 0.0
     else:
-        # 일반 벡터 검색
-        query_vector = embeddings.embed_query(query)
-        
-        search_result = client.query_points(
-            collection_name=ConfigDB.COLLECTION_NAME,
-            query=query_vector,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="metadata.source",
-                        match=MatchValue(value=source)
-                    )
-                ]
-            ),
-            limit=top_k
+        for candidate in candidates:
+            candidate['bm25_score'] = 0.0
+    
+    # 하이브리드 점수 계산 (벡터 + 키워드 + BM25)
+    # 가중치: vector 0.6, keyword 0.2, bm25 0.2 (vector_search.py와 동일)
+    vector_weight = 0.6
+    keyword_weight = 0.2
+    bm25_weight = 0.2
+    
+    for candidate in candidates:
+        hybrid_score = (
+            candidate['vector_score'] * vector_weight +
+            candidate['keyword_score'] * keyword_weight +
+            candidate['bm25_score'] * bm25_weight
         )
-        
-        results = []
-        for hit in search_result.points:
-            results.append({
-                "content": hit.payload.get('page_content', ''),
-                "score": hit.score,
-                "metadata": hit.payload.get('metadata', {})
-            })
-        return results
+        candidate['score'] = hybrid_score
+    
+    candidates.sort(key=lambda x: x['score'], reverse=True)
+    return candidates[:top_k]
 
 
-def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
+def execute_dual_query_search(query: str) -> tuple:
     """
     소스별 듀얼 쿼리 검색
     
@@ -229,7 +283,7 @@ def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
     PYDOC_FALLBACK_SCORE_THRESHOLD = 0.45
 
     # 1) lecture는 원문으로만 검색
-    lecture_results = search_by_source(query, "lecture", top_k, use_hybrid=use_hybrid) if "lecture" in sources else []
+    lecture_results = search_by_source(query, "lecture", top_k) if "lecture" in sources else []
 
     # 2) python_doc 검색
     python_results = []
@@ -238,7 +292,7 @@ def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
             # 2-1) 번역(영어 키워드) 검색이 기본
             english_query = _translate_to_english(query)
             query_info["translated"] = english_query
-            python_results_en = search_by_source(english_query, "python_doc", top_k, use_hybrid=use_hybrid)
+            python_results_en = search_by_source(english_query, "python_doc", top_k)
             for r in python_results_en:
                 r["query_type"] = "translated"
             all_results.extend(python_results_en)
@@ -247,10 +301,10 @@ def execute_dual_query_search(query: str, use_hybrid: bool = False) -> tuple:
             # 2-2) fallback: 번역 결과가 약하면 한글 원문으로도 한 번 더 검색
             best_score = python_results_en[0]["score"] if python_results_en else 0
             if (not python_results_en) or (best_score < PYDOC_FALLBACK_SCORE_THRESHOLD):
-                python_results = search_by_source(query, "python_doc", top_k, use_hybrid=use_hybrid)
+                python_results = search_by_source(query, "python_doc", top_k)
         else:
             # 영어 질문이면 원문(영어) 그대로
-            python_results = search_by_source(query, "python_doc", top_k, use_hybrid=use_hybrid)
+            python_results = search_by_source(query, "python_doc", top_k)
     else:
         python_results = []
     
