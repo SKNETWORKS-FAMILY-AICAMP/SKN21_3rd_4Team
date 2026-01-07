@@ -175,8 +175,10 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             color: var(--text-white);
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .brand-icon {
@@ -327,28 +329,82 @@
             padding: 40px 24px;
         }
 
-        /* [추가] 상태 표시기 스타일 */
+        /* [추가] 상태 표시기 스타일 - 프리미엄 버전 */
         .status-indicator {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background-color: #ccc;
-            /* 초기 상태: 회색 */
-            margin-left: 8px;
-            transition: background-color 0.3s ease;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            background-color: #6b7280;
+            margin-left: 6px;
+            margin-right: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* 정상 (초록) */
+        /* 정상 (초록) - 화려한 글로우 */
         .status-ok {
-            background-color: #10b981;
-            box-shadow: 0 0 8px #10b981;
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            border-color: rgba(52, 211, 153, 0.5);
+            box-shadow:
+                0 0 8px rgba(52, 211, 153, 0.8),
+                0 0 16px rgba(52, 211, 153, 0.4);
+            animation: glow-green 2s ease-in-out infinite;
         }
 
-        /* 오류 (빨강) */
+        @keyframes glow-green {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(52, 211, 153, 0.8), 0 0 16px rgba(52, 211, 153, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 12px rgba(52, 211, 153, 1), 0 0 24px rgba(52, 211, 153, 0.6);
+            }
+        }
+
+        /* 오류 (빨강) - 깜빡임 글로우 */
         .status-error {
-            background-color: #ef4444;
-            box-shadow: 0 0 8px #ef4444;
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+            border-color: rgba(248, 113, 113, 0.5);
+            box-shadow:
+                0 0 8px rgba(248, 113, 113, 0.8),
+                0 0 16px rgba(248, 113, 113, 0.4);
+            animation: glow-red 1s ease-in-out infinite;
+        }
+
+        @keyframes glow-red {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* DB 상태 텍스트 (오른쪽 아래 고정) */
+        .db-status-text {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: transparent;
+            z-index: 1000;
+            font-weight: 500;
+        }
+
+        .db-status-ok {
+            color: #10b981;
+        }
+
+        .db-status-error {
+            color: #ef4444;
         }
 
         /* ========================================
@@ -689,6 +745,52 @@
             transform: translateY(-2px);
         }
 
+        /* Best Match 카드 스타일 (다크모드 호환) */
+        .best-match-card {
+            background: var(--bg-secondary);
+            border: 1px solid #f9a8d4;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-top: 16px;
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 220px;
+        }
+
+        .best-match-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .best-match-badge {
+            background: rgba(252, 231, 243, 0.2);
+            color: #ec4899;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .best-match-title {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 12px;
+        }
+
+        .best-match-content {
+            font-size: 10px;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .best-match-score {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
         .source-type {
             display: inline-block;
             padding: 2px 6px;
@@ -829,12 +931,11 @@
     <aside class="sidebar">
         <!-- 헤더: 로고 + 테마 토글 -->
         <div class="sidebar-header">
+            <!-- 로고 아이콘 (왼쪽 고정) -->
+            <div class="brand-icon">✨</div>
             <div class="brand">
-                <!-- [수정 포인트] 로고 아이콘 변경 -->
-                <div class="brand-icon">⚡</div>
                 <!-- [수정 포인트] 브랜드명 변경 -->
                 <span class="brand-text">Bootcamp AI</span>
-                <div id="serverStatus" class="status-indicator" title="서버 연결 확인 중..."></div>
             </div>
             <!-- 다크/라이트 모드 토글 버튼 -->
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
@@ -1213,18 +1314,18 @@
                                     answer += data.data;
                                     updateBotMessage(botDiv, answer);
                                 } else if (data.type === 'sources') {
-                                    // 참고 자료 수신
+                                    // 참고 자료 수신 → Best Match 카드 표시 (답변 아래)
                                     sources = data.data;
+                                    if (botDiv && sources.length > 0) {
+                                        appendBestMatch(botDiv, sources[0]);
+                                    }
                                 } else if (data.type === 'suggestions') {
                                     // 추천 질문 수신 → UI에 표시
                                     if (botDiv && data.data && data.data.length > 0) {
                                         appendSuggestions(botDiv, data.data);
                                     }
                                 } else if (data.type === 'done') {
-                                    // 완료 - 스크립트 카드는 표시하지 않음
-                                    // if (botDiv && sources.length > 0) {
-                                    //     appendSources(botDiv, sources);
-                                    // }
+                                    // 완료 신호
                                 }
                             } catch (e) { /* JSON 파싱 에러 무시 */ }
                         }
@@ -1268,6 +1369,44 @@
             div.querySelector('.message-content').innerHTML = marked.parse(text);
             // 자동 스크롤
             document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+        }
+
+        /**
+         * Best Match 카드 추가 (답변 아래에 표시)
+         */
+        function appendBestMatch(div, source) {
+            if (div.querySelector('.best-match-card')) return;
+            const scorePercent = (source.score * 100).toFixed(1);
+            const html = `
+                <div class="best-match-card">
+                    <div class="best-match-header">
+                        <span class="best-match-badge">${source.type}</span>
+                        <div class="best-match-title">${source.title}</div>
+                    </div>
+                    <div class="best-match-content">${source.content}</div>
+                    <div class="best-match-score">유사도: ${scorePercent}%</div>
+                </div>
+            `;
+            div.querySelector('.message-content').insertAdjacentHTML('beforeend', html);
+        }
+
+        /**
+         * 추천 질문 버튼 추가 (답변 아래에 표시)
+         */
+        function appendSuggestions(div, suggestions) {
+            const html = `
+                <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${suggestions.map(q => `
+                        <button onclick="send('${q.replace(/'/g, "\\'")}')"
+                            style="padding: 8px 14px; border-radius: 20px; border: 1px solid var(--accent); 
+                                   background: var(--bg-tertiary); color: var(--accent); font-size: 13px;
+                                   cursor: pointer;">
+                            🔗 ${q}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            div.querySelector('.message-content').innerHTML += html;
         }
 
         /**
@@ -1423,9 +1562,8 @@
          * 5초마다 서버 상태 체크
          */
         async function checkServerStatus() {
-            const indicator = document.getElementById('serverStatus');
+            const statusText = document.getElementById('dbStatusText');
             try {
-                // 헬스 체크 API 호출 (타임아웃 2초 설정)
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 2000);
 
@@ -1433,17 +1571,14 @@
                 clearTimeout(timeoutId);
 
                 if (response.ok) {
-                    indicator.className = 'status-indicator status-ok';
-                    indicator.title = '서버 정상 연결됨';
+                    statusText.textContent = 'Database is successfully connected';
+                    statusText.className = 'db-status-text db-status-ok';
                 } else {
                     throw new Error('Server Error');
                 }
             } catch (e) {
-                indicator.className = 'status-indicator status-error';
-                indicator.title = '서버 연결 끊김';
-
-                // (선택 사항) 연결 끊김 시 알림을 띄우고 싶다면:
-                // alert('서버 연결이 끊어졌습니다.'); 
+                statusText.textContent = 'Database is not connected';
+                statusText.className = 'db-status-text db-status-error';
             }
         }
 
@@ -1458,6 +1593,9 @@
         // 페이지 로드 시 사이드바 렌더링
         renderSections();
     </script>
+
+    <!-- DB 상태 텍스트 (오른쪽 아래 고정) -->
+    <div id="dbStatusText" class="db-status-text">Checking database...</div>
 </body>
 
 </html>
