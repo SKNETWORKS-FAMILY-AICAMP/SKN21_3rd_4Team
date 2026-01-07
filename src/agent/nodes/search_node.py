@@ -10,7 +10,7 @@ def search_node(state: AgentState):
     
     query = state['query']
     
-    # 검색 설정 및 실행
+    # 검색 설정 및 실행 (하이브리드 검색 기본 적용)
     results, query_info = execute_dual_query_search(query)
     
     # 결과 포맷팅
@@ -36,7 +36,7 @@ def build_context(state: AgentState):
     results = state['search_results']
     
     if not results:
-        return "검색된 관련 자료가 없습니다."
+        return {"context": "검색된 관련 자료가 없습니다."}
     
     context_parts = []
     

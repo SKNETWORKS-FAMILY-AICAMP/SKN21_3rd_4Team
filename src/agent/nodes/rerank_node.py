@@ -36,11 +36,13 @@ def rerank_node(state: AgentState):
     scores = [(1 / (1 + np.exp(-score))) for score in scores] # Sigmoid 함수 적용하여 0~1 사이값으로 변환
 
     # 점수 업데이트 및 정렬
+    # 하이브리드 점수(score)는 유지하고, rerank 점수는 별도로 저장
     for i, res in enumerate(results):
-        res['score'] = float(scores[i])
+        res['rerank_score'] = float(scores[i])  # Rerank 점수 (CrossEncoder)
+        # res['score']는 하이브리드 점수 그대로 유지
         
-    # 점수가 높은 순으로 내림차순 정렬
-    reranked_results = sorted(results, key=lambda x: x['score'], reverse=True) 
+    # Rerank 점수가 높은 순으로 정렬 (하이브리드 점수는 유지)
+    reranked_results = sorted(results, key=lambda x: x['rerank_score'], reverse=True) 
     
     return {
         "search_results": reranked_results
