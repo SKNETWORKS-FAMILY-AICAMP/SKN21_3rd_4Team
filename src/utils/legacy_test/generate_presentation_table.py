@@ -41,19 +41,23 @@ def generate_presentation_tables():
     lecture_avg_hybrid, python_doc_avg_hybrid, lecture_scores, python_doc_scores = calculate_averages(csv_file)
     
     # ========== Python Doc 데이터 ==========
-    # 실제 데이터 기반
+    # 실제 데이터 기반 (experiment_summary.md + 최종 테스트 결과)
     python_doc_data = {
         "전처리 전 (txt)": {
             "평균 유사도": 0.35,  # 사용자 기억: 0.3~0.4
             "설명": "txt 파일 기반 단순 벡터 검색 (한글 질문)"
         },
-        "전처리 후 (RST)": {
-            "평균 유사도": 0.5587,  # 초기 설정 (experiment_summary.md)
-            "설명": "RST 파일 기반, chunk_size=900, 번역 프롬프트 사용"
+        "전처리 후 (RST) - 초기 설정": {
+            "평균 유사도": 0.5587,  # 0. 초기 설정 (experiment_summary.md)
+            "설명": "RST 파일 기반, chunk_size=900, 번역 프롬프트 사용, 하이브리드 없음"
         },
-        "하이브리드 검색": {
-            "평균 유사도": python_doc_avg_hybrid,  # 최종 테스트 결과
-            "설명": "벡터 + 키워드 매칭 + BM25, 번역 프롬프트 사용"
+        "하이브리드 검색 (F)": {
+            "평균 유사도": 0.6360,  # F. 하이브리드 검색 (experiment_summary.md)
+            "설명": "벡터 + 키워드 매칭 + BM25, text-embedding-3-small, chunk_size=900"
+        },
+        "하이브리드 검색 (최종)": {
+            "평균 유사도": python_doc_avg_hybrid,  # 최종 테스트 결과 (2026-01-07)
+            "설명": "벡터 + 키워드 매칭 + BM25, text-embedding-3-large, 개선된 번역 프롬프트"
         }
     }
     
@@ -124,7 +128,7 @@ def generate_presentation_tables():
     print("마크다운 형식 (복사용)")
     print("=" * 100)
     
-    print("\n### Python Doc (RST 파일)")
+    print("\n### Python Doc (RST 파일) - 실험 과정 포함")
     print("| 단계 | 평균 유사도 | 개선율 | 설명 |")
     print("|------|:-----------:|:------:|------|")
     prev_score = None
@@ -138,6 +142,22 @@ def generate_presentation_tables():
             improvement = "-"
         print(f"| {stage} | **{score:.4f}** | {improvement} | {data['설명']} |")
         prev_score = score
+    
+    # 실험 결과 표 추가
+    print("\n### Python Doc 실험 결과 상세 (2026-01-06)")
+    print("| 순위 | 실험 | 청크 | 하이브리드 | 문서증강 | 평균 유사도 | 0.6+ |")
+    print("|:---:|------|:----:|:---------:|:-------:|:-----------:|:----:|")
+    experiments = [
+        ("1", "F. 하이브리드 검색", 900, "O", "없음", 0.6360, "10개"),
+        ("2", "0. 초기 설정", 900, "X", "없음", 0.5587, "3개"),
+        ("3", "G. 키워드 태그", 500, "X", "[KEYWORDS]", 0.5495, "2개"),
+        ("4", "C. 청크 축소", 500, "X", "없음", 0.5380, "2개"),
+        ("5", "B. 간소화 프롬프트", 500, "X", "없음", 0.5191, "0개"),
+        ("6", "A. 쿼리 확장", 900, "X", "없음", 0.5116, "1개"),
+        ("7", "D. 요약 추가", 500, "X", "[SUMMARY]", 0.5043, "0개"),
+    ]
+    for rank, exp, chunk, hybrid, aug, score, count in experiments:
+        print(f"| {rank} | {exp} | {chunk} | {hybrid} | {aug} | **{score:.4f}** | {count} |")
     
     print("\n### Lecture (노트북 파일)")
     print("| 단계 | 평균 유사도 | 개선율 | 설명 |")
@@ -159,11 +179,12 @@ def generate_presentation_tables():
     print("전체 개선 요약")
     print("=" * 100)
     
-    python_total_improvement = ((python_doc_data["하이브리드 검색"]["평균 유사도"] - python_doc_data["전처리 전 (txt)"]["평균 유사도"]) / python_doc_data["전처리 전 (txt)"]["평균 유사도"]) * 100
+    python_total_improvement = ((python_doc_data["하이브리드 검색 (최종)"]["평균 유사도"] - python_doc_data["전처리 전 (txt)"]["평균 유사도"]) / python_doc_data["전처리 전 (txt)"]["평균 유사도"]) * 100
     lecture_total_improvement = ((lecture_data["하이브리드 검색"]["평균 유사도"] - lecture_data["전처리 전"]["평균 유사도"]) / lecture_data["전처리 전"]["평균 유사도"]) * 100
     
     print(f"\nPython Doc:")
-    print(f"  전처리 전 -> 하이브리드: {python_doc_data['전처리 전 (txt)']['평균 유사도']:.4f} -> {python_doc_data['하이브리드 검색']['평균 유사도']:.4f} ({python_total_improvement:+.1f}%)")
+    print(f"  전처리 전 -> 하이브리드(최종): {python_doc_data['전처리 전 (txt)']['평균 유사도']:.4f} -> {python_doc_data['하이브리드 검색 (최종)']['평균 유사도']:.4f} ({python_total_improvement:+.1f}%)")
+    print(f"  초기 설정 -> 하이브리드(F): {python_doc_data['전처리 후 (RST) - 초기 설정']['평균 유사도']:.4f} -> {python_doc_data['하이브리드 검색 (F)']['평균 유사도']:.4f} (+13.8%)")
     print(f"  질문 수: {len(python_doc_scores)}개")
     
     print(f"\nLecture:")
