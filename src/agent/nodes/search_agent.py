@@ -84,11 +84,15 @@ def _translate_to_english(query: str) -> str:
 def _calculate_keyword_score(query_keywords: List[str], content: str) -> float:
     """
     키워드 매칭 점수 계산 (0.0 ~ 1.0)
+    부분 단어 매칭도 지원합니다 (예: "trimming"이 "trimming_history"에 포함되면 매칭).
     """
     if not query_keywords or not content:
         return 0.0
     
     content_lower = content.lower()
+    # 문서를 단어로 분리 (정확한 매칭 확인용)
+    doc_words = re.findall(r'\b\w+\b', content_lower)
+    
     matched_count = 0
     total_weight = 0
     
@@ -99,10 +103,22 @@ def _calculate_keyword_score(query_keywords: List[str], content: str) -> float:
         
         weight = len(keyword_lower.split())
         
-        if keyword_lower in content_lower:
+        # 1. 정확한 단어 매칭 (우선순위 높음)
+        exact_match = keyword_lower in doc_words
+        
+        # 2. 부분 문자열 매칭 (예: "trimming"이 "trimming_history"에 포함)
+        partial_match = keyword_lower in content_lower
+        
+        if exact_match:
+            # 정확한 매칭: 전체 가중치
             matched_count += weight
             if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
                 matched_count += weight * 0.5
+        elif partial_match:
+            # 부분 매칭: 가중치 0.7 (정확한 매칭보다 낮음)
+            matched_count += weight * 0.7
+            if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
+                matched_count += weight * 0.35
         
         total_weight += weight
     
@@ -118,6 +134,7 @@ def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_lengt
     BM25 점수 계산 (Sparse 검색)
     
     BM25는 TF-IDF의 개선 버전으로, 문서 길이 정규화를 포함합니다.
+    부분 단어 매칭도 지원합니다 (예: "trimming"이 "trimming_history"에 포함되면 매칭).
     
     Args:
         query_keywords: 검색 쿼리의 키워드 리스트
@@ -135,6 +152,7 @@ def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_lengt
     # 문서를 단어로 분리 (소문자 변환)
     doc_words = re.findall(r'\b\w+\b', content.lower())
     doc_length = len(doc_words)
+    content_lower = content.lower()
     
     if doc_length == 0:
         return 0.0
@@ -146,17 +164,37 @@ def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_lengt
         if not keyword_lower:
             continue
         
-        # 키워드가 문서에 나타나는 빈도 (TF)
+        # 1. 정확한 단어 매칭 (우선순위 높음)
         term_freq = doc_words.count(keyword_lower)
-        if term_freq == 0:
+        exact_match = term_freq > 0
+        
+        # 2. 부분 단어 매칭 (예: "trimming"이 "trimming_history"에 포함)
+        # 정확한 매칭이 없을 때만 부분 매칭 사용 (가중치 낮춤)
+        partial_match = False
+        partial_freq = 0
+        if not exact_match:
+            # 단어 경계를 고려한 부분 매칭 (단어 중간에 포함되는 경우)
+            for word in doc_words:
+                if keyword_lower in word or word in keyword_lower:
+                    partial_freq += 1
+                    partial_match = True
+        
+        # 매칭이 없으면 스킵
+        if not exact_match and not partial_match:
             continue
+        
+        # TF 계산 (정확한 매칭 우선, 부분 매칭은 가중치 낮춤)
+        if exact_match:
+            final_freq = term_freq
+        else:
+            final_freq = partial_freq * 0.5  # 부분 매칭은 가중치 0.5
         
         # BM25 공식: IDF는 간단히 log로 근사 (실제로는 전체 문서 집합에서 계산해야 함)
         # 여기서는 키워드가 문서에 나타나면 점수를 주는 방식
         # 실제 IDF는 전체 문서 집합에서 계산해야 하지만, 여기서는 간단히 처리
         
         # TF 정규화 (BM25 공식)
-        tf_norm = (term_freq * (k1 + 1)) / (term_freq + k1 * (1 - b + b * (doc_length / avg_doc_length)))
+        tf_norm = (final_freq * (k1 + 1)) / (final_freq + k1 * (1 - b + b * (doc_length / avg_doc_length)))
         
         # 간단한 IDF 근사 (키워드 길이 기반 가중치)
         idf_weight = 1.0 + len(keyword_lower.split())  # 긴 키워드가 더 중요
@@ -188,7 +226,10 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
     )
     
     # 하이브리드 검색: 벡터 + 키워드 매칭 + BM25 (vector_search.py와 동일한 방식)
-    candidate_k = min(top_k * 4, 20)
+    # 단일 단어 쿼리의 경우 더 많은 후보를 가져와서 부분 매칭 확률 증가
+    query_words = query.split()
+    is_single_word = len(query_words) == 1
+    candidate_k = min(top_k * 6, 30) if is_single_word else min(top_k * 4, 20)
     query_vector = embeddings.embed_query(query)
     
     vector_result = client.query_points(
@@ -210,11 +251,16 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
         query_keywords = [k.strip() for k in keywords if k.strip()]
     else:
         query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
+        # 단일 단어도 처리 (길이 2 이상, 대소문자 구분 없이)
         query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
+        # 단일 단어 쿼리인 경우에도 키워드가 비어있지 않도록 보장
+        if not query_keywords and len(query_cleaned.strip()) > 2:
+            query_keywords = [query_cleaned.strip()]
     
     # 벡터 검색 결과 수집 및 점수 계산
     candidates = []
     bm25_scores = []
+    seen_ids = set()  # 중복 제거용
     
     for hit in vector_result.points:
         content = hit.payload.get('page_content', '')
@@ -225,13 +271,60 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
         bm25_raw = _calculate_bm25_score(query_keywords, content)
         bm25_scores.append(bm25_raw)
         
-        candidates.append({
-            "content": content,
-            "vector_score": vector_score,
-            "keyword_score": keyword_score,
-            "bm25_raw": bm25_raw,
-            "metadata": hit.payload.get('metadata', {})
-        })
+        # 문서 ID로 중복 제거 (같은 문서가 여러 번 나올 수 있음)
+        doc_id = hit.id
+        if doc_id not in seen_ids:
+            seen_ids.add(doc_id)
+            candidates.append({
+                "content": content,
+                "vector_score": vector_score,
+                "keyword_score": keyword_score,
+                "bm25_raw": bm25_raw,
+                "metadata": hit.payload.get('metadata', {})
+            })
+    
+    # 단일 단어 쿼리이고 벡터 검색 결과가 적거나 키워드 매칭이 없는 경우
+    # 키워드 기반으로 추가 검색 (벡터 점수는 낮게 설정)
+    if is_single_word and len(candidates) < top_k:
+        # 키워드 매칭이 있는 문서를 추가로 찾기 위해 전체 컬렉션에서 검색
+        # (벡터 검색으로 찾지 못한 문서 중 키워드가 포함된 문서)
+        all_points = client.scroll(
+            collection_name=ConfigDB.COLLECTION_NAME,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.source",
+                        match=MatchValue(value=source)
+                    )
+                ]
+            ),
+            limit=1000,  # 최대 1000개 스캔
+            with_payload=True
+        )
+        
+        for point in all_points[0]:  # scroll 결과는 (points, next_page_offset) 튜플
+            if point.id in seen_ids:
+                continue  # 이미 벡터 검색 결과에 포함된 문서는 제외
+            
+            content = point.payload.get('page_content', '')
+            keyword_score = _calculate_keyword_score(query_keywords, content)
+            bm25_raw = _calculate_bm25_score(query_keywords, content)
+            
+            # 키워드나 BM25 매칭이 있는 문서만 추가
+            if keyword_score > 0 or bm25_raw > 0:
+                bm25_scores.append(bm25_raw)
+                seen_ids.add(point.id)
+                candidates.append({
+                    "content": content,
+                    "vector_score": 0.1,  # 벡터 검색으로 찾지 못했으므로 낮은 점수
+                    "keyword_score": keyword_score,
+                    "bm25_raw": bm25_raw,
+                    "metadata": point.payload.get('metadata', {})
+                })
+                
+                # 충분한 후보를 모았으면 중단
+                if len(candidates) >= top_k * 3:
+                    break
     
     # BM25 점수 정규화 (0~1 범위로)
     if bm25_scores and max(bm25_scores) > 0:
@@ -243,10 +336,17 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
             candidate['bm25_score'] = 0.0
     
     # 하이브리드 점수 계산 (벡터 + 키워드 + BM25)
-    # 가중치: vector 0.6, keyword 0.2, bm25 0.2 (vector_search.py와 동일)
-    vector_weight = 0.6
-    keyword_weight = 0.2
-    bm25_weight = 0.2
+    # 단일 단어 쿼리일 때는 키워드/BM25 가중치를 높여서 정확한 매칭 강조
+    if is_single_word:
+        # 단일 단어: 키워드 매칭과 BM25가 더 중요 (벡터는 보조)
+        vector_weight = 0.4
+        keyword_weight = 0.3
+        bm25_weight = 0.3
+    else:
+        # 일반 쿼리: vector 0.6, keyword 0.2, bm25 0.2 (vector_search.py와 동일)
+        vector_weight = 0.6
+        keyword_weight = 0.2
+        bm25_weight = 0.2
     
     for candidate in candidates:
         hybrid_score = (
@@ -255,6 +355,13 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
             candidate['bm25_score'] * bm25_weight
         )
         candidate['score'] = hybrid_score
+    
+    # 단일 단어 쿼리일 때 키워드/BM25 매칭이 있는 문서는 최소 점수 보장
+    if is_single_word:
+        for candidate in candidates:
+            if candidate['keyword_score'] > 0 or candidate['bm25_score'] > 0:
+                # 키워드나 BM25 매칭이 있으면 최소 점수 0.3 보장
+                candidate['score'] = max(candidate['score'], 0.3)
     
     candidates.sort(key=lambda x: x['score'], reverse=True)
     return candidates[:top_k]
