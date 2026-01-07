@@ -8,7 +8,7 @@
 
 <!-- 김가람 -->
 <td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/강하다.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="김가람"/>
+  <img src="image/한별이.webp" width="70" style="border-radius: 50%; alt="김가람"/>
   <h3 style="margin: 10px 0 5px 0;">김가람</h3>
   <p style="margin: 5px 0;">LLM Reasoning Agent Developer</p>
   <a href="https://github.com/gr-kim-94">
@@ -16,19 +16,9 @@
   </a>
 </td>
 
-<!-- 신지용 -->
-<td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/피카츄.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="신지용"/>
-  <h3 style="margin: 10px 0 5px 0;">신지용</h3>
-  <p style="margin: 5px 0;">Retrieval Agent Engineer</p>
-  <a href="https://github.com/sjy361872">
-    <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/>
-  </a>
-</td>
-
 <!-- 최자슈아주원 -->
 <td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/초롱이.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="최자슈아주원"/>
+  <img src="image/케케로.webp" width="160" style="border-radius: 50%;" alt="최자슈아주원"/>
   <h3 style="margin: 10px 0 5px 0;">최자슈아주원</h3>
   <p style="margin: 5px 0;">Retrieval Agent Engineer</p>
   <a href="https://github.com/reasonableplan">
@@ -38,7 +28,7 @@
 
 <!-- 윤경은 -->
 <td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/짱쎈고양이.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="윤경은"/>
+  <img src="image/타마마.webp" width="120" style="border-radius: 50%;" alt="윤경은"/>
   <h3 style="margin: 10px 0 5px 0;">윤경은</h3>
   <p style="margin: 5px 0;">Vector DB Engineer(lectures)</p>
   <a href="https://github.com/ykgstar37-lab">
@@ -48,7 +38,7 @@
 
 <!-- 안해빙 -->
 <td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/코카인.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="안혜빈"/>
+  <img src="image/기로로.webp" width="110" style="border-radius: 50%;" alt="안혜빈"/>
   <h3 style="margin: 10px 0 5px 0;">안혜빈</h3>
   <p style="margin: 5px 0;">LLM Reasoning Agent Developer</p>
   <a href="https://github.com/hyebinhy">
@@ -58,10 +48,20 @@
 
 <!-- 정세연 -->
 <td align="center" width="200" style="vertical-align: top; padding: 15px;">
-  <img src="image/코카인.jpg" width="180" height="180" style="border-radius: 50%; object-fit: cover;" alt="정세연"/>
+  <img src="image/쿠루루.webp" width="98" style="border-radius: 50%;" alt="정세연"/>
   <h3 style="margin: 10px 0 5px 0;">정세연</h3>
   <p style="margin: 5px 0;">Vector DB Engineer(python)</p>
   <a href="https://github.com/wjdtpdus25">
+    <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/>
+  </a>
+</td>
+
+<!-- 신지용 -->
+<td align="center" width="200" style="vertical-align: top; padding: 15px;">
+  <img src="image/우주.webp" width="98" style="border-radius: 50%;" alt="신지용"/>
+  <h3 style="margin: 10px 0 5px 0;">신지용</h3>
+  <p style="margin: 5px 0;">Retrieval Agent Engineer</p>
+  <a href="https://github.com/sjy361872">
     <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=GitHub&logoColor=white"/>
   </a>
 </td>
