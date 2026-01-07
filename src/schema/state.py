@@ -30,3 +30,8 @@ class AgentState(TypedDict):
     # 4. 분석 결과 (analyst_node → END) - 최종 출력
     # ─────────────────────────────────────────────────────────────
     analyst_results: Annotated[list, add_messages]
+    
+    # ─────────────────────────────────────────────────────────────
+    # 5. 추천 질문 (no_data_node에서 설정)
+    # ─────────────────────────────────────────────────────────────
+    suggested_questions: List[str]

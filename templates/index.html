@@ -1190,11 +1190,16 @@
                                 } else if (data.type === 'sources') {
                                     // 참고 자료 수신
                                     sources = data.data;
-                                } else if (data.type === 'done') {
-                                    // 완료
-                                    if (botDiv && sources.length > 0) {
-                                        appendSources(botDiv, sources);
+                                } else if (data.type === 'suggestions') {
+                                    // 추천 질문 수신 → UI에 표시
+                                    if (botDiv && data.data && data.data.length > 0) {
+                                        appendSuggestions(botDiv, data.data);
                                     }
+                                } else if (data.type === 'done') {
+                                    // 완료 - 스크립트 카드는 표시하지 않음
+                                    // if (botDiv && sources.length > 0) {
+                                    //     appendSources(botDiv, sources);
+                                    // }
                                 }
                             } catch (e) { /* JSON 파싱 에러 무시 */ }
                         }
@@ -1258,6 +1263,27 @@
                 </div>
             `;
             div.querySelector('.message-content').innerHTML += srcHtml;
+        }
+
+        /**
+         * 추천 질문 버튼 추가 (클릭 시 바로 질문)
+         * @param {HTMLElement} div - 메시지 div
+         * @param {Array} suggestions - 추천 질문 배열
+         */
+        function appendSuggestions(div, suggestions) {
+            const suggestHtml = `
+                <div class="suggestions-container" style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${suggestions.map(q => `
+                        <button class="suggestion-btn" onclick="send('${q.replace(/'/g, "\\'")}')"
+                            style="padding: 8px 14px; border-radius: 20px; border: 1px solid var(--accent); 
+                                   background: var(--bg-tertiary); color: var(--accent); font-size: 13px;
+                                   cursor: pointer; transition: 0.2s;">
+                            💬 ${q}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            div.querySelector('.message-content').innerHTML += suggestHtml;
         }
 
         /**
