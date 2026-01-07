@@ -8,7 +8,7 @@ class AgentState(TypedDict):
     LangGraph 워크플로우 상태 관리
     
     [데이터 흐름]
-    START → search_node → rerank_node → build_context → check_relevance → analyst_node/web_search_node → END
+    START → search_node → build_context → check_relevance → analyst_node/web_search_node → END
     """
     
     # ─────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ class AgentState(TypedDict):
     query: str  # 사용자의 원래 질문
     
     # ─────────────────────────────────────────────────────────────
-    # 2. 검색 결과 (search_node → rerank_node → build_context)
+    # 2. 검색 결과 (search_node → build_context)
     # ─────────────────────────────────────────────────────────────
     search_results: List[Dict[str, Any]]  # content, score, metadata 포함
     
