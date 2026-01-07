@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "timestamp": "20260107_152556",
+    "embedding_model": "text-embedding-3-large",
+    "collection_name": "learning_ai",
+    "use_translation": true,
+    "use_hybrid": true,
+    "prompt_version": {
+      "file": "src\\agent\\prompts\\translate_prompt.py",
+      "hash": "24b802663015d309",
+      "modified_time": "2026-01-07T14:03:59.663510"
+    },
+    "preprocessing_config": {
+      "file": "src\\ingestion_rst.py",
+      "hash": "1ad00b312246b41b",
+      "chunk_size": 900,
+      "chunk_overlap": 200
+    },
+    "total_queries": 1,
+    "avg_top_score": 0.6058796479999999
+  },
+  "results": [
+    {
+      "query": "랜덤포레스트가 뭐야?상속이란 무엇인가",
+      "is_korean": true,
+      "translated_query": "random forest machine learning algorithm ensemble method decision tree inheritance class definition method resolution order MRO",
+      "translation_error": null,
+      "top_score": 0.6058796479999999,
+      "top_k": 5,
+      "sources": [
+        "lecture",
+        "python_doc"
+      ],
+      "lecture_count": 5,
+      "python_doc_count": 5,
+      "top_3_results": [
+        {
+          "score": 0.6058796479999999,
+          "source": "python_doc",
+          "query_type": "translated",
+          "content_preview": "[TITLE] mro [H1] The Python 2.3 Method Resolution Order [H2] The beginning  2) The list of the ancestors of a class C, including the class itself,    ordered from the nearest ancestor to the furthest,"
+        },
+        {
+          "score": 0.5927396012801649,
+          "source": "python_doc",
+          "query_type": "translated",
+          "content_preview": "[TITLE] mro [H1] The Python 2.3 Method Resolution Order [H2] The beginning  *Don't be scared!*  Moreover, unless you make strong use of multiple inheritance and you have non-trivial hierarchies, you d"
+        },
+        {
+          "score": 0.5814404969319905,
+          "source": "python_doc",
+          "query_type": "translated",
+          "content_preview": "[KEYWORDS] F E D C B A [TITLE] mro [H1] The Python 2.3 Method Resolution Order [H2] Examples  First example. Consider the following hierarchy:    >>> O = object   >>> class F(O): pass   >>> class E(O)"
+        }
+      ]
+    }
+  ]
+}

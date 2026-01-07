@@ -266,7 +266,8 @@ def hybrid_search(
     vector_weight: float = 0.6,
     keyword_weight: float = 0.2,
     bm25_weight: float = 0.2,
-    use_bm25: bool = True
+    use_bm25: bool = True,
+    keywords: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
     하이브리드 검색: 벡터 검색 + 키워드 매칭 + BM25 (Sparse 검색)
@@ -307,10 +308,14 @@ def hybrid_search(
         limit=candidate_k
     )
     
-    # 2. 쿼리에서 키워드 추출 (쉼표 제거 후 공백으로 분리)
-    # 쉼표, 세미콜론, 콜론 제거 후 공백으로 분리
-    query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
-    query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
+    # 2. 쿼리에서 키워드 추출
+    if keywords:
+        query_keywords = [k.strip() for k in keywords if k.strip()]
+        # print(f"DEBUG: Using provided keywords: {query_keywords}")
+    else:
+        # 쉼표, 세미콜론, 콜론 제거 후 공백으로 분리
+        query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
+        query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
     
     # 3. 벡터 검색 결과 수집 및 점수 계산
     candidates = []
@@ -531,60 +536,60 @@ def test_vector_search(
         # "결정트리와 랜덤포레스트의 차이점이 뭐야?",
         # "xgboost 모델에 대해 설명해줘",
         # "비지도 학습이 뭐야?",
-        
+        "랜덤포레스트가 뭐야?"
         # ========== 한글 질문 (python_doc 테스트용 - 번역 프롬프트 테스트) ==========
         # Numbers & Operators
-        "파이썬에서 숫자 연산하는 방법",
-        "정수 나눗셈과 나머지 연산자 사용법",
-        "거듭제곱 연산자 사용하는 방법",
+        # "파이썬에서 숫자 연산하는 방법",
+        # "정수 나눗셈과 나머지 연산자 사용법",
+        # "거듭제곱 연산자 사용하는 방법",
         
         # Strings
         # "원시 문자열 리터럴이 뭐야?",
-        "문자열 슬라이싱 하는 법",
-        "문자열 메서드 format replace split join 사용법",
+        # "문자열 슬라이싱 하는 법",
+        # "문자열 메서드 format replace split join 사용법",
         
         # Lists
         # "리스트에 요소 추가하는 방법 append extend insert",
-        "리스트 컴프리헨션이란",
-        "리스트 요소 수정하는 방법",
+        # "리스트 컴프리헨션이란",
+        # "리스트 요소 수정하는 방법",
         
         # Control Flow
-        "if elif else 조건문 사용법",
-        "for문에서 range 함수 사용하는 방법",
+        # "if elif else 조건문 사용법",
+        # "for문에서 range 함수 사용하는 방법",
         # "while문에서 break continue 사용법",
         # "변수 여러 개를 한 번에 할당하는 방법",
         
         # Functions
-        "함수 정의하는 방법 def 키워드",
-        "람다 함수 사용법",
+        # "함수 정의하는 방법 def 키워드",
+        # "람다 함수 사용법",
         # "함수에서 기본값 인자 설정하는 방법",
         # "키워드 인자와 위치 인자 차이",
         
         # Data Structures
-        "딕셔너리 리터럴 사용법",
+        # "딕셔너리 리터럴 사용법",
         # "딕셔너리 메서드 get keys values items",
         # "튜플과 리스트의 차이점",
         # "set 집합 자료형 사용법",
         
         # Modules / Packages
-        "모듈 임포트 하는 방법",
+        # "모듈 임포트 하는 방법",
         # "패키지 디렉토리 __init__.py",
         # "from import로 특정 이름만 가져오는 방법",
         
         # File I/O
         # "파일 객체 메서드 read write close",
         # "with문으로 파일 열기",
-        "파일 읽고 쓰는 방법 텍스트 모드 바이너리 모드",
+        # "파일 읽고 쓰는 방법 텍스트 모드 바이너리 모드",
         
         # Exceptions
-        "try except 예외 처리하는 방법",
+        # "try except 예외 처리하는 방법",
 
         # "사용자 정의 예외 만드는 방법",
         # "finally 절 사용법",
         
         # Classes / OOP
         # "클래스 정의하는 방법",
-        "상속이란 무엇인가",
+        # "상속이란 무엇인가",
         # "__init__ 메서드 역할",
         # "인스턴스 메서드 클래스 메서드 정적 메서드 차이",
         
@@ -667,18 +672,24 @@ def test_vector_search(
                 top_k = config.get('top_k', 5)
                 sources = config.get("sources", ["lecture", "python_doc"])
                 analysis = config.get('_analysis', {})
+                topic_keywords = analysis.get('topic_keywords', [])
+                
                 print(f"🤖 LLM 결정: top_k={top_k}개, sources={sources} (complexity: {analysis.get('complexity', 'unknown')})")
+                if topic_keywords:
+                    print(f"🔑 추출 키워드: {topic_keywords}")
             except Exception as e:
                 print(f"⚠️  LLM 설정 결정 실패: {e} (기본값 사용)")
                 top_k = 5
                 sources = ["lecture", "python_doc"] if is_korean(query) else ["python_doc"]
+                topic_keywords = []
             
             # 1. lecture 검색 (LLM이 결정한 sources에 포함되어 있을 때만)
             lecture_count = 0
             if "lecture" in sources:
                 lecture_query = query  # lecture는 원문으로 검색
                 lecture_results = hybrid_search(
-                    client, embedding, lecture_query, collection_name, "lecture", top_k=top_k, use_bm25=True
+                    client, embedding, lecture_query, collection_name, "lecture", top_k=top_k, use_bm25=True,
+                    keywords=topic_keywords
                 )
                 lecture_count = len(lecture_results)
                 for r in lecture_results:

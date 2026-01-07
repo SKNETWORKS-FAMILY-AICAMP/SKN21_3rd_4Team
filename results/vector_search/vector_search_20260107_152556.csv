@@ -1,0 +1,2 @@
+query,is_korean,translated_query,top_score,lecture_count,python_doc_count,translation_error
+랜덤포레스트가 뭐야?상속이란 무엇인가,True,random forest machine learning algorithm ensemble method decision tree inheritance class definition method resolution order MRO,0.6058796479999999,5,5,

@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "timestamp": "20260107_153302",
+    "embedding_model": "text-embedding-3-large",
+    "collection_name": "learning_ai",
+    "use_translation": true,
+    "use_hybrid": true,
+    "prompt_version": {
+      "file": "src\\agent\\prompts\\translate_prompt.py",
+      "hash": "24b802663015d309",
+      "modified_time": "2026-01-07T14:03:59.663510"
+    },
+    "preprocessing_config": {
+      "file": "src\\ingestion_rst.py",
+      "hash": "1ad00b312246b41b",
+      "chunk_size": 900,
+      "chunk_overlap": 200
+    },
+    "total_queries": 1,
+    "avg_top_score": 0.6497363894236169
+  },
+  "results": [
+    {
+      "query": "랜덤포레스트가 뭐야?",
+      "is_korean": true,
+      "translated_query": null,
+      "translation_error": null,
+      "top_score": 0.6497363894236169,
+      "top_k": 3,
+      "sources": [
+        "lecture"
+      ],
+      "lecture_count": 3,
+      "python_doc_count": 0,
+      "top_3_results": [
+        {
+          "score": 0.6497363894236169,
+          "source": "lecture",
+          "query_type": "original",
+          "content_preview": "[강의: 09_결정트리와 랜덤포레스트]  Random Forest (랜덤포레스트) - Bagging 방식의 앙상블 모델 - Decision Tree를 기반으로 한다. - 다수의 Decision Tree를 사용해서 성능을 올린 앙상블 알고리즘의 하나 - N개의 Decision Tree 생성하고 입력데이터를 각각 추론하게 한 뒤 가장 많이 나온 추론결과를 최종"
+        },
+        {
+          "score": 0.6129874099722703,
+          "source": "lecture",
+          "query_type": "original",
+          "content_preview": "[강의: 09_결정트리와 랜덤포레스트]  의사결정나무(Decision Tree )"
+        },
+        {
+          "score": 0.6076019850345193,
+          "source": "lecture",
+          "query_type": "original",
+          "content_preview": "[강의: 09_결정트리와 랜덤포레스트]  - **랜덤포레스트의 절차** - 객체 생성시 Decision Tree의 개수, Decision Tree에 대한 하이퍼파라미터들 등을 받아서 생성한다. - 모든 DecisionTree들은 같은 구조를 가지게 한다. - 학습시 모든 Decision Tree들이 서로 다른 데이터셋으로 학습하도록 Train dataset"
+        }
+      ]
+    }
+  ]
+}
