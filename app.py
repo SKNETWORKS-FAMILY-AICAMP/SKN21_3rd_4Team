@@ -104,9 +104,13 @@ def learning_agent(message, context=None):
             for r in search_results[:3]  # 상위 3개만
         ]
         
+        # 추천 질문 추출
+        suggested_questions = response.get('suggested_questions', [])
+        
         return {
             'text': answer_text,
             'sources': sources,
+            'suggested_questions': suggested_questions,  # 추천 질문 추가
             'steps': [
                 {'step': 1, 'title': 'Router', 'desc': '질문 유형 분석 및 검색 설정 결정'},
                 {'step': 2, 'title': 'Search', 'desc': f'Qdrant에서 {len(search_results)}개 문서 검색'},
@@ -182,7 +186,13 @@ def chat_stream():
         # 3단계: 참고 자료 전송
         yield f"data: {json.dumps({'type': 'sources', 'data': response['sources']})}\n\n"
         
-        # 4단계: 완료 신호
+        # 4단계: 추천 질문 전송 (있으면)
+        suggested = response.get('suggested_questions', [])
+        print(f"🔔 [SSE] 추천 질문: {suggested}", flush=True)  # 디버그
+        if suggested:
+            yield f"data: {json.dumps({'type': 'suggestions', 'data': suggested})}\n\n"
+        
+        # 5단계: 완료 신호
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     return Response(generate(), mimetype='text/event-stream')
