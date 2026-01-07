@@ -41,25 +41,11 @@ def init_qdrant():
 def recover_snapshots():
     '''
     hugging face에서 snapshot 복구하기
-    '''
-    path = Path(ConfigDB.SNAPSHOT_FOLDER_PATH)
-    
-    # snapshots 폴더가 있으면 내부 파일들 전체 삭제
-    if path.exists():
-        file_name = ""
-        snapshot_files = list(path.glob("*.snapshot"))
-        if snapshot_files:
-            file_name = snapshot_files[0].name
-
-    # snapshot 파일이 없으면 return
-    if not file_name:
-        print(">>>> Snapshot 파일이 없습니다.")
-        return
-            
+    '''     
     # Hugging Face Snapshot URL (Raw/Resolve URL 사용)
     # blob -> resolve 로 변경하여 직접 다운로드 가능한 링크로 설정
     # file_name = "learning_ai-2263345336731768-2026-01-04-15-15-01.snapshot"
-    snapshot_url = "https://huggingface.co/datasets/lucymoon/skn21_3rd_4team/resolve/main/" + file_name
+    snapshot_url = "https://huggingface.co/datasets/lucymoon/skn21_3rd_4team/resolve/main/" + "learning_ai-5440725894880113-2026-01-07-08-14-04.snapshot"
 
     print(f"URL: {snapshot_url}")
 
@@ -82,5 +68,5 @@ def recover_snapshots():
 
 
 if __name__ == "__main__":
-    init_qdrant()
+    # init_qdrant()
     recover_snapshots()
