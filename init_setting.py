@@ -49,8 +49,8 @@ def recover_snapshots():
 
     print(f"URL: {snapshot_url}")
 
-    # Qdrant 클라이언트 연결
-    client = QdrantClient(host="localhost", port=6333)
+    # Qdrant 클라이언트 연결 (타임아웃 10분 설정)
+    client = QdrantClient(host="localhost", port=6333, timeout=600)
     collection_name = ConfigDB.COLLECTION_NAME
 
     # 기존 컬렉션이 있으면 삭제
