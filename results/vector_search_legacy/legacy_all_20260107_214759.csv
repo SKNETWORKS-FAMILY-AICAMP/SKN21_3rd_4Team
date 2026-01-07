@@ -1,0 +1,11 @@
+﻿query,is_korean,top_score,lecture_count,python_doc_count
+파이썬에서 숫자 연산하는 방법,True,0.537268,0,5
+문자열 슬라이싱 하는 법,True,0.5651532,0,5
+리스트 컴프리헨션이란,True,0.49941456,0,5
+if elif else 조건문 사용법,True,0.6418822,0,5
+람다 함수 사용법,True,0.49247086,0,5
+딕셔너리 리터럴 사용법,True,0.45538232,0,5
+from import로 특정 이름만 가져오는 방법,True,0.5283379,0,5
+파일 객체 메서드 read write close,True,0.60738444,0,5
+try except 예외 처리하는 방법,True,0.5923672,0,5
+상속이란 무엇인가,True,0.36538297,0,5

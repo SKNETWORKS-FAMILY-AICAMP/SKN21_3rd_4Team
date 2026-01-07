@@ -26,70 +26,46 @@ from src.utils.config import ConfigDB, ConfigAPI
 DOC_QUERIES = [
     # Numbers & Operators
     "파이썬에서 숫자 연산하는 방법",
-    "정수 나눗셈과 나머지 연산자 사용법",
-    "거듭제곱 연산자 사용하는 방법",
     
     # Strings
-    "원시 문자열 리터럴이 뭐야?",
     "문자열 슬라이싱 하는 법",
-    "문자열 메서드 format replace split join 사용법",
     
     # Lists
-    "리스트에 요소 추가하는 방법 append extend insert",
     "리스트 컴프리헨션이란",
-    "리스트 요소 수정하는 방법",
     
     # Control Flow
     "if elif else 조건문 사용법",
-    "for문에서 range 함수 사용하는 방법",
-    "while문에서 break continue 사용법",
-    "변수 여러 개를 한 번에 할당하는 방법",
-    
+
     # Functions
-    "함수 정의하는 방법 def 키워드",
     "람다 함수 사용법",
-    "함수에서 기본값 인자 설정하는 방법",
-    "키워드 인자와 위치 인자 차이",
     
     # Data Structures
     "딕셔너리 리터럴 사용법",
-    "딕셔너리 메서드 get keys values items",
-    "튜플과 리스트의 차이점",
-    "set 집합 자료형 사용법",
     
     # Modules / Packages
-    "모듈 임포트 하는 방법",
-    "패키지 디렉토리 __init__.py",
     "from import로 특정 이름만 가져오는 방법",
     
     # File I/O
     "파일 객체 메서드 read write close",
-    "with문으로 파일 열기",
-    "파일 읽고 쓰는 방법 텍스트 모드 바이너리 모드",
     
     # Exceptions
     "try except 예외 처리하는 방법",
-    "사용자 정의 예외 만드는 방법",
-    "finally 절 사용법",
     
     # Classes / OOP
-    "클래스 정의하는 방법",
     "상속이란 무엇인가",
-    "__init__ 메서드 역할",
-    "인스턴스 메서드 클래스 메서드 정적 메서드 차이",
 ]
 
 LECTURE_QUERIES = [
-    "유닛/노드/뉴런 개념 알려줘.",
-    "레이어, 층에 대해서 알려줘.",
-    "입력층이 뭐야?",
-    "머신러닝이 뭐야?",
-    "결정트리가 뭐야?",
-    "경사하강법 개념 알려줘",
-    "결정트리와 랜덤포레스트의 차이점이 뭐야?",
-    "xgboost 모델에 대해 설명해줘",
-    "비지도 학습이 뭐야?",
-    "랜덤포레스트가 뭐야?",
+    # "유닛/노드/뉴런 개념 알려줘.",
+    # "레이어, 층에 대해서 알려줘.",
+    # "입력층이 뭐야?",
+    # "머신러닝이 뭐야?",
+    # "결정트리가 뭐야?",
+    # "경사하강법 개념 알려줘",
+    # "결정트리와 랜덤포레스트의 차이점이 뭐야?",
+    # "xgboost 모델에 대해 설명해줘",
+    # "비지도 학습이 뭐야?",
+    # "랜덤포레스트가 뭐야?",
 ]
 
 def simple_vector_search(
@@ -103,14 +79,14 @@ def simple_vector_search(
     단순 벡터 검색 (Hybrid X, Keyword X, BM25 X)
     """
     query_vector = embedding.embed_query(query)
-    search_result = client.search(
+    vector_result = client.query_points(
         collection_name=collection_name,
-        query_vector=query_vector,
+        query=query_vector,
         limit=top_k
     )
     
     results = []
-    for hit in search_result:
+    for hit in vector_result.points:
         results.append({
             "content": hit.payload.get('page_content', '') or hit.payload.get('content', ''),
             "score": hit.score,
