@@ -24,13 +24,9 @@ MODES = {
     'learning': {'name': '학습할래용', 'icon': '📚', 'system_prompt': '친절한 학습 튜터로서 답변해주세요.'},
 }
 
-
 # ============================================
 # Agent Functions (Mode-specific logic)
 # ============================================
-
-
-
 
 def learning_agent(message, context=None):
     """
@@ -97,9 +93,10 @@ def learning_agent(message, context=None):
         print("="*60 + "\n", flush=True)
         sources = [
             {
-                'type': 'IPYNB',
-                'title': r.get('metadata', {}).get('lecture_title', 'Unknown'),
-                'content': r.get('content', '')[:100] + '...'
+                'type': r.get('metadata', {}).get('source', 'IPYNB').upper(),
+                'title': r.get('metadata', {}).get('lecture_title', r.get('metadata', {}).get('source', '문서')),
+                'content': r.get('content', '')[:100] + '...',
+                'score': r.get('score', 0)  # 유사도 점수 추가
             }
             for r in search_results[:3]  # 상위 3개만
         ]
@@ -129,11 +126,9 @@ def learning_agent(message, context=None):
             ]
         }
 
-
 def get_agent_response(mode, message, context=None):
     """모드에 따라 적절한 에이전트 호출"""
     return learning_agent(message, context)
-
 
 # ============================================
 # 라우트 (Routes) - URL 엔드포인트 정의
@@ -164,7 +159,6 @@ def index():
     """메인 페이지"""
     return render_template('index.html', modes=MODES)
 
-
 @app.route('/chat', methods=['POST'])
 def chat():
     """채팅 API - POST /chat"""
@@ -180,7 +174,6 @@ def chat():
         'sources': response['sources'],
         'steps': response['steps']
     })
-
 
 @app.route('/chat/stream', methods=['POST'])
 def chat_stream():
@@ -203,20 +196,19 @@ def chat_stream():
             yield f"data: {json.dumps({'type': 'char', 'data': char})}\n\n"
             time.sleep(0.02)
         
-        # 3단계: 참고 자료 전송
-        yield f"data: {json.dumps({'type': 'sources', 'data': response['sources']})}\n\n"
-        
-        # 4단계: 추천 질문 전송 (있으면)
+        # 3단계: 추천 질문 전송 (먼저 표시)
         suggested = response.get('suggested_questions', [])
-        print(f"🔔 [SSE] 추천 질문: {suggested}", flush=True)  # 디버그
+        print(f"🔔 [SSE] 추천 질문: {suggested}", flush=True)
         if suggested:
             yield f"data: {json.dumps({'type': 'suggestions', 'data': suggested})}\n\n"
+        
+        # 4단계: 참고 자료(카드) 전송 (질문 아래에 표시)
+        yield f"data: {json.dumps({'type': 'sources', 'data': response['sources']})}\n\n"
         
         # 5단계: 완료 신호
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     return Response(generate(), mimetype='text/event-stream')
-
 
 @app.route('/reset', methods=['POST'])
 def reset_all():
@@ -224,12 +216,10 @@ def reset_all():
     session.clear()
     return jsonify({'success': True, 'message': 'Session reset'})
 
-
 @app.route('/modes')
 def get_modes():
     """사용 가능한 모드 목록"""
     return jsonify(MODES)
-
 
 # ============================================
 # 앱 실행

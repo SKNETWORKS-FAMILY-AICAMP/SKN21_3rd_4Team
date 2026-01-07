@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_tavily import TavilySearch
 
 from src.agent.prompts import PROMPTS
@@ -73,6 +73,7 @@ def analyst_node(state: AgentState):
         "analyst_results": [
             HumanMessage(content=response_text, name="analyst")
         ],
+        "messages": [AIMessage(content=response_text)],  # 대화 기록 저장
         "suggested_questions": questions
     }
 
@@ -183,5 +184,6 @@ def no_data_node(state: AgentState):
         "suggested_questions": suggested_questions,
         "analyst_results": [
             HumanMessage(content=fixed_message, name="analyst")
-        ]
+        ],
+        "messages": [AIMessage(content=fixed_message)]  # 대화 기록 저장
     }
