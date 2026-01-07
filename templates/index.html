@@ -327,6 +327,30 @@
             padding: 40px 24px;
         }
 
+        /* [추가] 상태 표시기 스타일 */
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+            /* 초기 상태: 회색 */
+            margin-left: 8px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 정상 (초록) */
+        .status-ok {
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        /* 오류 (빨강) */
+        .status-error {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+
         /* ========================================
         👋 웰컴 화면 스타일
         ========================================
@@ -810,6 +834,7 @@
                 <div class="brand-icon">⚡</div>
                 <!-- [수정 포인트] 브랜드명 변경 -->
                 <span class="brand-text">Bootcamp AI</span>
+                <div id="serverStatus" class="status-indicator" title="서버 연결 확인 중..."></div>
             </div>
             <!-- 다크/라이트 모드 토글 버튼 -->
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
@@ -1389,6 +1414,42 @@
             // 0.8초 후 자동 접기
             setTimeout(() => document.getElementById(id)?.classList.remove('open'), 800);
         }
+
+        // ========================================
+        // 🏥 서버 상태 모니터링
+        // ========================================
+
+        /**
+         * 5초마다 서버 상태 체크
+         */
+        async function checkServerStatus() {
+            const indicator = document.getElementById('serverStatus');
+            try {
+                // 헬스 체크 API 호출 (타임아웃 2초 설정)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+                const response = await fetch('/health', { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    indicator.className = 'status-indicator status-ok';
+                    indicator.title = '서버 정상 연결됨';
+                } else {
+                    throw new Error('Server Error');
+                }
+            } catch (e) {
+                indicator.className = 'status-indicator status-error';
+                indicator.title = '서버 연결 끊김';
+
+                // (선택 사항) 연결 끊김 시 알림을 띄우고 싶다면:
+                // alert('서버 연결이 끊어졌습니다.'); 
+            }
+        }
+
+        // 최초 실행 및 주기적 반복 (5초)
+        checkServerStatus();
+        setInterval(checkServerStatus, 5000);
 
         // ========================================
         // 🚀 초기화

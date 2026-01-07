@@ -138,6 +138,26 @@ def get_agent_response(mode, message, context=None):
 # ============================================
 # 라우트 (Routes) - URL 엔드포인트 정의
 # ============================================
+# 헬스 체크 API
+@app.route('/health')
+def health_check():
+    """서버 및 DB 연결 상태 확인"""
+    try:
+        # Qdrant DB 연결 확인 (가벼운 연결 시도)
+        import socket
+        # 6333 포트(Qdrant 기본 포트)가 열려있는지 확인
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1) # 1초 타임아웃
+        result = sock.connect_ex(('localhost', 6333))
+        sock.close()
+        
+        if result == 0:
+            return jsonify({'status': 'ok', 'message': '정상 연결'})
+        else:
+            return jsonify({'status': 'error', 'message': 'DB 연결 실패'}), 503
+            
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/')
 def index():
