@@ -254,42 +254,67 @@ SKN21_3rd_4Team
 
 <br><br>
 
-## 강의 데이터 전처리 및 임베딩
+## 강의 데이터(lecture) 전처리 및 임베딩
+부트캠프 강의 자료는 Jupyter Notebook(.ipynb) 형식으로 구성되어 있으며,
+Markdown 설명 + Code 셀이 결합된 고품질 학습 데이터이다.
+
+본 프로젝트에서는 강의 자료의 학습 맥락을 최대한 보존하면서
+RAG 검색에 최적화된 형태로 전처리 및 임베딩을 수행하였다.
 
 ### 1. 모듈 개요
+Ingestor 클래스는 강의용 Jupyter Notebook 파일을 대상으로 다음 과정을 수행한다:
+- `.ipynb` 파일 파싱
+- Markdown 셀과 Code 셀 분리 처리
+- 의미 단위 기반 청킹(chunking)
+- OpenAI Embedding을 활용한 벡터화
+- Qdrant(Vector DB) 업로드
 
-`Ingestor` 클래스는 Jupyter Notebook(`.ipynb`) 파일을 파싱하여 마크다운과 코드 셀을 처리합니다. 각 셀을 청크 단위로 나눈 후, OpenAI의 임베딩 기능을 사용해서 벡터화합니다.
+이를 통해 강의 흐름을 유지하면서도 검색 친화적인 데이터 구조를 구축한다.
 
 ### 2. 전처리 단계
 
 #### a. 파일 로드 및 수집
-`load_repo` 메서드는 로컬 디렉토리에서 강의 자료를 로드합니다.
+`load_repo` 메서드는 로컬 디렉토리에서 강의 자료를 로드한
 
 ```python
 def load_repo(self, repo_url: str) -> str:
     # repo_url이 유효한지 체크
 ```
+- 프로젝트 루트 기준으로 강의 자료 경로 확인
+- 잘못된 경로 입력 시 예외 처리
 
-#### b. 파일 수집
-`collect_files` 메서드는 지정된 루트 경로에서 `.ipynb` 확장자를 가진 파일만 수집합니다.
+#### b. Notebook 파일 수집
+`collect_files` 메서드는 지정된 루트 경로에서 `.ipynb` 확장자를 가진 파일만 수집한다
 
 ```python
 def collect_files(self, root_path: str) -> List[str]:
     # docs_root 하위에서 .ipynb 파일만 수집
 ```
+- 불필요한 파일 제외
+- 강의 노트에 해당하는 Notebook만 대상으로 처리
 
-#### c. 마크다운 및 코드 셀 전처리
-`_preprocess_markdown`과 `_preprocess_code` 메서드를 통해 불필요한 데이터를 제거합니다.
+#### c. Markdown 및 Code 셀 전처리
+`_preprocess_markdown`과 `_preprocess_code` 메서드를 통해 불필요한 데이터를 제거한
 
 ```python
 def _preprocess_markdown(self, text: str) -> str:
     # Base64 이미지, HTML 태그 제거, URL 대체 등의 작업
 ```
+**Markdown 셀 처리**
+- Base64 인코딩 이미지 제거
+- HTML 태그 제거
+- URL 치환 및 불필요한 포맷 제거
+- LaTeX 수식 정리
 
-이 과정에서 이미지, HTML 태그, URL 등을 제거하고 LaTeX 수식을 정리합니다.
+**Code 셀 처리**
+- 코드 원문 유지
+- 과도한 공백 및 주석 정리
+- 코드 의미가 손실되지 않도록 최소 정제 원칙 적용
+
+➡️ 설명과 코드의 학습 맥락을 유지하는 것이 핵심 목표
 
 #### d. 셀 필터링
-각 셀의 내용이 의미가 없는 경우(예: 10자 이하의 텍스트이거나 링크가 포함된 경우)는 필터링됩니다.
+각 셀의 내용이 의미가 없는 경우(예: 10자 이하의 텍스트이거나 링크가 포함된 경우)는 필터링
 
 ```python
 if len(txt.strip()) <= 10 or "[링크]" in txt:
@@ -321,7 +346,126 @@ if __name__ == "__main__":
     # 프로젝트 루트에서 인제스터 실행
 ```
 
+<br><br>
 
+## Python Official Docs (RST) 전처리 및 임베딩
+Python 공식 문서는 RST(ReStructuredText) 기반으로 작성되어 있으며,
+검색 및 임베딩에 불필요한 문법적 노이즈가 매우 많다.
+
+본 프로젝트에서는 의미 밀도 극대화를 목표로 다음과 같은 전처리 전략을 적용하였다
+
+### 1. RST 문법 노이즈 제거 (Semantic Cleaning)
+RST 문서는 검색에 불필요한 **directive / role / index / metadata**가 매우 많아
+이를 그대로 벡터화할 경우 의미 밀도가 급격히 낮아진다. <br>
+이에 따라 다음 요소를 **강력 제거 또는 정제**하였다:
+- `.. toctree::`, `.. index::`, `.. contents::` 등 **목차·인덱스 블록 제거**
+- `versionadded`, `deprecated`, `availability` 등 **버전 메타 정보 제거**
+- `:func:`, `:class:` 같은 **RST role 문법 → 순수 텍스트로 치환**
+- 제목 장식 문자 (`====`, `---`) 제거
+- 외부 링크 마커 및 불필요한 inline markup 제거
+
+➡️ **결과:** <br>
+문서 길이는 줄이되, 실제 질의에 필요한 **의미 정보만 유지**
+
+### 2. 코드 블록 보존 + 코드 신호 강화
+RST 문서의 핵심 가치는 **설명 + 코드 예제의 결합**에 있음.
+
+- `.. code-block::`, `.. doctest::` 내부 코드는 **삭제하지 않고 유지**
+- 코드 블록의 들여쓰기를 정규화하여 검색 시 토큰 손실 방지
+- 코드 내에서 다음 정보를 자동 추출:
+    - API 시그니처 (`class`, `def` 선언부)
+    - 메서드 호출 (`list.append`, `dict.get` 등)
+    - 특수 메서드 (`__init__`, `__str__` 등)
+
+➡️ 추출된 정보는 **문서 앞부분 프리픽스**로 삽입하여 검색 힌트로 활용
+
+### 3. RST 구조 기반 섹션 파싱
+일반 텍스트 청킹이 아닌, **RST 문서 구조를 인식한 파싱**을 적용
+- `=` → H1 (최상위 섹션)
+- → H2 (하위 섹션)
+- `~`, `^` 등 → 하위 설명 영역
+
+각 청크는 다음 구조 메타데이터를 포함한다:
+- `[TITLE]` 파일명
+- `[H1]` 섹션 제목
+- `[H2]` 서브 섹션 제목
+
+➡️ 질문 시 “어디 문서의 어떤 개념인지”를 명확히 인식 가능
+
+### 4. 문맥 강화 프리픽스 추가(Context PRefixing)
+모든 청크 상단에 검색 친화적 프리픽스를 자동 삽입한다.
+
+```
+[API] list.append(x)
+[KEYWORDS] append method list
+[TITLE] introduction
+[H1] Data Structures
+[H2] More on Lists
+```
+
+➡️ 이 프리픽스는:
+- 벡터 검색에서 의미 힌트 강화
+- BM25 / 키워드 검색에서 명시적 토큰 신호 제공
+
+### 5. RST 특화 Chunking 전략
+Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 설정이 가장 안정적
+
+- `chunk_size = 900`
+- `chunk_overlap = 200`
+- 우선 분리 기준:
+  1) 빈 줄
+  2) 코드 블록
+  3) directive 경계
+  4) 일반 줄바꿈
+
+➡️ 개념 설명 + 코드 예제가 **같은 청크에 유지**되도록 설계
+
+### 6. 임베딩 및 업로드 전략
+- OpenAI Embedding 사용
+    - `text-embedding-3-small`
+    - `text-embedding-3-large` **(최종)**
+- Qdrant Vector DB 사용 (Cosine Similarity)
+- 문서/섹션/청크 기반 **deterministic ID** 생성
+    → 재실행 시 중복 업로드 방지
+
+
+<br><br>
+
+## 데이터 흐름 (End-to-End Pipeline)
+다음은 사용자 질문 입력부터 최종 응답 반환까지의 전체 데이터 처리 흐름이다
+
+```
+사용자 질문
+   ↓
+[질문 분석]
+   └─ Router를 통해 검색 전략 및 파라미터 결정
+   ↓
+[하이브리드 검색]
+   └─ Qdrant(Vector DB)에서 관련 문서 검색
+   ↓
+[컨텍스트 포맷팅]
+   └─ 검색 결과를 LLM이 이해하기 쉬운 형식으로 변환
+   ↓
+[관련성 평가]
+   └─ 검색 결과들의 평균 점수 계산
+   ↓
+[분기 처리]
+   ├─ 점수 높음  → Analyst Node (내부 데이터만 활용)
+   ├─ 점수 중간 → Web Search + Analyst Node (외부 정보 보강)
+   └─ 점수 낮음  → No Data Node (고정 안내 메시지 반환)
+   ↓
+[최종 답변 생성]
+   └─ 요약 / 코드 / 팁 / 정리 형태의 구조화된 응답 생성
+   ↓
+**[응답 반환]**
+   └─ Frontend로 스트리밍 방식 전송
+```
+
+**설계 포인트**
+- Router 기반 분기 처리로 질문 유형에 따라 검색 전략 자동 조정
+- 내부 학습 자료를 우선 활용하되, 신뢰도 기준에 따라 외부 검색을 선택적으로 결합
+- 검색 실패 시에도 사용자 경험을 해치지 않는 No Data 대응 전략 적용
+- 응답은 단순 텍스트가 아닌 구조화된 학습 친화 포맷으로 제공
 
 <br><br>
 
@@ -378,12 +522,16 @@ if __name__ == "__main__":
 
 다음은 전체 검색 프로세스를 나타내는 흐름도입니다:
 
+<br>
+
 <div align="center">
-  <img src="image/2.png" alt="검색 과정 흐름도" width="800"/>
+  <img src="image/2.png" alt="검색 과정 흐름도" width="600"/>
 </div>
 <div align="center">
-  <img src="image/5.png" alt="프로젝트 전체 흐름도" width="800"/>
-</div>
+  <img src="image/5.png" alt="프로젝트 전체 흐름도" width="600"/>
+</div
+
+<br>
 
 **흐름도 주요 단계:**
 1. **사용자 질문** → **검색 LLM**에서 질문 분석 및 검색 파라미터 결정
