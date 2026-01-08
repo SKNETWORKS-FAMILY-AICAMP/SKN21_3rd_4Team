@@ -185,6 +185,8 @@ SKN21_3rd_4Team
 ├── unit_test.ipynb                # 단위 테스트 및 기능 검증 노트북
 └── utils.py                       # 보조 유틸리티 함수
 ```
+
+원본 데이터(`/data/raw/`)의 경우, 최종 git에서 제거
 <br>
 <div> 
 
@@ -247,6 +249,7 @@ SKN21_3rd_4Team
 - 부트캠프 수업 자료 (`.ipynb`)
   - Markdown 셀: 개념 설명, 이론 정리
   - Code 셀: 실습 코드, 예제 구현
+#### 출처 [SKN21-inst](https://github.com/kgmyhGit/SKN21-inst)
 
 - Python 공식 문서 (`Python 3 Documentation`)
   - Python 문법 및 표준 라이브러리 설명
