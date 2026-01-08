@@ -2,8 +2,14 @@
   
 ![header](https://capsule-render.vercel.app/api?type=waving&color=ffb3dc&height=180&section=header&text=Bootcamp%20AI%20RAG%20Tutor&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=PyMate%20by%20SH%20LAB&descSize=18&descAlignY=60)
 
+<p align="center">
+  <img src="image/PyMate.png" alt="pymate" width="350"/>
+</p>
 
 </div>
+
+
+<br><br>
 
 
 ## 팀원 및 담당 업무
@@ -217,7 +223,7 @@ SKN21_3rd_4Team
 
 ## 프로젝트 전체 흐름도
 
-다음은 프론트엔드부터 백엔드, LangGraph 워크플로우까지의 전체 프로세스를 나타내는 흐름도입니다:
+다음은 프론트엔드부터 백엔드, LangGraph 워크플로우까지의 전체 프로세스를 나타내는 흐름도:
 
 <br>
 
@@ -255,11 +261,10 @@ SKN21_3rd_4Team
 <br><br>
 
 ## 강의 데이터(lecture) 전처리 및 임베딩
-부트캠프 강의 자료는 Jupyter Notebook(.ipynb) 형식으로 구성되어 있으며,
-Markdown 설명 + Code 셀이 결합된 고품질 학습 데이터이다.
+부트캠프 강의 자료는 Jupyter Notebook(.ipynb) 형식으로 구성되어 있으며, <br>
+Markdown 설명 + Code 셀이 결합된 고품질 학습 데이터이다
 
-본 프로젝트에서는 강의 자료의 학습 맥락을 최대한 보존하면서
-RAG 검색에 최적화된 형태로 전처리 및 임베딩을 수행하였다.
+본 프로젝트에서는 강의 자료의 학습 맥락을 최대한 보존하면서 RAG 검색에 최적화된 형태로 전처리 및 임베딩을 수행했다
 
 ### 1. 모듈 개요
 Ingestor 클래스는 강의용 Jupyter Notebook 파일을 대상으로 다음 과정을 수행한다:
@@ -269,12 +274,11 @@ Ingestor 클래스는 강의용 Jupyter Notebook 파일을 대상으로 다음 �
 - OpenAI Embedding을 활용한 벡터화
 - Qdrant(Vector DB) 업로드
 
-이를 통해 강의 흐름을 유지하면서도 검색 친화적인 데이터 구조를 구축한다.
+이를 통해 강의 흐름을 유지하면서도 검색 친화적인 데이터 구조를 구축
 
 ### 2. 전처리 단계
-
 #### a. 파일 로드 및 수집
-`load_repo` 메서드는 로컬 디렉토리에서 강의 자료를 로드한
+`load_repo` 메서드는 로컬 디렉토리에서 강의 자료를 로드한다
 
 ```python
 def load_repo(self, repo_url: str) -> str:
@@ -294,19 +298,19 @@ def collect_files(self, root_path: str) -> List[str]:
 - 강의 노트에 해당하는 Notebook만 대상으로 처리
 
 #### c. Markdown 및 Code 셀 전처리
-`_preprocess_markdown`과 `_preprocess_code` 메서드를 통해 불필요한 데이터를 제거한
+`_preprocess_markdown`과 `_preprocess_code` 메서드를 통해 불필요한 데이터를 제거한다
 
 ```python
 def _preprocess_markdown(self, text: str) -> str:
     # Base64 이미지, HTML 태그 제거, URL 대체 등의 작업
 ```
-**Markdown 셀 처리**
+🔹 **Markdown 셀 처리**
 - Base64 인코딩 이미지 제거
 - HTML 태그 제거
 - URL 치환 및 불필요한 포맷 제거
 - LaTeX 수식 정리
 
-**Code 셀 처리**
+🔹 **Code 셀 처리**
 - 코드 원문 유지
 - 과도한 공백 및 주석 정리
 - 코드 의미가 손실되지 않도록 최소 정제 원칙 적용
@@ -320,24 +324,34 @@ def _preprocess_markdown(self, text: str) -> str:
 if len(txt.strip()) <= 10 or "[링크]" in txt:
     continue
 ```
+- 10자 이하의 짧은 텍스트
+- 링크만 포함된 셀
+- 학습/검색에 기여하지 않는 노이즈 제거
+
+➡️ 벡터 품질 및 검색 정확도 향상
 
 ### 3. 파싱 및 청크 생성
 
-`parse_file` 메서드를 통해 Jupyter Notebook 파일을 셀 단위로 읽고, 이를 청크로 나눕니다.
+`parse_file` 메서드를 통해 Jupyter Notebook 파일을 셀 단위로 읽고, 이를 청크로 생성한다
 
 ```python
 def parse_file(self, file_path: str) -> Dict[str, Any]:
     # ipynb 파일을 읽어서 셀 단위로 추출
 ```
+- Markdown + Code 셀이 하나의 학습 흐름으로 유지되도록 구성
+- 강의 설명 → 코드 예제 → 추가 설명 구조 보존
+- 청크 단위로 메타데이터(주차, 파일명 등) 포함
 
-### 4. 문맥 주입 및 업로드
-
-`upload_to_qdrant` 메서드를 사용하여 전처리된 데이터를 Qdrant에 저장합니다.
+### 4. 문맥 주입 및 Vector DB 업로드
+`upload_to_qdrant` 메서드를 사용하여 전처리된 데이터를 Qdrant에 저장한다
 
 ```python
 def upload_to_qdrant(self, chunks: List[Document]) -> Dict[str, int]:
     # VectorStore.add_documents로 업로드 (배치)
 ```
+- 배치 단위 업로드로 성능 최적화
+- 강의 단위 / 파일 단위 메타데이터 포함
+- 검색 시 “어느 강의의 어떤 내용인지” 추적 가능
 
 ### 5. 모듈 실행
 
@@ -345,11 +359,12 @@ def upload_to_qdrant(self, chunks: List[Document]) -> Dict[str, int]:
 if __name__ == "__main__":
     # 프로젝트 루트에서 인제스터 실행
 ```
+➡️ 반복 실행 시에도 일관된 데이터 생성 및 재현성 확보
 
 <br><br>
 
 ## Python Official Docs (RST) 전처리 및 임베딩
-Python 공식 문서는 RST(ReStructuredText) 기반으로 작성되어 있으며,
+Python 공식 문서는 RST(ReStructuredText) 기반으로 작성되어 있으며, <br>
 검색 및 임베딩에 불필요한 문법적 노이즈가 매우 많다.
 
 본 프로젝트에서는 의미 밀도 극대화를 목표로 다음과 같은 전처리 전략을 적용하였다
