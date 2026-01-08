@@ -20,9 +20,41 @@ app.secret_key = 'bootcamp-ai-tutor-secret-key-2024'
 # ============================================
 
 # [사용 가능한 모드(에이전트) 정의]
+from src.quiz_service import QuizService
+
+# [추가] 퀴즈 서비스 초기화
+quiz_service = QuizService()
+
+# -------------------------------------------------------------------------
+# Flask App 설정
+# -------------------------------------------------------------------------
+app = Flask(__name__)
+# ... (중략) ...
+
 MODES = {
     'learning': {'name': '학습할래용', 'icon': '📚', 'system_prompt': '친절한 학습 튜터로서 답변해주세요.'},
+    'quiz': {'name': '퀴즈풀래용', 'icon': '🧩', 'system_prompt': 'None'} 
 }
+
+# ... (중략) ...
+
+@app.route('/api/quiz', methods=['GET'])
+def get_quiz():
+    """
+    퀴즈 데이터 반환 API
+    Query Params:
+      - category: 'python' | 'lecture' | 'all' (default: all)
+      - count: int (default: 5)
+    """
+    category = request.args.get('category', 'all')
+    try:
+        count = int(request.args.get('count', 5))
+    except ValueError:
+        count = 5
+        
+    quizzes = quiz_service.get_quizzes(category, count)
+    return jsonify({'success': True, 'quizzes': quizzes})
+
 
 # ============================================
 # Agent Functions (Mode-specific logic)

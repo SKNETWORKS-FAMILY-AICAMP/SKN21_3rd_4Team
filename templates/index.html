@@ -386,6 +386,247 @@
             }
         }
 
+        /* ========================================
+        🧩 퀴즈 UI 스타일
+        ======================================== */
+        .quiz-container {
+            max_width: 700px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        /* 퀴즈 설정 (시작 화면) */
+        .quiz-setup-card {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .quiz-setup-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--text-primary);
+        }
+
+        .quiz-option-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .quiz-option-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .quiz-radio-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .quiz-radio-label {
+            cursor: pointer;
+            padding: 10px 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .quiz-radio-input {
+            display: none;
+        }
+
+        .quiz-radio-input:checked+.quiz-radio-label {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .quiz-input-number {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .quiz-start-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        .quiz-start-btn:hover {
+            transform: scale(1.02);
+        }
+
+        /* 문제 풀이 화면 */
+        .quiz-play-card {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quiz-progress {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .quiz-question-text {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+            word-break: keep-all;
+        }
+
+        .quiz-ox-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .quiz-ox-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            font-size: 40px;
+            font-weight: 900;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .quiz-btn-o {
+            color: #10b981;
+            border-color: #10b981;
+        }
+
+        .quiz-btn-o:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        .quiz-btn-x {
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .quiz-btn-x:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* 결과/해설 표시 */
+        .quiz-feedback {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .quiz-feedback.correct {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+        }
+
+        .quiz-feedback.wrong {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+        }
+
+        .feedback-result {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .feedback-explanation {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .feedback-source {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: right;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 8px;
+        }
+
+        .quiz-next-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 14px;
+            /* 검색 버튼과 동일한 스타일 적용 */
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quiz-next-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 최종 결과 화면 */
+        .quiz-final-score {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent-color);
+            margin: 20px 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* DB 상태 텍스트 (오른쪽 아래 고정) */
         .db-status-text {
             position: fixed;
@@ -862,6 +1103,14 @@
             color: var(--text-muted);
         }
 
+        /* [다크 모드] 퀴즈 카드 배경 밝게 조정 */
+        [data-theme="dark"] .quiz-play-card,
+        [data-theme="dark"] .quiz-setup-card {
+            background: #1a1a2e;
+            /* 기존보다 밝은 색상 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         /* 전송 버튼 */
         .send-btn {
             width: 34px;
@@ -877,6 +1126,8 @@
             flex-shrink: 0;
             transition: var(--transition);
         }
+
+
 
         .send-btn:hover {
             transform: scale(1.05);
@@ -1088,13 +1339,16 @@
          * name: UI에 표시되는 이름
          */
         const SECTIONS = [
-            { id: 'learning', name: '학습할래용' }
-            // 예시: { id: 'coding', name: '코딩 도우미' }
+            { id: 'learning', name: '학습할래용' },
+            { id: 'quiz', name: '퀴즈풀래용' }
         ];
 
         // 현재 상태 변수들
         let currentMode = 'learning';  // 현재 선택된 모드
         let isProcessing = false;      // 메시지 처리 중 여부
+
+        // 모드별 chatContent 캐시 (모드 전환 시 상태 유지용)
+        const modeContentCache = {};
 
         // ========================================
         // 🌙 테마 관련 함수
@@ -1152,14 +1406,43 @@
          * @param {string} mode - 선택된 모드 ID
          */
         function selectMode(mode) {
-            // 모든 섹션에서 active 클래스 제거
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            // 선택된 섹션에 active 클래스 추가
-            document.querySelector(`.section[data-mode="${mode}"]`).classList.add('active');
-            currentMode = mode;
-            // 배지 텍스트 업데이트
-            document.getElementById('modeBadge').textContent = SECTIONS.find(s => s.id === mode).name + ' 모드';
-            showWelcome();
+            try {
+                // 현재 모드의 chatContent 저장
+                const chatContent = document.getElementById('chatContent');
+                if (chatContent && currentMode) {
+                    modeContentCache[currentMode] = chatContent.innerHTML;
+                }
+
+                // 모든 섹션에서 active 클래스 제거
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                // 선택된 섹션에 active 클래스 추가
+                const targetSection = document.querySelector(`.section[data-mode="${mode}"]`);
+                if (targetSection) targetSection.classList.add('active');
+
+                currentMode = mode;
+
+                // 퀴즈 모드에서는 입력창 숨기기
+                const inputArea = document.querySelector('.input-area');
+                if (inputArea) {
+                    inputArea.style.display = (mode === 'quiz') ? 'none' : 'block';
+                }
+
+                // 캐시된 콘텐츠가 있으면 복원, 없으면 웰컴 화면
+                if (modeContentCache[mode]) {
+                    chatContent.innerHTML = modeContentCache[mode];
+                } else {
+                    showWelcome();
+                }
+
+                // modeBadge 업데이트
+                const badge = document.getElementById('modeBadge');
+                if (badge) {
+                    const info = SECTIONS.find(s => s.id === mode);
+                    badge.textContent = info ? info.name + ' 모드' : mode + ' 모드';
+                }
+            } catch (e) {
+                console.error('selectMode 오류:', e);
+            }
         }
 
         /**
@@ -1561,6 +1844,213 @@
         /**
          * 5초마다 서버 상태 체크
          */
+        // ========================================
+        // 🧩 퀴즈 관련 변수 및 함수
+        // ========================================
+        let currentQuizData = [];
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+
+        async function startQuiz() {
+            const category = document.querySelector('input[name="quizCategory"]:checked').value;
+            const count = document.getElementById('quizCount').value;
+
+            // 로딩 표시 (간단히 버튼 텍스트 변경)
+            const btn = document.getElementById('btnStartQuiz');
+            const originalText = btn.textContent;
+            btn.textContent = '문제 불러오는 중...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/quiz?category=${category}&count=${count}`);
+                const data = await res.json();
+
+                if (data.success && data.quizzes.length > 0) {
+                    currentQuizData = data.quizzes;
+                    currentQuizIndex = 0;
+                    quizScore = 0;
+                    renderQuizQuestion();
+                } else {
+                    alert('문제를 불러올 수 없습니다.');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                console.error(e);
+                alert('서버 통신 오류');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function renderQuizQuestion() {
+            const quiz = currentQuizData[currentQuizIndex];
+            const content = document.getElementById('chatContent');
+
+            content.innerHTML = `
+                <div class="quiz-container">
+                    <div class="quiz-play-card">
+                        <div class="quiz-progress">문제 ${currentQuizIndex + 1} / ${currentQuizData.length}</div>
+                        <div class="quiz-question-text">${quiz.question}</div>
+                        
+                        <div class="quiz-ox-buttons" id="oxButtons">
+                            <button class="quiz-ox-btn quiz-btn-o" onclick="checkAnswer('O')">O</button>
+                            <button class="quiz-ox-btn quiz-btn-x" onclick="checkAnswer('X')">X</button>
+                        </div>
+
+                        <div id="quizFeedback"></div>
+                        
+                        <button class="quiz-stop-btn" onclick="stopQuiz()" style="
+                            margin-top: 20px;
+                            padding: 10px 20px;
+                            background: transparent;
+                            border: 1px solid var(--text-muted);
+                            color: var(--text-muted);
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-size: 13px;
+                        ">퀴즈 중단</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkAnswer(userChoice) {
+            const quiz = currentQuizData[currentQuizIndex];
+            const feedback = document.getElementById('quizFeedback');
+            const buttons = document.getElementById('oxButtons');
+
+            // 버튼 재클릭 방지
+            buttons.style.pointerEvents = 'none';
+            buttons.style.opacity = '0.6';
+
+            const isCorrect = userChoice === quiz.answer;
+            if (isCorrect) quizScore++;
+
+            const resultClass = isCorrect ? 'correct' : 'wrong';
+            const resultText = isCorrect ? '정답입니다! 🎉' : `틀렸습니다 😅 (정답: ${quiz.answer})`;
+
+            feedback.innerHTML = `
+                <div class="quiz-feedback ${resultClass}">
+                    <div class="feedback-result">${resultText}</div>
+                    <div class="feedback-explanation">${quiz.explanation}</div>
+                    <div class="feedback-source">출처: ${quiz.source}</div>
+                    <button class="quiz-next-btn" onclick="nextQuestion()">
+                        ${currentQuizIndex < currentQuizData.length - 1 ? '다음 문제' : '결과 보기'}
+                    </button>
+                </div>
+            `;
+        }
+
+        function nextQuestion() {
+            currentQuizIndex++;
+            if (currentQuizIndex < currentQuizData.length) {
+                renderQuizQuestion();
+            } else {
+                showQuizResult();
+            }
+        }
+
+        // 퀴즈 중단 함수
+        function stopQuiz() {
+            if (confirm('퀴즈를 중단하시겠습니까?')) {
+                // 퀴즈 상태 초기화
+                currentQuizData = [];
+                currentQuizIndex = 0;
+                quizScore = 0;
+                // 캐시 삭제 후 기본 화면으로
+                delete modeContentCache['quiz'];
+                showWelcome();
+            }
+        }
+
+        function showQuizResult() {
+            const content = document.getElementById('chatContent');
+            content.innerHTML = `
+                <div class="quiz-container">
+                    <div class="quiz-setup-card">
+                        <div class="quiz-setup-title">퀴즈 종료! 🏁</div>
+                        <div class="quiz-final-score">${quizScore} / ${currentQuizData.length}</div>
+                        <p>수고하셨습니다!</p>
+                        <button class="quiz-start-btn" onclick="showWelcome()">다시 하기</button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        /**
+         * 웰컴 화면 표시
+         * 모드 변경 시 또는 초기 로드 시 호출됨
+         */
+        function showWelcome() {
+            const info = SECTIONS.find(s => s.id === currentMode);
+
+            // 퀴즈 모드일 경우 별도 UI 렌더링
+            if (currentMode === 'quiz') {
+                document.getElementById('chatContent').innerHTML = `
+                    <div class="quiz-container">
+                        <div class="quiz-setup-card">
+                            <div class="quiz-setup-title">오늘의 퀴즈 도전! 🧩</div>
+                            
+                            <div class="quiz-option-group">
+                                <label class="quiz-option-label">카테고리 선택</label>
+                                <div class="quiz-radio-group">
+                                    <input type="radio" id="catAll" name="quizCategory" value="all" class="quiz-radio-input" checked>
+                                    <label for="catAll" class="quiz-radio-label">모두</label>
+                                    
+                                    <input type="radio" id="catLec" name="quizCategory" value="lecture" class="quiz-radio-input">
+                                    <label for="catLec" class="quiz-radio-label">강의자료</label>
+
+                                    <input type="radio" id="catPy" name="quizCategory" value="python" class="quiz-radio-input">
+                                    <label for="catPy" class="quiz-radio-label">파이썬 기초</label>
+                                </div>
+                            </div>
+
+                            <div class="quiz-option-group">
+                                <label class="quiz-option-label">문항 수 (5 ~ 20)</label>
+                                <input type="number" id="quizCount" class="quiz-input-number" value="5" min="5" max="20">
+                            </div>
+
+                            <button id="btnStartQuiz" class="quiz-start-btn" onclick="startQuiz()">퀴즈 시작</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // [기존] 학습 모드 웰컴 화면
+            document.getElementById('chatContent').innerHTML = `
+                <div class="welcome" id="welcome">
+                    <div class="welcome-badge" id="modeBadge">${info.name} 모드</div>
+                    <div class="welcome-icon">✨</div>
+                    <h1>무엇을 배우고 싶으세요?</h1>
+                    <p>부트캠프 학습 자료를 기반으로 한 AI 튜터입니다.</p>
+                    <div class="suggestions">
+                        <div class="suggestion" onclick="send('과적합이 뭐고 어떻게 방지해?')">
+                            <div class="suggestion-icon">🎯</div>
+                            <div class="suggestion-title">과적합이 뭐고 어떻게 방지해?</div>
+                            <div class="suggestion-desc">Overfitting 개념과 해결법</div>
+                        </div>
+                        <div class="suggestion" onclick="send('결정트리와 랜덤포레스트 차이가 뭐야?')">
+                            <div class="suggestion-icon">🌳</div>
+                            <div class="suggestion-title">결정트리와 랜덤포레스트 차이가 뭐야?</div>
+                            <div class="suggestion-desc">트리 기반 알고리즘 비교</div>
+                        </div>
+                        <div class="suggestion" onclick="send('train_test_split은 왜 하는 거야?')">
+                            <div class="suggestion-icon">📊</div>
+                            <div class="suggestion-title">train_test_split은 왜 하는 거야?</div>
+                            <div class="suggestion-desc">데이터 분할의 필요성</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ... 기존 코드 유지
+        // checkServerStatus(), setInterval(), renderSections() 등은 유지됨
+        // 단, 기존 showWelcome()은 덮어쓰여짐
+
         async function checkServerStatus() {
             const statusText = document.getElementById('dbStatusText');
             try {

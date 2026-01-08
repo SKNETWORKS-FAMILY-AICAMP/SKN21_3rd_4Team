@@ -70,3 +70,28 @@ def recover_snapshots():
 if __name__ == "__main__":
     # init_qdrant()
     recover_snapshots()
+    recover_quiz_snapshots()
+
+def recover_quiz_snapshots():
+    '''
+    Hugging Face에서 퀴즈 스냅샷 복구하기
+    '''
+    snapshot_url = "https://huggingface.co/datasets/lucymoon/skn21_3rd_4team/resolve/main/quizzes.snapshot"
+    
+    print(f"📂 퀴즈 스냅샷 URL: {snapshot_url}")
+    
+    client = QdrantClient(host="localhost", port=6333, timeout=600)
+    collection_name = "quizzes"
+    
+    # 기존 컬렉션이 있으면 삭제
+    if client.collection_exists(collection_name=collection_name):
+        print(f"⚠️ 기존 '{collection_name}' 컬렉션 삭제 중...")
+        client.delete_collection(collection_name=collection_name)
+    
+    # URL을 통해 스냅샷 복구
+    client.recover_snapshot(
+        collection_name=collection_name,
+        location=snapshot_url,
+        wait=True
+    )
+    print("✅ 퀴즈 스냅샷 복구 완료!")
