@@ -441,9 +441,17 @@ TestsetGenerator를 통해 생성된 테스트셋 20개를 가지고 평가한 �
 
 2차 : 동일 데이터셋 난이도 유지하며 프롬프트 개선으로 평균 점수 다시 올림. Answer relevancy 점수를 올렸으나 Context Recall이 1.0에서 0.8583으로 떨어짐
 
+context에대한 강제성이 너무 강했음. 유하게 답변할 수 있도록 프롬프트 개선.
+
 | Context Recall | Context Precision | Faithfulness | Answer relevancy | 
 |-----------|-----------|-----------|-----------|
 | 0.8583 | 0.8494 | 0.8542 | 0.8352 | 
+
+### 최종 모델
+**Embedding Model :** text-embedding-3-large
+
+**OpenAI Model :** gpt-4o-mini
+
 
 <br><br>
 
