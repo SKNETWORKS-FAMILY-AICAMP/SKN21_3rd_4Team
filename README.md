@@ -230,8 +230,10 @@ SKN21_3rd_4Team
 <br>
 
 <p align="center">
-  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="900"/>
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="550"/>
+  <img src="image/langgraph.png" alt="langgraph" width="550"/>
 </p>
+
 
 <br>
 
@@ -449,6 +451,40 @@ Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 
 - Qdrant Vector DB 사용 (Cosine Similarity)
 - 문서/섹션/청크 기반 **deterministic ID** 생성
     → 재실행 시 중복 업로드 방지
+
+
+<br><br>
+
+
+## Retrieval 실험 결과 (평균 유사도)
+
+### Python Official Docs (RST) — Retrieval 실험 요약 (질문 11개)
+
+
+| 단계 | 평균 유사도 | 개선율 | 핵심 변경 사항 |
+|---|---:|---:|---|
+| 전처리 전 (TXT) | **0.3500** | – | TXT 파일 기반 단순 벡터 검색(한글 질의) |
+| 전처리 후 (RST, 초기) | **0.5587** | +59.6% | RST 파싱, chunk_size=900, 번역 프롬프트 적용 |
+| 하이브리드 검색 (F) | **0.6360** | +13.8% | Vector + Keyword + BM25, `text-embedding-3-small` |
+| 하이브리드 검색 (최종) | **0.7012** | +10.3% | Vector + Keyword + BM25, `text-embedding-3-large`, 프롬프트 개선 |
+
+### Lecture Notebook (ipynb) — Retrieval 실험 요약 (질문 10개)
+
+| 단계 | 평균 유사도 | 개선율 | 설명 |
+|---|---:|---:|---|
+| 전처리 전 | **0.4500** | – | 전처리 없이 단순 벡터 검색(추정치) |
+| 전처리 후 | **0.5285** | +17.4% | 노트북 파싱 및 기본 전처리 적용 |
+| 하이브리드 검색 | **0.6701** | +26.8% | Vector + Keyword + BM25 |
+
+### 전체 개선 성과 요약
+
+- **Python Docs (질문 11개)**  
+  **0.3500 → 0.7012** (총 개선율: **+100.4%**)  
+  - **TXT → RST 전환 + 하이브리드 검색**이 가장 큰 성능 향상에 기여
+
+- **Lecture (질문 10개)**  
+  **0.4500 → 0.6701** (총 개선율: **+48.9%**)  
+  - **전처리 + 하이브리드 검색 조합**의 효과 확인
 
 
 <br><br>
