@@ -222,8 +222,10 @@ SKN21_3rd_4Team
 <br>
 
 <p align="center">
-  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="800"/>
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="900"/>
 </p>
+
+<br>
 
 **주요 흐름:**
 1. **Frontend (index.html)**: 사용자 인터페이스
@@ -376,9 +378,12 @@ if __name__ == "__main__":
 
 다음은 전체 검색 프로세스를 나타내는 흐름도입니다:
 
-<p align="center">
-  <img src="image/검색흐름도.png" alt="검색 과정 흐름도" width="1500"/>
-</p>
+<div align="center">
+  <img src="image/2.png" alt="검색 과정 흐름도" width="800"/>
+</div>
+<div align="center">
+  <img src="image/5.png" alt="프로젝트 전체 흐름도" width="800"/>
+</div>
 
 **흐름도 주요 단계:**
 1. **사용자 질문** → **검색 LLM**에서 질문 분석 및 검색 파라미터 결정
