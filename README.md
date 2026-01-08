@@ -427,16 +427,35 @@ Python 공식 문서는 문법적 노이즈가 많아,
    - **python_doc**: 한글 질문일 경우 영어 키워드로 번역 후 검색 (번역 결과가 약하면 fallback)
 5. **결과 병합 및 중복 제거**: 여러 소스에서 가져온 결과 통합
 6. **점수순 정렬 후 top_k 반환**: 하이브리드 점수 기준으로 정렬하여 최종 결과 반환
+7. **top_k 조건 처리**
+   - k개의 문서의 유사도 점수가 너무 낮다면 : 데이터 없음 처리 + 추가 질문 추천 로직
+   - 답변을 할 수 있지만, 유사도가 애매할 때 : Tavily Search 추가 후 llm 답변 생성
+   - 유사도가 높을 때 : llm 답변 생성
 
 <br><br>
 
-## 평가 결과
+## RAG 평가 결과
 ### RAGAS
 TestsetGenerator를 통해 생성된 테스트셋 20개를 가지고 평가한 결과로 평가 진행
+
+1차 : 다른 점수에비해 Answer relevancy가 낮은 결과
+| Context Recall | Context Precision | Faithfulness | Answer relevancy | 
+|-----------|-----------|-----------|-----------|
+| 1.0 | 0.8924 | 0.8187 | 0.6868 | 
+
+2차 : 동일 데이터셋 난이도 유지하며 프롬프트 개선으로 평균 점수 다시 올림. Answer relevancy 점수를 올렸으나 Context Recall이 1.0에서 0.8583으로 떨어짐
+
+context에대한 강제성이 너무 강했음. 유하게 답변할 수 있도록 프롬프트 개선.
 
 | Context Recall | Context Precision | Faithfulness | Answer relevancy | 
 |-----------|-----------|-----------|-----------|
 | 0.8583 | 0.8494 | 0.8542 | 0.8352 | 
+
+### 최종 모델
+**Embedding Model :** text-embedding-3-large
+
+**OpenAI Model :** gpt-4o-mini
+
 
 <br><br>
 
