@@ -12,7 +12,6 @@ langchain_openai
 langchain_community
 langchain-tavily
 langchain_qdrant
-sentence-transformers
 
 # evaluation
 ragas

@@ -1,14 +1,7 @@
-### docker init setting
-# docker login
-# docker pull luccia/skn21-3rd-4team
-# docker run -p 6333:6333 -p 6334:6334 luccia/skn21-3rd-4team
-###
-
-### run init_setting.py
+### init_setting 실행
 # python init_setting.py
 ###
 
-from pathlib import Path
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams
 from src.utils.config import ConfigDB
@@ -93,6 +86,6 @@ def recover_quiz_snapshots():
 
 
 if __name__ == "__main__":
-    # init_qdrant()
+    init_qdrant()
     recover_snapshots()
     recover_quiz_snapshots()
