@@ -5,7 +5,6 @@
 </div>
 
 
-
 ## 팀원 및 담당 업무
 <p align="left" style="display: flex; align-items: center;">
   <img src="image/team.png" width="190" style="margin-left: 15px;" />
@@ -214,6 +213,26 @@ SKN21_3rd_4Team
 
 <br><br>
 
+<br>
+
+## 프로젝트 전체 흐름도
+
+다음은 프론트엔드부터 백엔드, LangGraph 워크플로우까지의 전체 프로세스를 나타내는 흐름도입니다:
+
+<p align="center">
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="600"/>
+</p>
+
+**주요 흐름:**
+1. **Frontend (index.html)**: 사용자 인터페이스
+2. **POST /chat/stream**: HTTP POST 요청
+3. **Flask App (app.py)**: 백엔드 서버
+4. **learning_agent()**: 에이전트 함수 호출
+5. **main.py main()**: 메인 파이프라인 실행
+6. **LangGraph Workflow**: 검색 및 분석 워크플로우 실행
+
+<br>
+
 ## 수집 데이터 설명
 - 부트캠프 수업 자료 (`.ipynb`)
   - Markdown 셀: 개념 설명, 이론 정리
@@ -249,7 +268,7 @@ SKN21_3rd_4Team
 
 - **Vector score** (의미 유사도): 임베딩 벡터 간 코사인 유사도
 - **Keyword matching** (정확 용어 포함 여부): 질문의 키워드가 문서에 포함되어 있는지 확인
-- **BM25** (Best Matching 25): 키워드 빈도/문서 길이 기반 sparse 점수 (TF-IDF 개선 버전)
+- **BM25** (Best Matching 25): 키워드 빈도/문서 길이 기반 점수
 
 #### 동적 가중치
 쿼리 유형에 따라 가중치를 자동 조정합니다:
@@ -283,16 +302,12 @@ SKN21_3rd_4Team
 - 번역 결과가 약하면 (최고 점수 < 0.45) **한글 원문으로 fallback 검색** 추가
 - 안전장치 확보로 검색 품질 보장
 
-**5. 전처리/인제스트 (검색 품질을 위한 문서 강화)**
-- **RST (python_doc)**: RST 노이즈 제거 + 섹션 기반 청킹 + `[API]/[KEYWORDS]/[TITLE]/[H1]/[H2]` 프리픽스 주입
-- **Lecture**: 마크다운/코드 노이즈 제거 + 너무 짧은 셀 제거 + `[강의]/[섹션]` 문맥 프리픽스 주입
-
 #### 검색 과정 흐름도
 
 다음은 전체 검색 프로세스를 나타내는 흐름도입니다:
 
 <p align="center">
-  <img src="docs/mermaid-diagram-2026-01-08-091520.png" alt="검색 과정 흐름도" width="800"/>
+  <img src="image/검색흐름도.png" alt="검색 과정 흐름도" width="800"/>
 </p>
 
 **흐름도 주요 단계:**
