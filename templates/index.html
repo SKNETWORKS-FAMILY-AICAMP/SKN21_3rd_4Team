@@ -2044,7 +2044,7 @@
         }
 
         function showQuizResult() {
-            const content = document.getElementById('quizContent');
+            const content = document.getElementById('chatContent');
             content.innerHTML = `
                 <div class="quiz-container">
                     <div class="quiz-setup-card">
@@ -2063,9 +2063,11 @@
          * 모드 변경 시 또는 초기 로드 시 호출됨
          */
         function showWelcome() {
+            const info = SECTIONS.find(s => s.id === currentMode);
+
             // 퀴즈 모드일 경우 별도 UI 렌더링
             if (currentMode === 'quiz') {
-                document.getElementById('quizContent').innerHTML = `
+                document.getElementById('chatContent').innerHTML = `
                     <div class="quiz-container">
                         <div class="quiz-setup-card">
                             <div class="quiz-setup-title">오늘의 퀴즈 도전! 🧩</div>
