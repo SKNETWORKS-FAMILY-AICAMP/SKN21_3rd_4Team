@@ -9,11 +9,12 @@ import os
 import time
 import uuid
 
-# [Flask 앱 인스턴스 생성]
-app = Flask(__name__)
+# [Flask 앱 인스턴스 생성 - image 폴더를 static으로 사용]
+app = Flask(__name__, static_folder='image', static_url_path='/image')
 
-# [비밀 키 설정]
+# [비밀 키 설정 및 캐시 비활성화]
 app.secret_key = 'bootcamp-ai-tutor-secret-key-2024'
+app.config['TEMPLATES_AUTO_RELOAD'] = True  # 템플릿 변경 시 자동 리로드
 
 # ============================================
 # 설정 (Configuration)
@@ -28,8 +29,7 @@ quiz_service = QuizService()
 # -------------------------------------------------------------------------
 # Flask App 설정
 # -------------------------------------------------------------------------
-app = Flask(__name__)
-# ... (중략) ...
+# (Flask 앱은 상단에서 이미 생성됨)
 
 MODES = {
     'learning': {'name': '학습할래용', 'icon': '📚', 'system_prompt': '친절한 학습 튜터로서 답변해주세요.'},
@@ -123,22 +123,42 @@ def learning_agent(message, context=None):
             print(f"   출처: {source} | 강의: {lecture}")
             print(f"   내용: {content_preview}...")
         print("="*60 + "\n", flush=True)
-        sources = [
-            {
-                'type': r.get('metadata', {}).get('source', 'IPYNB').upper(),
-                'title': r.get('metadata', {}).get('lecture_title', r.get('metadata', {}).get('source', '문서')),
-                'content': r.get('content', '')[:100] + '...',
-                'score': r.get('score', 0)  # 유사도 점수 추가
-            }
-            for r in search_results[:3]  # 상위 3개만
-        ]
+        # [Best Match] 내부 자료 카드 데이터 구성
+        import re
+        sources = []
+        for r in search_results[:3]:
+            if r.get('score', 0) > 0.5:
+                raw_title = r.get('metadata', {}).get('lecture_title', r.get('metadata', {}).get('source', '문서'))
+                # 사용자 요청: "==[내부자료(origin)]==" 문구 제거
+                # (혹시 모를 공백이나 대소문자 차이까지 유연하게 처리를 위해 re 사용)
+                clean_title = re.sub(r'==\[내부자료\(origin\)\]==', '', raw_title, flags=re.IGNORECASE).strip()
+                
+                # 내용(content) 가져오기 (줄바꿈 공백 등으로 정리)
+                raw_content = r.get('content', '')
+                # 사용자 요청: "=== [내부 자료 (Original)] ===" 문구 제거
+                # 정규식으로 해당 패턴 및 앞뒤 공백 제거
+                clean_content = re.sub(r'={2,}\s*\[내부\s*자료\s*\(Original\)\]\s*={2,}', '', raw_content, flags=re.IGNORECASE).strip()
+                clean_content = clean_content.replace('\n', ' ').strip()
+                
+                sources.append({
+                    'type': r.get('metadata', {}).get('source', 'IPYNB').upper(),
+                    'title': clean_title,
+                    'score': r.get('score', 0),
+                    'content': clean_content[:200] + "..." if len(clean_content) > 200 else clean_content
+                })
         
         # 추천 질문 추출
         suggested_questions = response.get('suggested_questions', [])
         
+        # 외부 검색 소스 추출 (web_search_node에서 설정됨)
+        # 외부 검색 소스 추출 (web_search_node에서 설정됨)
+        # 사용자 요청으로 외부 검색 카드는 표시하지 않음
+        web_sources = []
+        
         return {
             'text': answer_text,
             'sources': sources,
+            'web_sources': web_sources,  # 외부 검색 소스 추가
             'suggested_questions': suggested_questions,  # 추천 질문 추가
             'steps': [
                 {'step': 1, 'title': 'Router', 'desc': '질문 유형 분석 및 검색 설정 결정'},
@@ -236,6 +256,11 @@ def chat_stream():
         
         # 4단계: 참고 자료(카드) 전송 (질문 아래에 표시)
         yield f"data: {json.dumps({'type': 'sources', 'data': response['sources']})}\n\n"
+
+        # 4.5단계: 외부 검색 결과 전송
+        web_sources = response.get('web_sources', [])
+        if web_sources:
+             yield f"data: {json.dumps({'type': 'web_sources', 'data': web_sources})}\n\n"
         
         # 5단계: 완료 신호
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
