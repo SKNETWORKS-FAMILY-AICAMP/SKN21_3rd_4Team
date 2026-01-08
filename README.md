@@ -305,10 +305,6 @@ Python 공식 문서는 문법적 노이즈가 많아,
 - 문서 구조 기반 섹션 파싱 (TITLE / H1 / H2)
 - 검색 강화를 위한 Context Prefix 자동 삽입
 
-### Chunking 전략
-
-- 개념 설명 + 코드 예제가 같은 청크에 유지되도록 설계
-- `chunk_size=900`, `overlap=200`
 
 <br><br>
 
