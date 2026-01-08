@@ -138,8 +138,19 @@ RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하�
 
 <br><br>
 
+## Application의 주요 기능
+
+<p align="center">
+        <img src="image/머신러닝.gif" alt="feature_importance" width="700">
+      </p>
+
+<p align="center">
+        <img src="image/퀴즈.gif" alt="feature_importance" width="700">
+      </p>
+
 ## 프로젝트를 구성하는 디렉토리들과 파일들의 구조
 </div>
+<br>
 
 ```plaintext
 SKN21_3rd_4Team
@@ -339,17 +350,6 @@ Python 공식 문서는 문법적 노이즈가 많아,
 
 <br><br>
 
-
-
-## Application의 주요 기능
-
-<p align="center">
-        <img src="image/머신러닝.gif" alt="feature_importance" width="700">
-      </p>
-
-<p align="center">
-        <img src="image/퀴즈.gif" alt="feature_importance" width="700">
-      </p>
 
 ### 하이브리드 검색 (Vector + Keyword + BM25)
 
