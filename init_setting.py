@@ -76,7 +76,7 @@ def recover_quiz_snapshots():
     '''
     Hugging Face에서 퀴즈 스냅샷 복구하기
     '''
-    snapshot_url = "https://huggingface.co/datasets/lucymoon/skn21_3rd_4team/resolve/main/quizzes.snapshot"
+    snapshot_url = "https://huggingface.co/datasets/reasonableplan/skn21_quizzes/resolve/main/quizzes.snapshot"
     
     print(f"📂 퀴즈 스냅샷 URL: {snapshot_url}")
     
