@@ -297,6 +297,10 @@ SKN21_3rd_4Team
 <br><br>
 
 ## 2️⃣ Python 공식 문서 (RST)
+RST (reStructuredText)란?
+
+reStructuredText는
+Python 생태계에서 사용하는 문서 작성용 마크업 언어입니다.
 
 Python 공식 문서는 문법적 노이즈가 많아,
 의미 밀도 극대화를 목표로 한 RST 특화 전처리를 적용하였다.
