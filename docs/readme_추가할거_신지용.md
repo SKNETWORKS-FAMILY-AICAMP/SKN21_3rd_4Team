@@ -1,5 +1,5 @@
 
-## Retrieval Agent (Search & Retrieval) — 담당 역할 정리 (발표/README용)
+## Retrieval Agent (Search & Retrieval) — README용
 
 ### 담당 역할 한 줄 요약
 - **Retrieval Agent Engineer**로서, *사용자 질문을 분석 → 최적 검색 소스/개수 결정 → (필요 시) 한글→영어 키워드 변환 → Qdrant에서 하이브리드(벡터+키워드+BM25) 검색 → 결과 통합/정렬*까지의 **검색 파이프라인**을 구현/개선했습니다.
