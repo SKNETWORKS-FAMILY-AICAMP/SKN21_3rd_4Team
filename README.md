@@ -131,13 +131,7 @@ RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하�
   - “이 코드에서 왜 이 부분이 필요한 거야?”
 - 코드 셀과 연관된 Markdown 설명을 함께 참조하여 코드 중심 학습을 지원
 
-3️⃣ **주차 · 주제 기반 검색** <br>
-학습자가 특정 주차 또는 주제를 지정하여 관련된 강의 내용을 요약·정리할 수 있다.
-- 예시 질문
-  - “LangChain 배운 주차 내용만 정리해줘”
-- Vector DB 기반 검색을 통해 **해당 범위의 강의 자료만 선별적으로 활용**
-
-4️⃣ **학습 범위 기반 응답 생성 (RAG 구조)**
+3️⃣ **학습 범위 기반 응답 생성 (RAG 구조)**
 - Retriever를 통해 관련 문서를 검색
 - 검색된 문서를 기반으로 LLM이 답변 생성
 - 수업 자료 및 공식 문서를 벗어나지 않는 **신뢰도 높은 응답** 제공
@@ -230,8 +224,8 @@ SKN21_3rd_4Team
 <br>
 
 <p align="center">
-  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="550"/>
-  <img src="image/langgraph.png" alt="langgraph" width="550"/>
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="700"/>
+  <img src="image/langgraph.png" alt="langgraph" width="280"/>
 </p>
 
 
@@ -489,43 +483,6 @@ Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 
 
 <br><br>
 
-## 데이터 흐름 (End-to-End Pipeline)
-다음은 사용자 질문 입력부터 최종 응답 반환까지의 전체 데이터 처리 흐름이다
-
-```
-사용자 질문
-   ↓
-[질문 분석]
-   └─ Router를 통해 검색 전략 및 파라미터 결정
-   ↓
-[하이브리드 검색]
-   └─ Qdrant(Vector DB)에서 관련 문서 검색
-   ↓
-[컨텍스트 포맷팅]
-   └─ 검색 결과를 LLM이 이해하기 쉬운 형식으로 변환
-   ↓
-[관련성 평가]
-   └─ 검색 결과들의 평균 점수 계산
-   ↓
-[분기 처리]
-   ├─ 점수 높음  → Analyst Node (내부 데이터만 활용)
-   ├─ 점수 중간 → Web Search + Analyst Node (외부 정보 보강)
-   └─ 점수 낮음  → No Data Node (고정 안내 메시지 반환)
-   ↓
-[최종 답변 생성]
-   └─ 요약 / 코드 / 팁 / 정리 형태의 구조화된 응답 생성
-   ↓
-**[응답 반환]**
-   └─ Frontend로 스트리밍 방식 전송
-```
-
-**설계 포인트**
-- Router 기반 분기 처리로 질문 유형에 따라 검색 전략 자동 조정
-- 내부 학습 자료를 우선 활용하되, 신뢰도 기준에 따라 외부 검색을 선택적으로 결합
-- 검색 실패 시에도 사용자 경험을 해치지 않는 No Data 대응 전략 적용
-- 응답은 단순 텍스트가 아닌 구조화된 학습 친화 포맷으로 제공
-
-<br><br>
 
 
 ## Application의 주요 기능
@@ -587,7 +544,11 @@ Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 
 </div>
 <div align="center">
   <img src="image/5.png" alt="프로젝트 전체 흐름도" width="600"/>
-</div
+</div>
+
+<p align="center">
+  <img src="image/생성단계.png" alt="pymate" width="350"/>
+</p>
 
 <br>
 
