@@ -250,6 +250,75 @@ SKN21_3rd_4Team
 
 <br><br>
 
+## 강의 데이터 전처리 및 임베딩
+
+### 1. 모듈 개요
+
+`Ingestor` 클래스는 Jupyter Notebook(`.ipynb`) 파일을 파싱하여 마크다운과 코드 셀을 처리합니다. 각 셀을 청크 단위로 나눈 후, OpenAI의 임베딩 기능을 사용해서 벡터화합니다.
+
+### 2. 전처리 단계
+
+#### a. 파일 로드 및 수집
+`load_repo` 메서드는 로컬 디렉토리에서 강의 자료를 로드합니다.
+
+```python
+def load_repo(self, repo_url: str) -> str:
+    # repo_url이 유효한지 체크
+```
+
+#### b. 파일 수집
+`collect_files` 메서드는 지정된 루트 경로에서 `.ipynb` 확장자를 가진 파일만 수집합니다.
+
+```python
+def collect_files(self, root_path: str) -> List[str]:
+    # docs_root 하위에서 .ipynb 파일만 수집
+```
+
+#### c. 마크다운 및 코드 셀 전처리
+`_preprocess_markdown`과 `_preprocess_code` 메서드를 통해 불필요한 데이터를 제거합니다.
+
+```python
+def _preprocess_markdown(self, text: str) -> str:
+    # Base64 이미지, HTML 태그 제거, URL 대체 등의 작업
+```
+
+이 과정에서 이미지, HTML 태그, URL 등을 제거하고 LaTeX 수식을 정리합니다.
+
+#### d. 셀 필터링
+각 셀의 내용이 의미가 없는 경우(예: 10자 이하의 텍스트이거나 링크가 포함된 경우)는 필터링됩니다.
+
+```python
+if len(txt.strip()) <= 10 or "[링크]" in txt:
+    continue
+```
+
+### 3. 파싱 및 청크 생성
+
+`parse_file` 메서드를 통해 Jupyter Notebook 파일을 셀 단위로 읽고, 이를 청크로 나눕니다.
+
+```python
+def parse_file(self, file_path: str) -> Dict[str, Any]:
+    # ipynb 파일을 읽어서 셀 단위로 추출
+```
+
+### 4. 문맥 주입 및 업로드
+
+`upload_to_qdrant` 메서드를 사용하여 전처리된 데이터를 Qdrant에 저장합니다.
+
+```python
+def upload_to_qdrant(self, chunks: List[Document]) -> Dict[str, int]:
+    # VectorStore.add_documents로 업로드 (배치)
+```
+
+### 5. 모듈 실행
+
+```python
+if __name__ == "__main__":
+    # 프로젝트 루트에서 인제스터 실행
+```
+
+<br><br>
+
 ## 데이터 베이스 테이블 설명
 
 <br><br>
