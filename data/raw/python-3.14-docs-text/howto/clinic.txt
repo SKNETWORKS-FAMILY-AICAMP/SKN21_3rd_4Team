@@ -1,7 +1,0 @@
-인자 클리닉 How-To
-******************
-
-참고:
-
-  The Argument Clinic How-TO has been moved to the Python Developer's
-  Guide.
