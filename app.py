@@ -23,7 +23,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True  # 템플릿 변경 시 자동 리로
 # [사용 가능한 모드(에이전트) 정의]
 from src.quiz_service import QuizService
 
-# [추가] 퀴즈 서비스 초기화
+# 퀴즈 서비스 초기화
 quiz_service = QuizService()
 
 # -------------------------------------------------------------------------
@@ -129,13 +129,13 @@ def learning_agent(message, context=None):
         for r in search_results[:3]:
             if r.get('score', 0) > 0.5:
                 raw_title = r.get('metadata', {}).get('lecture_title', r.get('metadata', {}).get('source', '문서'))
-                # 사용자 요청: "==[내부자료(origin)]==" 문구 제거
+                # "==[내부자료(origin)]==" 문구 제거
                 # (혹시 모를 공백이나 대소문자 차이까지 유연하게 처리를 위해 re 사용)
                 clean_title = re.sub(r'==\[내부자료\(origin\)\]==', '', raw_title, flags=re.IGNORECASE).strip()
                 
                 # 내용(content) 가져오기 (줄바꿈 공백 등으로 정리)
                 raw_content = r.get('content', '')
-                # 사용자 요청: "=== [내부 자료 (Original)] ===" 문구 제거
+                # "=== [내부 자료 (Original)] ===" 문구 제거
                 # 정규식으로 해당 패턴 및 앞뒤 공백 제거
                 clean_content = re.sub(r'={2,}\s*\[내부\s*자료\s*\(Original\)\]\s*={2,}', '', raw_content, flags=re.IGNORECASE).strip()
                 clean_content = clean_content.replace('\n', ' ').strip()
@@ -151,7 +151,6 @@ def learning_agent(message, context=None):
         suggested_questions = response.get('suggested_questions', [])
         
         # 외부 검색 소스 추출 (web_search_node에서 설정됨)
-        # 외부 검색 소스 추출 (web_search_node에서 설정됨)
         # 사용자 요청으로 외부 검색 카드는 표시하지 않음
         web_sources = []
         
@@ -163,7 +162,7 @@ def learning_agent(message, context=None):
             'steps': [
                 {'step': 1, 'title': 'Router', 'desc': '질문 유형 분석 및 검색 설정 결정'},
                 {'step': 2, 'title': 'Search', 'desc': f'Qdrant에서 {len(search_results)}개 문서 검색'},
-                {'step': 3, 'title': 'Analyst', 'desc': 'GPT-4o-mini로 답변 생성 완료'}
+                {'step': 3, 'title': 'Analyst', 'desc': 'OPENAI_MODEL로 답변 생성 완료'}
             ]
         }
     except Exception as e:
