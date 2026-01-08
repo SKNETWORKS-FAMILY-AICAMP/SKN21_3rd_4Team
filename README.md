@@ -224,8 +224,8 @@ SKN21_3rd_4Team
 <br>
 
 <p align="center">
-  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="700"/>
-  <img src="image/langgraph.png" alt="langgraph" width="280"/>
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="300"/>
+  <img src="image/langgraph.png" alt="langgraph" width="370"/>
 </p>
 
 
@@ -492,6 +492,14 @@ Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 
 
 ## Application의 주요 기능
 
+<p align="center">
+        <img src="image/머신러닝.gif" alt="feature_importance" width="700">
+      </p>
+
+<p align="center">
+        <img src="image/퀴즈.gif" alt="feature_importance" width="700">
+      </p>
+
 ### 하이브리드 검색 (Vector + Keyword + BM25)
 
 본 프로젝트는 검색 품질 향상을 위해 **하이브리드 검색** 방식을 채택했습니다.
@@ -550,6 +558,8 @@ Python 공식 문서 특성상 **문단 단위 의미 밀도**가 높아 다음 
 <div align="center">
   <img src="image/5.png" alt="프로젝트 전체 흐름도" width="600"/>
 </div>
+
+<br>
 
 <p align="center">
   <img src="image/생성단계.png" alt="pymate" width="350"/>
