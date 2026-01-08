@@ -426,6 +426,16 @@ Python 공식 문서는 문법적 노이즈가 많아,
 
 <br><br>
 
+## 평가 결과
+### RAGAS
+TestsetGenerator를 통해 생성된 테스트셋 20개를 가지고 평가한 결과로 평가 진행
+
+| Context Recall | Context Precision | Faithfulness | Answer relevancy | 
+|-----------|-----------|-----------|-----------|
+| 0.8583 | 0.8494 | 0.8542 | 0.8352 | 
+
+<br><br>
+
 ## 회고
 
 | 이름 | 역할 | 소감 |
