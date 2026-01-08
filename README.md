@@ -1,14 +1,13 @@
 <div align="center">
+  
+![header](https://capsule-render.vercel.app/api?type=waving&color=ffb3dc&height=180&section=header&text=Bootcamp%20AI%20RAG%20Tutor&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=PyMate%20by%20SH%20LAB&descSize=18&descAlignY=60)
 
-![header](https://capsule-render.vercel.app/api?type=waving&color=ffb3dc&height=180&section=header&text=Bootcamp%20AI%20RAG%20Tutor&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Vector%20DB%20%7C%20Search%20Agent%20%7C%20Analysis%20Agent&descSize=18&descAlignY=60)
 
 </div>
 
 
 ## 팀원 및 담당 업무
-<p align="left" style="display: flex; align-items: center;">
-  <img src="image/team.png" width="190" style="margin-left: 15px;" />
-</p>
+### SKN21_3rd_3Team
           
 <table>
 <tr>
@@ -161,6 +160,7 @@ SKN21_3rd_4Team
 │   ├── ingestion.py                 # 데이터 수집 및 전처리 파이프라인
 │   ├── ingestion_lectures.py        # 강의 자료(ipynb) 수집 및 임베딩
 │   ├── ingestion_rst.py             # 문서(rst 등) 수집 및 임베딩
+│   ├─ quiz_service.py               # 퀴즈 생성 및 관리 서비스 로직
 │   └── vector_search.py             # Vector DB 기반 검색 로직
 │
 ├── templates/                     # Flask 렌더링 템플릿
@@ -219,9 +219,13 @@ SKN21_3rd_4Team
 
 다음은 프론트엔드부터 백엔드, LangGraph 워크플로우까지의 전체 프로세스를 나타내는 흐름도입니다:
 
+<br>
+
 <p align="center">
-  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="600"/>
+  <img src="image/흐름도.png" alt="프로젝트 전체 흐름도" width="900"/>
 </p>
+
+<br>
 
 **주요 흐름:**
 1. **Frontend (index.html)**: 사용자 인터페이스
@@ -317,11 +321,10 @@ if __name__ == "__main__":
     # 프로젝트 루트에서 인제스터 실행
 ```
 
-<br><br>
 
-## 데이터 베이스 테이블 설명
 
 <br><br>
+
 
 ## Application의 주요 기능
 
@@ -375,9 +378,12 @@ if __name__ == "__main__":
 
 다음은 전체 검색 프로세스를 나타내는 흐름도입니다:
 
-<p align="center">
-  <img src="image/검색흐름도.png" alt="검색 과정 흐름도" width="800"/>
-</p>
+<div align="center">
+  <img src="image/2.png" alt="검색 과정 흐름도" width="800"/>
+</div>
+<div align="center">
+  <img src="image/5.png" alt="프로젝트 전체 흐름도" width="800"/>
+</div>
 
 **흐름도 주요 단계:**
 1. **사용자 질문** → **검색 LLM**에서 질문 분석 및 검색 파라미터 결정
