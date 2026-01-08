@@ -215,6 +215,5 @@ __marimo__/
 # Results
 results/vector_search/
 
-data/raw/lectures/
-*.snapshot
-data/snapshots/
+data/raw/
+
