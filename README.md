@@ -346,6 +346,11 @@ def parse_file(self, file_path: str) -> Dict[str, Any]:
 - 강의 설명 → 코드 예제 → 추가 설명 구조 보존
 - 청크 단위로 메타데이터(주차, 파일명 등) 포함
 
+| Type | Chunk Size | Overlap | Rationale |
+|------|-----------|---------|-----------|
+| Markdown | 1200 | 200 | 개념 설명의 문맥(Context) 보존을 위해 긴 호흡으로 컷팅 |
+| Code | 1000 | 150 | 코드 블록의 의미론적 단위(함수/클래스) 유지를 위해 컴팩트하게 설정 |
+
 ### 4. 문맥 주입 및 Vector DB 업로드
 `upload_to_qdrant` 메서드를 사용하여 전처리된 데이터를 Qdrant에 저장한다
 
