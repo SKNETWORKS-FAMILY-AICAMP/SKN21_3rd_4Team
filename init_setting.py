@@ -44,7 +44,6 @@ def recover_snapshots():
     '''     
     # Hugging Face Snapshot URL (Raw/Resolve URL 사용)
     # blob -> resolve 로 변경하여 직접 다운로드 가능한 링크로 설정
-    # file_name = "learning_ai-2263345336731768-2026-01-04-15-15-01.snapshot"
     snapshot_url = "https://huggingface.co/datasets/lucymoon/skn21_3rd_4team/resolve/main/" + "learning_ai-5440725894880113-2026-01-07-08-14-04.snapshot"
 
     print(f"URL: {snapshot_url}")
@@ -67,16 +66,12 @@ def recover_snapshots():
     print(">>>> Snapshot recovery from Hugging Face completed successfully!")
 
 
-if __name__ == "__main__":
-    # init_qdrant()
-    recover_snapshots()
-    recover_quiz_snapshots()
-
 def recover_quiz_snapshots():
     '''
     Hugging Face에서 퀴즈 스냅샷 복구하기
     '''
-    snapshot_url = "https://huggingface.co/datasets/reasonableplan/skn21_quizzes/resolve/main/quizzes.snapshot"
+    # blob -> resolve 로 변경!
+    snapshot_url = "https://huggingface.co/datasets/reasonableplan/skn21_3rd_4team/resolve/main/quizzes.snapshot"
     
     print(f"📂 퀴즈 스냅샷 URL: {snapshot_url}")
     
@@ -95,3 +90,9 @@ def recover_quiz_snapshots():
         wait=True
     )
     print("✅ 퀴즈 스냅샷 복구 완료!")
+
+
+if __name__ == "__main__":
+    # init_qdrant()
+    recover_snapshots()
+    recover_quiz_snapshots()
