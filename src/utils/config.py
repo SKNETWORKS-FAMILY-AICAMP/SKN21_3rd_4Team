@@ -34,3 +34,7 @@ class ConfigDB:
     DISTANCE_FUNCTION = Distance.COSINE
 
     SNAPSHOT_FOLDER_PATH = "./data/snapshots/"
+
+
+class ConfigLLM:
+    OPENAI_MODEL = "gpt-4o-mini"

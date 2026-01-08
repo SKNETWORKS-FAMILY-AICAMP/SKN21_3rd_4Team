@@ -30,7 +30,7 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
-from src.utils.config import ConfigDB, ConfigAPI
+from src.utils.config import ConfigDB, ConfigAPI, ConfigLLM
 from src.agent.prompts import PROMPTS
 from src.agent.nodes.search_router import build_search_config
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
@@ -135,7 +135,7 @@ def create_translate_chain():
         SystemMessagePromptTemplate.from_template(PROMPTS["TRANSLATE_PROMPT"])
     ])
     
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model=ConfigLLM.OPENAI_MODEL, temperature=0)
     parser = StrOutputParser()
     
     chain = prompt | llm | parser

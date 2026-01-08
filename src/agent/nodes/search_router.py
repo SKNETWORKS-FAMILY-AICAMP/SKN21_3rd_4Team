@@ -29,8 +29,9 @@ from typing import Dict, List, Literal
 from langchain_openai import ChatOpenAI  # OpenAI LLM 인터페이스
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
 from pydantic import BaseModel, Field    # 데이터 검증 및 구조화
-from src.agent.prompts import PROMPTS
 
+from src.agent.prompts import PROMPTS
+from src.utils.config import ConfigLLM
 
 def build_search_config(query: str) -> Dict:
     """
@@ -114,7 +115,7 @@ def build_search_config(query: str) -> Dict:
     
     # ChatOpenAI: OpenAI의 GPT 모델을 사용하기 위한 인터페이스
     llm = ChatOpenAI(
-        model="gpt-4o-mini",  # 빠르고 저렴한 모델 (gpt-4보다 10배 이상 저렴)
+        model=ConfigLLM.OPENAI_MODEL,  # 빠르고 저렴한 모델 (gpt-4보다 10배 이상 저렴)
         temperature=0         # 일관된 결과를 위해 0으로 설정
                               # temperature=0: 항상 동일한 질문에 동일한 답변
                               # temperature=1: 매번 다른 답변 (창의적이지만 불안정)

@@ -4,6 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_tavily import TavilySearch
 
+from src.utils.config import ConfigLLM
 from src.agent.prompts import PROMPTS
 from src.agent.tools.analyst_tools import submit_analysis
 from src.schema.state import AgentState
@@ -45,7 +46,7 @@ def analyst_node(state: AgentState):
 
     # 2. LLM 설정
     llm = ChatOpenAI(
-        model="gpt-4o-mini",
+        model=ConfigLLM.OPENAI_MODEL,
         temperature=0
     ).bind_tools([submit_analysis], tool_choice="submit_analysis")
     
