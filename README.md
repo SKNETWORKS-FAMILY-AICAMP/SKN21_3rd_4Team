@@ -3,7 +3,7 @@
 ![header](https://capsule-render.vercel.app/api?type=waving&color=ffb3dc&height=180&section=header&text=Bootcamp%20AI%20RAG%20Tutor&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=PyMate%20by%20SH%20LAB&descSize=18&descAlignY=60)
 
 <p align="center">
-  <img src="image/PyMate.png" alt="pymate" width="350"/>
+  <img src="image/pymate_logo.png" alt="pymate" width="350"/>
 </p>
 
 </div>
@@ -90,7 +90,7 @@
 
 <br>
 
-본 프로젝트는 **부트캠프 학습 자료(ipynb)** 와 **Python 공식 문서(Python 3 Documentation)** 를 
+본 프로젝트는 **학습 자료 데이터(ipynb)** 와 **Python 공식 문서(Python 3 Documentation)** 를 
 핵심 지식으로 활용하여 개념, 코드, 실습 질문에 답변할 수 있는
 RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하는 것을 목표로 한다.
 
@@ -116,7 +116,7 @@ RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하�
 <br>
 
 ### 3. 주요 기능
-> 부트캠프 학습 자료를 기준으로 개념 설명, 코드 해석, 주제별 검색을 지원하는 RAG 학습 도우미
+> 학습 자료 데이터를 기준으로 개념 설명, 코드 해석, 주제별 검색을 지원하는 RAG 학습 도우미
 
 1️⃣ **개념 설명 질의응답** <br>
 부트캠프 학습 자료와 Python 공식 문서를 기반으로 핵심 개념에 대한 질문에 정확한 답변을 제공한다.
@@ -244,7 +244,7 @@ SKN21_3rd_4Team
 <br>
 
 ## 수집 데이터 설명
-- 부트캠프 수업 자료 (`.ipynb`)
+- 강의 자료 데이터 (`.ipynb`)
   - Markdown 셀: 개념 설명, 이론 정리
   - Code 셀: 실습 코드, 예제 구현
 
@@ -261,10 +261,14 @@ SKN21_3rd_4Team
 <br><br>
 
 ## 강의 데이터(lecture) 전처리 및 임베딩
-부트캠프 강의 자료는 Jupyter Notebook(.ipynb) 형식으로 구성되어 있으며, <br>
+본 프로젝트에서 활용한 강의 자료는  
+**김성환 강사님의 강의 콘텐츠를 기반으로 한 학습 자료**이며,  
+모든 저작권은 김성환 강사님께 있습니다. <br>
+
+강의 자료 데이터는 Jupyter Notebook(`.ipynb`) 형식으로 구성되어 있으며, <br>
 Markdown 설명 + Code 셀이 결합된 고품질 학습 데이터이다
 
-본 프로젝트에서는 강의 자료의 학습 맥락을 최대한 보존하면서 RAG 검색에 최적화된 형태로 전처리 및 임베딩을 수행했다
+강의 자료의 학습 맥락을 최대한 보존하면서 RAG 검색에 최적화된 형태로 전처리 및 임베딩을 수행했다
 
 ### 1. 모듈 개요
 Ingestor 클래스는 강의용 Jupyter Notebook 파일을 대상으로 다음 과정을 수행한다:
