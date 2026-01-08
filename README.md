@@ -148,6 +148,10 @@ RAG(Retrieval-Augmented Generation) 기반 학습 도우미 챗봇을 개발하�
         <img src="image/퀴즈.gif" alt="feature_importance" width="700">
       </p>
 
+
+### 프로젝트 실습  :  [intro.md](https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN21_3rd_4Team/blob/main/intro.md)
+
+
 ## 프로젝트를 구성하는 디렉토리들과 파일들의 구조
 </div>
 <br>
