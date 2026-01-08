@@ -434,6 +434,13 @@ Python 공식 문서는 문법적 노이즈가 많아,
 ### RAGAS
 TestsetGenerator를 통해 생성된 테스트셋 20개를 가지고 평가한 결과로 평가 진행
 
+1차 : 다른 점수에비해 Answer relevancy가 낮은 결과
+| Context Recall | Context Precision | Faithfulness | Answer relevancy | 
+|-----------|-----------|-----------|-----------|
+| 1.0 | 0.8924 | 0.8187 | 0.6868 | 
+
+2차 : 동일 데이터셋 난이도 유지하며 프롬프트 개선으로 평균 점수 다시 올림. Answer relevancy 점수를 올렸으나 Context Recall이 1.0에서 0.8583으로 떨어짐
+
 | Context Recall | Context Precision | Faithfulness | Answer relevancy | 
 |-----------|-----------|-----------|-----------|
 | 0.8583 | 0.8494 | 0.8542 | 0.8352 | 
