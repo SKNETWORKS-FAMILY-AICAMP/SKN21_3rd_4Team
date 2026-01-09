@@ -468,7 +468,7 @@ context에대한 강제성이 너무 강했음. 유하게 답변할 수 있도�
 | 이름 | 역할 | 소감 |
 |-----------|-----------|-----------|
 | **대가람** | LLM Reasoning Agent Developer |   |
-| **지드래곤** | Search & Retrieval Agent Developer |   |
+| **지드래곤** | Search & Retrieval Agent Developer | 강의 노트·Python 공식문서 RST 전처리를 통해 검색 가능한 형태로 정제하고, 검색 라우터/번역 프롬프트와 하이브리드 검색 로직을 구현했습니다. 특히 Vector/Keyword/BM25 가중치 튜닝과 한글→영문 키워드 변환, 단일/복합 쿼리 처리에서 유사도를 안정적으로 끌어올리는 과정이 가장 어려웠습니다. 앞으로는 쿼리 전처리(동의어/복합명사 분해/오탈자), 재현성 있는 스코어링(정규화 기준, 정렬 안정화)과 평가 자동화를 더 고도화해 검색 품질을 지속적으로 개선하고 싶습니다. |
 | **좌슈아주원** | Search & Retrieval Agent Developer |  |
 | **윤경은** | Lecture Data Ingestion Engineer |  |
 | **앙해빙** | LLM Reasoning Agent Developere |    |
