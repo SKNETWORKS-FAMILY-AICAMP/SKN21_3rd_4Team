@@ -1,17 +1,17 @@
-# 벡터 검색 품질 테스트 스크립트
 """
-lecture와 python_doc 모두 테스트 가능
-search_agent와 유사한 구조로 간단하게 테스트
+벡터 검색 품질 테스트 스크립트
 
-사용법:
-1. 아래 EMBEDDING_MODEL 변수를 변경하여 테스트
-   - "text-embedding-3-small" (1536 차원)
-   - "text-embedding-3-large" (3072 차원)
-2. python src/test_vector_search.py 실행
+이 모듈의 역할:
+- lecture와 python_doc 검색 품질을 테스트하고 결과를 분석합니다
+- search_agent와 유사한 구조로 간단하게 테스트할 수 있습니다
+- 하이브리드 검색(벡터 + 키워드 매칭 + BM25)을 사용합니다
+- 테스트 결과를 JSON, CSV, TXT 형식으로 저장하여 분석 가능합니다
 
-주의:
-- 컬렉션의 벡터 크기와 임베딩 모델이 일치해야 함!
-- lecture와 python_doc가 같은 컬렉션이면 같은 임베딩 모델 사용 필수
+핵심 개념: 검색 품질 평가
+- 다양한 질문으로 검색 정확도 테스트
+- 번역 기능 활성화/비활성화 테스트
+- 하이브리드 검색 점수 분석 (벡터, 키워드, BM25)
+- 프롬프트 버전 추적으로 변경 이력 관리
 """
 import sys
 import os
@@ -30,7 +30,13 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
-from src.utils.config import ConfigDB, ConfigAPI, ConfigLLM
+from src.utils.config import ConfigDB, ConfigAPI
+from src.utils.search_utils import (
+    is_korean,
+    translate_to_english,
+    calculate_keyword_score,
+    calculate_bm25_score
+)
 from src.agent.prompts import PROMPTS
 from src.agent.nodes.search_router import build_search_config
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
@@ -40,12 +46,9 @@ import re
 # ============================================================
 # 테스트 설정 (여기서 쉽게 변경 가능)
 # ============================================================
-# 임베딩 모델 선택: "text-embedding-3-small" 또는 "text-embedding-3-large"
-# None이면 ConfigDB.EMBEDDING_MODEL 사용
-EMBEDDING_MODEL = None  # ← 필요시 변경 (None이면 ConfigDB.EMBEDDING_MODEL 사용)
-
-# 컬렉션 이름 (None이면 ConfigDB.COLLECTION_NAME 사용)
-COLLECTION_NAME = None  # ← 필요시 변경 (None이면 ConfigDB.COLLECTION_NAME 사용)
+# 임베딩 모델과 컬렉션 이름은 ConfigDB에서 가져오거나
+# 명령줄 인자로 지정 가능합니다.
+# (파일 하단의 argparse 참조)
 
 
 def get_vector_size(model_name: str) -> int:
@@ -118,141 +121,6 @@ def get_preprocessing_config() -> Dict[str, Any]:
     
     return config
 
-
-def is_korean(text: str) -> bool:
-    """한글 포함 여부 확인"""
-    return bool(re.search(r'[가-힣]', text))
-
-
-def create_translate_chain():
-    """
-    번역용 LangChain chain 생성 (search_agent와 동일)
-    
-    Returns:
-        Chain: prompt | llm | parser 형태의 chain
-    """
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(PROMPTS["TRANSLATE_PROMPT"])
-    ])
-    
-    llm = ChatOpenAI(model=ConfigLLM.OPENAI_MODEL, temperature=0)
-    parser = StrOutputParser()
-    
-    chain = prompt | llm | parser
-    return chain
-
-
-def translate_to_english(query: str) -> str:
-    """
-    LLM으로 한글 → 영어 검색 쿼리 변환 (search_agent와 동일)
-    
-    Args:
-        query: 한글 질문
-        
-    Returns:
-        영어 검색 키워드
-    """
-    chain = create_translate_chain()
-    return chain.invoke({"query": query}).strip()
-
-
-def calculate_keyword_score(query_keywords: List[str], content: str) -> float:
-    """
-    키워드 매칭 점수 계산 (0.0 ~ 1.0) - 간단한 버전
-    
-    Args:
-        query_keywords: 검색 쿼리의 키워드 리스트
-        content: 문서 내용
-        
-    Returns:
-        키워드 매칭 점수 (0.0 ~ 1.0)
-    """
-    if not query_keywords or not content:
-        return 0.0
-    
-    content_lower = content.lower()
-    matched_count = 0
-    total_weight = 0
-    
-    for keyword in query_keywords:
-        keyword_lower = keyword.lower().strip()
-        if not keyword_lower:
-            continue
-        
-        # 키워드 가중치 (긴 키워드가 더 중요)
-        weight = len(keyword_lower.split())
-        
-        # 정확한 매칭 (단순 포함 체크)
-        if keyword_lower in content_lower:
-            matched_count += weight
-            # 키워드가 프리픽스([TITLE], [H1] 등)에 있으면 가중치 증가
-            if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
-                matched_count += weight * 0.5  # 프리픽스에 있으면 50% 보너스
-        
-        total_weight += weight
-    
-    if total_weight == 0:
-        return 0.0
-    
-    # 정규화: 매칭된 키워드 비율
-    score = matched_count / total_weight
-    
-    # 최대 1.0으로 제한
-    return min(score, 1.0)
-
-
-def calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_length: float = 100.0, k1: float = 1.5, b: float = 0.75) -> float:
-    """
-    BM25 점수 계산 (Sparse 검색)
-    
-    BM25는 TF-IDF의 개선 버전으로, 문서 길이 정규화를 포함합니다.
-    
-    Args:
-        query_keywords: 검색 쿼리의 키워드 리스트
-        content: 문서 내용
-        avg_doc_length: 평균 문서 길이 (기본값: 100.0, 실제로는 전체 문서 평균 사용 권장)
-        k1: TF 정규화 파라미터 (기본값: 1.5)
-        b: 문서 길이 정규화 파라미터 (기본값: 0.75)
-        
-    Returns:
-        BM25 점수 (정규화되지 않음, 비교용으로만 사용)
-    """
-    if not query_keywords or not content:
-        return 0.0
-    
-    # 문서를 단어로 분리 (소문자 변환)
-    import re
-    doc_words = re.findall(r'\b\w+\b', content.lower())
-    doc_length = len(doc_words)
-    
-    if doc_length == 0:
-        return 0.0
-    
-    # 각 키워드의 TF 계산
-    score = 0.0
-    for keyword in query_keywords:
-        keyword_lower = keyword.lower().strip()
-        if not keyword_lower:
-            continue
-        
-        # 키워드가 문서에 나타나는 빈도 (TF)
-        term_freq = doc_words.count(keyword_lower)
-        if term_freq == 0:
-            continue
-        
-        # BM25 공식: IDF는 간단히 log로 근사 (실제로는 전체 문서 집합에서 계산해야 함)
-        # 여기서는 키워드가 문서에 나타나면 점수를 주는 방식
-        # 실제 IDF는 전체 문서 집합에서 계산해야 하지만, 여기서는 간단히 처리
-        
-        # TF 정규화 (BM25 공식)
-        tf_norm = (term_freq * (k1 + 1)) / (term_freq + k1 * (1 - b + b * (doc_length / avg_doc_length)))
-        
-        # 간단한 IDF 근사 (키워드 길이 기반 가중치)
-        idf_weight = 1.0 + len(keyword_lower.split())  # 긴 키워드가 더 중요
-        
-        score += tf_norm * idf_weight
-    
-    return score
 
 
 def hybrid_search(
@@ -497,11 +365,11 @@ def test_vector_search(
     """
     load_dotenv(override=True)
     
-    # 기본값 설정 (파일 상단 변수 또는 ConfigDB 사용)
+    # 기본값 설정 (ConfigDB 사용)
     if embedding_model is None:
-        embedding_model = EMBEDDING_MODEL if EMBEDDING_MODEL is not None else ConfigDB.EMBEDDING_MODEL
+        embedding_model = ConfigDB.EMBEDDING_MODEL
     if collection_name is None:
-        collection_name = COLLECTION_NAME if COLLECTION_NAME is not None else ConfigDB.COLLECTION_NAME
+        collection_name = ConfigDB.COLLECTION_NAME
     
     # Qdrant 직접 연결
     client = QdrantClient(host=ConfigDB.HOST, port=ConfigDB.PORT)

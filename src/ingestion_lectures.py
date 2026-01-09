@@ -1,15 +1,17 @@
-# AI ingestion : Vector DB 구축
-# 인공지능(AI) 시스템에서 데이터를 수집하여 AI 모델 학습이나 분석에 사용할 수 있는 중앙 저장소로 이동, 저장하는 과정
-
 """
-src/ingestion_lectures.py
+강의 자료 Ingestion 모듈
 
-강의자료(.ipynb)를 파싱하여 chunk 단위로 분할하고,
-OpenAI Embedding으로 벡터화한 뒤 Qdrant(Vector DB)에 저장하는 ingestion 모듈.
+이 모듈의 역할:
+- 강의자료(.ipynb)를 파싱하여 chunk 단위로 분할합니다
+- OpenAI Embedding으로 벡터화한 뒤 Qdrant(Vector DB)에 저장합니다
+- source 메타데이터로 'lecture'를 부여하여 python_doc과 구분합니다
+- 전처리 로직을 적용하여 이미지/URL/HTML/LaTeX를 제거합니다
+- Qdrant 컬렉션이 없으면 자동으로 생성합니다
 
-- source 메타데이터로 'lecture'를 부여하여 python_doc과 구분 가능
-- Qdrant 컬렉션이 없으면 자동 생성
-- 전처리 로직 적용: 이미지/URL/HTML/LaTeX 제거
+핵심 개념: 문맥 주입 (Context Injection)
+- 각 chunk 앞에 강의 제목과 섹션 정보를 추가하여 검색 품질 향상
+- Markdown과 Code를 별도 처리하여 최적화된 chunk 생성
+- 헤더 기반 분할 후 RecursiveCharacterTextSplitter로 세부 분할
 """
 
 import os
@@ -86,9 +88,6 @@ class Ingestor:
 
         self._vector_store: Optional[QdrantVectorStore] = None
 
-    # -------------------------
-    # 0) VectorStore 준비
-    # -------------------------
     def _get_vector_store(self) -> QdrantVectorStore:
         if self._vector_store is not None:
             return self._vector_store
@@ -96,9 +95,7 @@ class Ingestor:
         client = QdrantClient(host=self.qdrant_host, port=self.qdrant_port)
         embedding = OpenAIEmbeddings(model=self.embedding_model_name)
 
-        # 컬렉션 없으면 생성
         if not client.collection_exists(collection_name=self.collection_name):
-            # text-embedding-3-small = 1536 차원
             vector_size = ConfigDB.VECTOR_SIZE
 
             client.create_collection(
@@ -115,9 +112,6 @@ class Ingestor:
         )
         return self._vector_store
 
-    # -------------------------
-    # 1) Data 준비
-    # -------------------------
     def load_repo(self, repo_url: str) -> str:
         """
         강의자료는 로컬 폴더(docs_root)를 그대로 사용하므로
@@ -145,9 +139,6 @@ class Ingestor:
                 targets.append(str(fp.resolve()))
         return sorted(targets)
 
-    # -------------------------
-    # 2) 전처리 헬퍼 함수들
-    # -------------------------
     def _preprocess_markdown(self, text: str) -> str:
         """마크다운 텍스트 전처리: 불필요한 요소 제거"""
         # 1) Base64 인코딩된 이미지 데이터 제거
@@ -188,9 +179,6 @@ class Ingestor:
         
         return code.strip()
 
-    # -------------------------
-    # 3) Parse / Split
-    # -------------------------
     def parse_file(self, file_path: str) -> Dict[str, Any]:
         """
         ipynb 파일 1개를 읽어서 셀 단위로 추출:
@@ -351,9 +339,6 @@ class Ingestor:
 
         return out_docs
 
-    # -------------------------
-    # 4) Upload
-    # -------------------------
     def upload_to_qdrant(self, chunks: List[Document]) -> Dict[str, int]:
         """
         VectorStore.add_documents로 업로드 (배치)
@@ -373,9 +358,6 @@ class Ingestor:
 
         return {"uploaded": uploaded, "failed": failed}
 
-    # -------------------------
-    # 5) Run
-    # -------------------------
     def run(self, repo_url: Optional[str] = None) -> Dict[str, int]:
         root_path = self.load_repo(repo_url) if repo_url else self.docs_root
         file_paths = self.collect_files(root_path)
@@ -399,9 +381,9 @@ if __name__ == "__main__":
 
     ingestor = Ingestor(
         docs_root=str(lectures_path),
-        qdrant_host="localhost",
-        qdrant_port=6333,
-        collection_name="learning_ai",
+        qdrant_host=ConfigDB.HOST,
+        qdrant_port=int(ConfigDB.PORT),
+        collection_name=ConfigDB.COLLECTION_NAME,
         # embedding_model_name은 ConfigDB.EMBEDDING_MODEL 기본값 사용
         batch_size=64,
     )

@@ -1,22 +1,21 @@
 """
 Search Agent - 듀얼 쿼리 검색 시스템
 
-무엇을 하는 파일인가?
-- 사용자 질문을 Qdrant(Vector DB)에서 검색해, 관련 문서 조각(top_k)을 가져오는 실행/테스트 스크립트입니다.
+이 모듈의 역할:
+- 사용자 질문을 Qdrant(Vector DB)에서 검색해, 관련 문서 조각(top_k)을 가져옵니다
 - Python 공식문서(RST)는 영어 본문이 대부분이라 한글 질문만으로는 유사도 점수가 낮게 나올 수 있어
-  "원문(한글) + 번역(영어)"를 같이 검색해 recall을 올리는 전략(dual query)을 사용합니다.
+  "원문(한글) + 번역(영어)"를 같이 검색해 recall을 올리는 전략(dual query)을 사용합니다
+- 검색 흐름:
+  1) 질문 언어 판별: `is_korean()`
+  2) 검색 설정 결정: `build_search_config(query)` - top_k, sources 등 결정
+  3) 소스별 검색: `search_by_source(query, source, top_k)` - lecture/python_doc 필터링
+  4) (한글이면) 번역 검색 추가: `translate_to_english()` - 영어 키워드로 재검색
+  5) 결과 합치기 → 중복 제거 → 점수순 정렬 → 최종 top_k 반환
 
-1) 질문 언어 판별: `is_korean()`
-2) 검색 설정 결정: `build_search_config(query)`
-   - top_k, sources(lecture/python_doc), search_method 등을 결정
-3) 소스별 검색: `search_by_source(query, source, top_k)`
-   - Qdrant에서 `metadata.source`로 필터링해 각각 검색 (lecture vs python_doc)
-4) (질문이 한글이면) 번역 검색 추가: `translate_to_english()`
-   - 영어 키워드 쿼리로 한 번 더 소스별 검색
-5) 결과 합치기 → 중복 제거 → 점수순 정렬 → 최종 top_k 반환
-
-실행
-- `python src/agent/nodes/search_agent.py`
+핵심 개념: 하이브리드 검색
+- 벡터 검색 + 키워드 매칭 + BM25로 검색 품질 향상
+- 소스별 필터링으로 lecture/python_doc 구분 검색
+- 한글 질문은 번역하여 영어 문서 검색 recall 향상
 """
 import sys
 import os
@@ -30,178 +29,17 @@ from langchain_openai import OpenAIEmbeddings
 sys.path.append(os.getcwd())
 
 from src.agent.nodes.search_router import build_search_config
-from src.agent.prompts import PROMPTS
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from src.utils.config import ConfigDB, ConfigAPI, ConfigLLM
+from src.utils.config import ConfigDB, ConfigAPI
+from src.utils.search_utils import (
+    is_korean,
+    translate_to_english,
+    calculate_keyword_score,
+    calculate_bm25_score
+)
+from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from typing import List, Dict, Any, Optional
-
-
-# ============================================================
-# 듀얼 쿼리 검색 함수
-# ============================================================
-
-def _is_korean(text: str) -> bool:
-    """한글 포함 여부 확인"""
-    return bool(re.search(r'[가-힣]', text))
-
-
-def _create_translate_chain():
-    """
-    번역용 LangChain chain 생성
-    
-    Returns:
-        Chain: prompt | llm | parser 형태의 chain
-    """
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(PROMPTS["TRANSLATE_PROMPT"])
-    ])
-    
-    llm = ChatOpenAI(model=ConfigLLM.OPENAI_MODEL, temperature=0)
-    parser = StrOutputParser()
-    
-    chain = prompt | llm | parser
-    return chain
-
-
-def _translate_to_english(query: str) -> str:
-    """
-    LLM으로 한글 → 영어 검색 쿼리 변환 (체인화 버전)
-    
-    Args:
-        query: 한글 질문
-        
-    Returns:
-        영어 검색 키워드
-    """
-    chain = _create_translate_chain()
-    return chain.invoke({"query": query}).strip()
-
-
-def _calculate_keyword_score(query_keywords: List[str], content: str) -> float:
-    """
-    키워드 매칭 점수 계산 (0.0 ~ 1.0)
-    부분 단어 매칭도 지원합니다 (예: "trimming"이 "trimming_history"에 포함되면 매칭).
-    """
-    if not query_keywords or not content:
-        return 0.0
-    
-    content_lower = content.lower()
-    # 문서를 단어로 분리 (정확한 매칭 확인용)
-    doc_words = re.findall(r'\b\w+\b', content_lower)
-    
-    matched_count = 0
-    total_weight = 0
-    
-    for keyword in query_keywords:
-        keyword_lower = keyword.lower().strip()
-        if not keyword_lower:
-            continue
-        
-        weight = len(keyword_lower.split())
-        
-        # 1. 정확한 단어 매칭 (우선순위 높음)
-        exact_match = keyword_lower in doc_words
-        
-        # 2. 부분 문자열 매칭 (예: "trimming"이 "trimming_history"에 포함)
-        partial_match = keyword_lower in content_lower
-        
-        if exact_match:
-            # 정확한 매칭: 전체 가중치
-            matched_count += weight
-            if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
-                matched_count += weight * 0.5
-        elif partial_match:
-            # 부분 매칭: 가중치 0.7 (정확한 매칭보다 낮음)
-            matched_count += weight * 0.7
-            if any(prefix in content for prefix in [f"[TITLE]", f"[H1]", f"[H2]", f"[API]", f"[KEYWORDS]"]):
-                matched_count += weight * 0.35
-        
-        total_weight += weight
-    
-    if total_weight == 0:
-        return 0.0
-    
-    score = matched_count / total_weight
-    return min(score, 1.0)
-
-
-def _calculate_bm25_score(query_keywords: List[str], content: str, avg_doc_length: float = 100.0, k1: float = 1.5, b: float = 0.75) -> float:
-    """
-    BM25 점수 계산 (Sparse 검색)
-    
-    BM25는 TF-IDF의 개선 버전으로, 문서 길이 정규화를 포함합니다.
-    부분 단어 매칭도 지원합니다 (예: "trimming"이 "trimming_history"에 포함되면 매칭).
-    
-    Args:
-        query_keywords: 검색 쿼리의 키워드 리스트
-        content: 문서 내용
-        avg_doc_length: 평균 문서 길이 (기본값: 100.0, 실제로는 전체 문서 평균 사용 권장)
-        k1: TF 정규화 파라미터 (기본값: 1.5)
-        b: 문서 길이 정규화 파라미터 (기본값: 0.75)
-        
-    Returns:
-        BM25 점수 (정규화되지 않음, 비교용으로만 사용)
-    """
-    if not query_keywords or not content:
-        return 0.0
-    
-    # 문서를 단어로 분리 (소문자 변환)
-    doc_words = re.findall(r'\b\w+\b', content.lower())
-    doc_length = len(doc_words)
-    content_lower = content.lower()
-    
-    if doc_length == 0:
-        return 0.0
-    
-    # 각 키워드의 TF 계산
-    score = 0.0
-    for keyword in query_keywords:
-        keyword_lower = keyword.lower().strip()
-        if not keyword_lower:
-            continue
-        
-        # 1. 정확한 단어 매칭 (우선순위 높음)
-        term_freq = doc_words.count(keyword_lower)
-        exact_match = term_freq > 0
-        
-        # 2. 부분 단어 매칭 (예: "trimming"이 "trimming_history"에 포함)
-        # 정확한 매칭이 없을 때만 부분 매칭 사용 (가중치 낮춤)
-        partial_match = False
-        partial_freq = 0
-        if not exact_match:
-            # 단어 경계를 고려한 부분 매칭 (단어 중간에 포함되는 경우)
-            for word in doc_words:
-                if keyword_lower in word or word in keyword_lower:
-                    partial_freq += 1
-                    partial_match = True
-        
-        # 매칭이 없으면 스킵
-        if not exact_match and not partial_match:
-            continue
-        
-        # TF 계산 (정확한 매칭 우선, 부분 매칭은 가중치 낮춤)
-        if exact_match:
-            final_freq = term_freq
-        else:
-            final_freq = partial_freq * 0.5  # 부분 매칭은 가중치 0.5
-        
-        # BM25 공식: IDF는 간단히 log로 근사 (실제로는 전체 문서 집합에서 계산해야 함)
-        # 여기서는 키워드가 문서에 나타나면 점수를 주는 방식
-        # 실제 IDF는 전체 문서 집합에서 계산해야 하지만, 여기서는 간단히 처리
-        
-        # TF 정규화 (BM25 공식)
-        tf_norm = (final_freq * (k1 + 1)) / (final_freq + k1 * (1 - b + b * (doc_length / avg_doc_length)))
-        
-        # 간단한 IDF 근사 (키워드 길이 기반 가중치)
-        idf_weight = 1.0 + len(keyword_lower.split())  # 긴 키워드가 더 중요
-        
-        score += tf_norm * idf_weight
-    
-    return score
 
 
 def search_by_source(query: str, source: str, top_k: int, keywords: Optional[List[str]] = None) -> list:
@@ -225,8 +63,6 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
         api_key=ConfigAPI.OPENAI_API_KEY
     )
     
-    # 하이브리드 검색: 벡터 + 키워드 매칭 + BM25 (vector_search.py와 동일한 방식)
-    # 단일 단어 쿼리의 경우 더 많은 후보를 가져와서 부분 매칭 확률 증가
     query_words = query.split()
     is_single_word = len(query_words) == 1
     candidate_k = min(top_k * 6, 30) if is_single_word else min(top_k * 4, 20)
@@ -246,32 +82,25 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
         limit=candidate_k
     )
     
-    # 키워드 추출
     if keywords:
         query_keywords = [k.strip() for k in keywords if k.strip()]
     else:
         query_cleaned = query.replace(',', ' ').replace(';', ' ').replace(':', ' ')
-        # 단일 단어도 처리 (길이 2 이상, 대소문자 구분 없이)
         query_keywords = [kw.strip() for kw in query_cleaned.split() if len(kw.strip()) > 2]
-        # 단일 단어 쿼리인 경우에도 키워드가 비어있지 않도록 보장
         if not query_keywords and len(query_cleaned.strip()) > 2:
             query_keywords = [query_cleaned.strip()]
     
-    # 벡터 검색 결과 수집 및 점수 계산
     candidates = []
     bm25_scores = []
-    seen_ids = set()  # 중복 제거용
+    seen_ids = set()
     
     for hit in vector_result.points:
         content = hit.payload.get('page_content', '')
         vector_score = hit.score
-        keyword_score = _calculate_keyword_score(query_keywords, content)
-        
-        # BM25 점수 계산
-        bm25_raw = _calculate_bm25_score(query_keywords, content)
+        keyword_score = calculate_keyword_score(query_keywords, content)
+        bm25_raw = calculate_bm25_score(query_keywords, content)
         bm25_scores.append(bm25_raw)
         
-        # 문서 ID로 중복 제거 (같은 문서가 여러 번 나올 수 있음)
         doc_id = hit.id
         if doc_id not in seen_ids:
             seen_ids.add(doc_id)
@@ -283,11 +112,7 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
                 "metadata": hit.payload.get('metadata', {})
             })
     
-    # 단일 단어 쿼리이고 벡터 검색 결과가 적거나 키워드 매칭이 없는 경우
-    # 키워드 기반으로 추가 검색 (벡터 점수는 낮게 설정)
     if is_single_word and len(candidates) < top_k:
-        # 키워드 매칭이 있는 문서를 추가로 찾기 위해 전체 컬렉션에서 검색
-        # (벡터 검색으로 찾지 못한 문서 중 키워드가 포함된 문서)
         all_points = client.scroll(
             collection_name=ConfigDB.COLLECTION_NAME,
             scroll_filter=Filter(
@@ -298,31 +123,29 @@ def search_by_source(query: str, source: str, top_k: int, keywords: Optional[Lis
                     )
                 ]
             ),
-            limit=1000,  # 최대 1000개 스캔
+            limit=1000,
             with_payload=True
         )
         
-        for point in all_points[0]:  # scroll 결과는 (points, next_page_offset) 튜플
+        for point in all_points[0]:
             if point.id in seen_ids:
-                continue  # 이미 벡터 검색 결과에 포함된 문서는 제외
+                continue
             
             content = point.payload.get('page_content', '')
-            keyword_score = _calculate_keyword_score(query_keywords, content)
-            bm25_raw = _calculate_bm25_score(query_keywords, content)
+            keyword_score = calculate_keyword_score(query_keywords, content)
+            bm25_raw = calculate_bm25_score(query_keywords, content)
             
-            # 키워드나 BM25 매칭이 있는 문서만 추가
             if keyword_score > 0 or bm25_raw > 0:
                 bm25_scores.append(bm25_raw)
                 seen_ids.add(point.id)
                 candidates.append({
                     "content": content,
-                    "vector_score": 0.1,  # 벡터 검색으로 찾지 못했으므로 낮은 점수
+                    "vector_score": 0.1,
                     "keyword_score": keyword_score,
                     "bm25_raw": bm25_raw,
                     "metadata": point.payload.get('metadata', {})
                 })
                 
-                # 충분한 후보를 모았으면 중단
                 if len(candidates) >= top_k * 3:
                     break
     
@@ -401,9 +224,9 @@ def execute_dual_query_search(query: str) -> tuple:
     # 2) python_doc 검색
     python_results = []
     if "python_doc" in sources:
-        if _is_korean(query):
+        if is_korean(query):
             # 2-1) 번역(영어 키워드) 검색이 기본
-            english_query = _translate_to_english(query)
+            english_query = translate_to_english(query)
             query_info["translated"] = english_query
             # python_doc(영어 번역 검색)은 영어 키워드이므로 topic_keywords(한글) 대신 쿼리에서 자동 추출하도록 None 전달
             python_results_en = search_by_source(english_query, "python_doc", top_k)

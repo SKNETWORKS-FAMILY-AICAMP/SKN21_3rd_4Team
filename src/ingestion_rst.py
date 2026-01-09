@@ -1,5 +1,20 @@
-# RST 파일 전용 Ingestion 테스트 스크립트
-# 유사도 최적화를 위한 설정 적용
+"""
+RST 파일 Ingestion 모듈
+
+이 모듈의 역할:
+- Python 공식 문서(RST 파일)를 파싱하여 chunk 단위로 분할합니다
+- OpenAI Embedding으로 벡터화한 뒤 Qdrant(Vector DB)에 저장합니다
+- source 메타데이터로 'python_doc'을 부여하여 lecture와 구분합니다
+- RST 문법 노이즈를 강력하게 제거하여 검색 품질을 향상시킵니다
+- API 시그니처와 코드 키워드를 추출하여 프리픽스로 추가합니다
+
+핵심 개념: RST 전처리 및 API 메타데이터
+- RST directive, role, 제목 장식 등 노이즈 제거
+- 섹션 단위 파싱으로 문맥 보존 (H1, H2 구조)
+- API 시그니처 추출 (class, function, method 등)
+- 코드 예제에서 키워드 추출 (method, function, operator 등)
+- 프리픽스로 [TITLE], [H1], [H2], [API], [KEYWORDS] 추가
+"""
 
 import os
 import hashlib
@@ -20,19 +35,9 @@ import sys
 sys.path.append(os.getcwd())
 from src.utils.config import ConfigDB
 
-# ============================================================
-# 테스트 설정 (여기서 쉽게 변경 가능)
-# ============================================================
-# 임베딩 모델 선택: "text-embedding-3-small" 또는 "text-embedding-3-large"
-# None이면 ConfigDB.EMBEDDING_MODEL 사용
-EMBEDDING_MODEL = None  # ← 필요시 변경 (None이면 ConfigDB.EMBEDDING_MODEL 사용)
-
-# 컬렉션 이름 (None이면 ConfigDB.COLLECTION_NAME 사용)
-COLLECTION_NAME = None  # ← 필요시 변경 (None이면 ConfigDB.COLLECTION_NAME 사용)
-
-# 컬렉션 재생성 여부 (기존 컬렉션 삭제 후 재생성)
+EMBEDDING_MODEL = None  # ← 필요시 변경 
+COLLECTION_NAME = None  # ← 필요시 변경 
 RECREATE_COLLECTION = False  # ← True로 설정하면 기존 컬렉션 삭제 후 재생성
-
 
 class RSTIngestor:
     def __init__(
@@ -66,9 +71,6 @@ class RSTIngestor:
 
         self._vector_store: Optional[QdrantVectorStore] = None
 
-    # -------------------------
-    # API 시그니처 및 코드 키워드 추출
-    # -------------------------
     @staticmethod
     def _extract_api_signature(content: str) -> str:
         """
@@ -82,11 +84,10 @@ class RSTIngestor:
         
         first_line = lines[0].strip()
         
-        # API 시그니처 패턴: class/def로 시작하는 줄
         patterns = [
-            r'^(class\s+\w+[^(]*\([^)]*\))',  # class Name(...)
-            r'^(def\s+\w+[^(]*\([^)]*\))',    # def function_name(...)
-            r'^(\w+\s+\w+[^(]*\([^)]*\))',   # method_name(...)
+            r'^(class\s+\w+[^(]*\([^)]*\))',
+            r'^(def\s+\w+[^(]*\([^)]*\))',
+            r'^(\w+\s+\w+[^(]*\([^)]*\))',
         ]
         
         for pattern in patterns:
@@ -798,8 +799,8 @@ if __name__ == "__main__":
     ingestor = RSTIngestor(
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
-        qdrant_host="localhost",
-        qdrant_port=6333,
+        qdrant_host=ConfigDB.HOST,
+        qdrant_port=int(ConfigDB.PORT),
         collection_name=collection_name,
         recreate_collection=recreate_collection,
         embedding_model_name=embedding_model,
