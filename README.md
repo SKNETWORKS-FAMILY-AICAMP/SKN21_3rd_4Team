@@ -496,5 +496,4 @@ context에대한 강제성이 너무 강했음. 유하게 답변할 수 있도�
 | **좌슈아주원** | Search & Retrieval Agent Developer |  |
 | **윤경은** | Lecture Data Ingestion Engineer |  |
 | **앙해빙** | LLM Reasoning Agent Developere | 이번 프로젝트를 통해 LLM Reasoning Agent의 역할이 단순한 답변 생성이 아니라, 검색 결과를 어떻게 해석하고 어떤 흐름으로 사고하게 할지를 설계하는 일이라는 것을 배웠다. RAG 구조와 Agent 연결 과정에서 발생한 다양한 오류와 시행착오는 쉽지 않았지만, 그만큼 LLM 시스템을 전체적으로 이해하는 데 도움이 되었다. 특히 데이터, 프롬프트, 상태(State), Agent 흐름이 서로 맞물려야 의미 있는 답변이 나온다는 점을 직접 경험할 수 있었고, 이를 통해 LLM을 “사용하는 것”과 “설계하는 것”의 차이를 알게 되었다.   |
-| **세여닝** | Text Data Vectorization Engineer |    |
-
+| **세여닝** | Text Data Vectorization Engineer |  팀원분들 덕분에 즐겁고 편안하게 진행했던 것 같습니다 4차도 화이팅!!  |
