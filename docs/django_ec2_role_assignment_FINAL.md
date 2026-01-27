@@ -28,7 +28,7 @@
 
 **할 일:**
 - [ ] Django 프로젝트 초기 세팅 (`django-admin startproject`)
-- [ ] 앱 구조 설계 (`chat`, `quiz`, `common`)
+- [ ] 앱 구조 설계 (`chat`, `quiz`)
 - [ ] **`templates/base.html` 공통 레이아웃 작성**
 - [ ] **`templates/main.html` 메인 채팅 UI 구현** (세연 디자인 아이디어 참고)
 - [ ] **Flask `index.html` (2177줄) → Django 템플릿 변환**
@@ -39,30 +39,24 @@
 
 ---
 
-### 2️⃣ 경은 - **도움 UI + Quiz API + CSS/JS + 발표**
-| 구분          | 내용                                 |
-| ------------- | ------------------------------------ |
-| **메인 역할** | 도움 페이지 UI + Quiz API + 스타일링 |
-| **보조 역할** | 발표 자료 제작                       |
+### 2️⃣ 경은 - **Quiz API + CSS/JS**
+| 구분          | 내용                |
+| ------------- | ------------------- |
+| **메인 역할** | Quiz API + 스타일링 |
 
 **할 일:**
-- [ ] **`templates/help.html` 도움말/가이드 페이지 구현**
 - [ ] **기존 `index.html`의 CSS를 `static/css/` 폴더로 분리**
   - `static/css/base.css` (공통 스타일)
   - `static/css/main.css` (메인 페이지 스타일)
-  - `static/css/help.css` (도움 페이지 스타일)
 - [ ] **JavaScript 파일 분리 및 Django URL 연동**
   - `static/js/chat.js` (채팅 로직)
   - `static/js/quiz.js` (퀴즈 로직)
 - [ ] Quiz API (`/api/quiz/`) Flask → Django 이관
-- [ ] Health Check API (`/api/health/`) 구현
 - [ ] 공통 에러 핸들링 미들웨어 (`config/middleware.py`)
-- [ ] API 테스트 코드 작성 (pytest)
-- [ ] 발표 자료 제작
 
 ---
 
-### 3️⃣ 지용 - **EC2 배포 & 인프라 + 정적 파일 관리**
+### 3️⃣ 지용 - **EC2 배포 & 인프라**
 | 구분          | 내용                     |
 | ------------- | ------------------------ |
 | **메인 역할** | AWS EC2 배포 & 서버 운영 |
@@ -74,9 +68,9 @@
 - [x] nginx.conf 작성
 - [x] .env.example 템플릿 작성
 - [x] EC2 배포 가이드 문서화
-- [ ] **Django `settings.py`에서 `STATIC_ROOT`, `STATICFILES_DIRS` 설정**
-- [ ] **`python manage.py collectstatic` 명령 자동화**
-- [ ] **Nginx가 `/static/` 경로를 직접 서빙하도록 설정**
+- [ ] Django `settings.py`에서 `STATIC_ROOT`, `STATICFILES_DIRS` 설정
+- [ ] `python manage.py collectstatic` 명령 자동화
+- [ ] Nginx가 `/static/` 경로를 직접 서빙하도록 설정
 - [ ] AWS EC2 인스턴스 생성 및 설정
 - [ ] Nginx + Gunicorn 세팅
 - [ ] Qdrant 서버 EC2 배포
@@ -104,36 +98,29 @@ SKN21_3rd_4Team/
 │   │   │   ├── urls.py
 │   │   │   └── services.py  # RAG 연동 (main() 호출)
 │   │   │
-│   │   ├── quiz/          # 퀴즈 API (경은)
-│   │   │   ├── views.py
-│   │   │   ├── urls.py
-│   │   │   └── services.py
-│   │   │
-│   │   └── common/        # 공통 기능 (경은)
-│   │       ├── views.py   # Health Check, 메인/도움 페이지
-│   │       └── urls.py
+│   │   └── quiz/          # 퀴즈 API (경은)
+│   │       ├── views.py
+│   │       ├── urls.py
+│   │       └── services.py
 │   │
 │   ├── templates/         # 🎨 UI 템플릿
 │   │   ├── base.html      # 공통 레이아웃 (주원)
-│   │   ├── main.html      # 메인 채팅 UI (주원 - 세연 디자인 참고)
-│   │   └── help.html      # 도움말 페이지 (경은)
+│   │   └── main.html      # 메인 채팅 UI (주원)
 │   │
 │   ├── static/            # 정적 파일 (경은: CSS/JS, 지용: 설정)
 │   │   ├── css/
 │   │   │   ├── base.css   # 공통 스타일 (경은)
-│   │   │   ├── main.css   # 메인 페이지 (경은)
-│   │   │   └── help.css   # 도움 페이지 (경은)
+│   │   │   └── main.css   # 메인 페이지 (경은)
 │   │   ├── js/
 │   │   │   ├── chat.js    # 채팅 로직 (경은)
 │   │   │   └── quiz.js    # 퀴즈 로직 (경은)
-│   │   └── images/        # (기존 image/ 폴더 복사)
+│   │   └── images/
 │   │
-│   └── tests/             # 테스트 코드 (경은)
-│       ├── test_chat.py
-│       └── test_quiz.py
+│   └── tests/             # 테스트 코드 (선택)
+│       └── test_api.py
 │
-├── main.py                # ✅ RAG 시스템 (가람·혜빈, 그대로 유지)
-├── src/                   # ✅ RAG 코어 로직 (가람·혜빈, 그대로 유지)
+├── main.py                # ✅ RAG 시스템 (가람·혜빈, 건드리지 말 것)
+├── src/                   # ✅ RAG 코어 로직 (가람·혜빈, 건드리지 말 것)
 ├── data/                  # ✅ 강의 자료 (완성)
 │
 ├── deploy/                # ✅ 배포 파일 (지용, 완료)
@@ -149,18 +136,160 @@ SKN21_3rd_4Team/
 
 ---
 
+## 🤖 RAG 챗봇 Django 연동
+
+### Chat API (`apps/chat/views.py`) - 주원
+
+```python
+from django.http import StreamingHttpResponse
+import sys
+from pathlib import Path
+import json
+import time
+
+# 기존 프로젝트 경로 추가
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from main import main
+
+def chat_stream(request):
+    """SSE 스트리밍 Chat API"""
+    message = request.POST.get('message')
+    
+    def event_stream():
+        # main() 호출 (RAG 시스템)
+        result = main(message)
+        
+        # Flask app.py와 동일한 로직
+        analyst_result = result.get('analyst_results', [])
+        if analyst_result:
+            last_msg = analyst_result[-1]
+            answer_text = last_msg.content if hasattr(last_msg, 'content') else str(last_msg)
+        else:
+            answer_text = "답변을 생성할 수 없습니다."
+        
+        # 검색 결과 처리
+        search_results = result.get('search_results', [])
+        sources = []
+        for r in search_results[:3]:
+            if r.get('score', 0) > 0.5:
+                sources.append({
+                    'type': r.get('metadata', {}).get('source', 'IPYNB').upper(),
+                    'title': r.get('metadata', {}).get('lecture_title', '문서'),
+                    'score': r.get('score', 0),
+                    'content': r.get('content', '')[:200]
+                })
+        
+        # 1단계: 진행 단계
+        steps = [
+            {'step': 1, 'title': 'Router', 'desc': '질문 분석'},
+            {'step': 2, 'title': 'Search', 'desc': f'{len(search_results)}개 문서 검색'},
+            {'step': 3, 'title': 'Analyst', 'desc': '답변 생성'}
+        ]
+        for step in steps:
+            yield f"data: {json.dumps({'type': 'step', 'data': step})}\n\n"
+            time.sleep(0.5)
+        
+        # 2단계: 답변 스트리밍
+        for char in answer_text:
+            yield f"data: {json.dumps({'type': 'char', 'data': char})}\n\n"
+            time.sleep(0.02)
+        
+        # 3단계: 추천 질문
+        suggested = result.get('suggested_questions', [])
+        if suggested:
+            yield f"data: {json.dumps({'type': 'suggestions', 'data': suggested})}\n\n"
+        
+        # 4단계: 참고 자료
+        yield f"data: {json.dumps({'type': 'sources', 'data': sources})}\n\n"
+        
+        # 완료
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    
+    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+```
+
+### Quiz API (`apps/quiz/views.py`) - 경은
+
+```python
+from django.http import JsonResponse
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.quiz_service import QuizService
+
+quiz_service = QuizService()
+
+def get_quiz(request):
+    """퀴즈 데이터 반환 API"""
+    category = request.GET.get('category', 'all')
+    count = int(request.GET.get('count', 5))
+    quizzes = quiz_service.get_quizzes(category, count)
+    return JsonResponse({'success': True, 'quizzes': quizzes})
+```
+
+### 에러 핸들링 미들웨어 (`config/middleware.py`) - 경은
+
+```python
+from django.http import JsonResponse
+
+class ErrorHandlerMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        return JsonResponse({
+            'success': False,
+            'error': str(exception),
+            'type': type(exception).__name__
+        }, status=500)
+```
+
+---
+
+## ⚠️ 작업 시 고려 사항
+
+### 1. RAG 팀과 충돌 방지
+- `main(question)` 함수만 호출, **내부 수정 절대 금지**
+- `src/` 폴더는 **RAG 팀 전용** (가람·혜빈)
+- 반환 형식 변경 시 사전 공유 필수
+
+### 2. Flask → Django 마이그레이션
+- 기존 `app.py`의 `/chat/stream` 로직을 `apps/chat/views.py`로 이관
+- `templates/index.html` (2177줄) → `base.html` + `main.html`로 분할
+- API 엔드포인트 경로 동일하게 유지
+
+### 3. 간소화 전략
+- ❌ 도움 페이지 제외 (시간 절약)
+- ❌ Health Check API 제외 (필수 아님)
+- ✅ **핵심 기능에만 집중** (Chat + Quiz)
+
+---
 
 ## 🎯 핵심 변경 사항
 
-| 항목          | 기존 문서    | 최종안                                        |
-| ------------- | ------------ | --------------------------------------------- |
-| **세연 역할** | 메인 UI 개발 | ❌ **디자인 아이디어만 제공** (개발 X)         |
-| **UI 개발**   | 별도 팀      | ✅ **Django 팀이 전부 담당**                   |
-| **주원 역할** | 백엔드만     | ✅ 백엔드 + **메인 UI 템플릿**                 |
-| **경은 역할** | Quiz API만   | ✅ Quiz API + 도움 UI + **CSS/JS 전체** + 발표 |
-| **지용 역할** | 배포만       | ✅ 배포 + **정적 파일 설정**                   |
+| 항목             | 기존 문서      | 최종안 (간소화)                  |
+| ---------------- | -------------- | -------------------------------- |
+| **세연 역할**    | 메인 UI 개발   | ❌ **디자인 아이디어만** (개발 X) |
+| **도움 UI**      | help.html 포함 | ❌ **제거** (불필요)              |
+| **Health Check** | API 포함       | ❌ **제거** (선택사항)            |
+| **주원 역할**    | 백엔드만       | ✅ 백엔드 + 메인 UI 템플릿        |
+| **경은 역할**    | 많은 작업      | ✅ Quiz API + **CSS/JS만**        |
+| **지용 역할**    | 배포만         | ✅ 배포 + 정적 파일 설정          |
+| **템플릿 개수**  | 3개            | ✅ **2개** (base.html, main.html) |
+
+---
+
 
 ---
 
 > **마지막 업데이트:** 2026-01-27  
-> **작성자:** 지용 (EC2 배포 & 인프라 담당)
+> **작성자:** 지용 (EC2 배포 & 인프라 담당)  
+> **버전:** v3 (간소화 - 도움 UI & Health Check 제거)
