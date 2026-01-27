@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Qdrant 벡터 데이터베이스
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # Django 백엔드 애플리케이션
+  django:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile
+    container_name: django_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    env_file:
+      - ../.env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # Nginx 웹 서버 (리버스 프록시)
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      - django
+    restart: unless-stopped
+    networks:
+      - app_network
+
+volumes:
+  qdrant_storage:
+  static_volume:
+  media_volume:
+
+
+networks:
+  app_network:
+    driver: bridge
