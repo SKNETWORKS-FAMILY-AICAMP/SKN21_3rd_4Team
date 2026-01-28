@@ -296,7 +296,7 @@ SKN21_3rd_4Team
   - Python 문법 및 표준 라이브러리 설명
   - 언어 차원의 개념, 함수, 동작 원리 보완
   - 공식 기준에 따른 정확한 설명 제공
-#### 출처 [Python 3 Documentation](https://docs.python.org/ko/3/download.html)
+#### 출처 [Python 3 Documentation](https://github.com/python/cpython/tree/main/Doc)
 <br>
 
 ▪️ 내부 학습 자료 + 공식 문서 결합으로 데이터 신뢰도 극대화 <br>
